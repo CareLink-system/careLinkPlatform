@@ -19,6 +19,9 @@ out/
 .idea/
 *.sln.iml
 
+#migration files
+Migrations/
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
