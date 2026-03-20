@@ -1,0 +1,172 @@
+version: "3.8"
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: carelink-postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: carelink_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - carelink-network
+
+  # MongoDB for telemedicine and notifications
+  mongodb:
+    image: mongo:6
+    container_name: carelink-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - carelink-network
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: carelink-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - carelink-network
+
+  # Auth Service
+  auth-service:
+    build: ./Services/AuthService
+    container_name: carelink-auth
+    ports:
+      - "5001:5001"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=authdb;Username=admin;Password=admin123
+      - Jwt__Key=your-super-secret-key-for-development-only
+      - Jwt__Issuer=careLinkPlatform
+      - Jwt__Audience=careLinkPlatformUsers
+    depends_on:
+      - postgres
+    networks:
+      - carelink-network
+
+  # Patient Service
+  patient-service:
+    build: ./Services/PatientService
+    container_name: carelink-patient
+    ports:
+      - "5002:5002"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=patientdb;Username=admin;Password=admin123
+    depends_on:
+      - postgres
+    networks:
+      - carelink-network
+
+  # Doctor Service
+  doctor-service:
+    build: ./Services/DoctorService
+    container_name: carelink-doctor
+    ports:
+      - "5003:5003"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=doctordb;Username=admin;Password=admin123
+    depends_on:
+      - postgres
+    networks:
+      - carelink-network
+
+  # Appointment Service
+  appointment-service:
+    build: ./Services/AppointmentService
+    container_name: carelink-appointment
+    ports:
+      - "5004:5004"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=appointmentdb;Username=admin;Password=admin123
+    depends_on:
+      - postgres
+    networks:
+      - carelink-network
+
+  # Telemedicine Service
+  telemedicine-service:
+    build: ./Services/TelemedicineService
+    container_name: carelink-telemedicine
+    ports:
+      - "5007:5007"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - MongoDb__ConnectionString=mongodb://mongodb:27017
+      - MongoDb__Database=telemedicinedb
+    depends_on:
+      - mongodb
+    networks:
+      - carelink-network
+
+  # Notification Service
+  notification-service:
+    build: ./Services/NotificationService
+    container_name: carelink-notification
+    ports:
+      - "5008:5008"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - MongoDb__ConnectionString=mongodb://mongodb:27017
+      - MongoDb__Database=notificationdb
+    depends_on:
+      - mongodb
+    networks:
+      - carelink-network
+
+  # Payment Service
+  payment-service:
+    build: ./Services/PaymentService
+    container_name: carelink-payment
+    ports:
+      - "5010:5010"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=paymentdb;Username=admin;Password=admin123
+      - PayHere__MerchantId=your-merchant-id
+      - PayHere__Secret=your-secret-key
+    depends_on:
+      - postgres
+    networks:
+      - carelink-network
+
+  # API Gateway
+  api-gateway:
+    build: ./ApiGateway
+    container_name: carelink-gateway
+    ports:
+      - "5000:5000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - Jwt__Key=your-super-secret-key-for-development-only
+      - Jwt__Issuer=careLinkPlatform
+      - Jwt__Audience=careLinkPlatformUsers
+    depends_on:
+      - auth-service
+      - patient-service
+      - doctor-service
+      - appointment-service
+      - telemedicine-service
+      - payment-service
+      - notification-service
+    networks:
+      - carelink-network
+
+networks:
+  carelink-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  mongo_data:
