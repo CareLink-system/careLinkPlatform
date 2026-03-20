@@ -115,15 +115,6 @@ coverage/
 *.coverage
 *.coveragexml
 
-# ==========================================
-# IMPORTANT: appsettings.json RULES
-# ==========================================
-
-# ✅ Keep template files (commit these to GitHub)
-!appsettings.json
-!appsettings.Development.json
-
-# ❌ But ignore local/user-specific files (DON'T commit these)
-appsettings.Local.json
-appsettings.*.local.json
-appsettings.Production.json
+# Ignore REAL config files with secrets
+**/appsettings.json
+**/appsettings.*.json
