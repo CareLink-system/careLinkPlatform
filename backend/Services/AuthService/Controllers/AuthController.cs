@@ -1,22 +1,28 @@
 using AuthService.DTOs.Auth;
 using AuthService.DTOs.Common;
-using AuthService.Models;
+using AuthService.Exceptions;
+using AuthService.Services.AuthService;
 using AuthService.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AuthService.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/[controller]")]
 [Produces("application/json")]
 public class AuthController : ControllerBase
 {
-    private static readonly List<User> users = new();
+    private readonly IAuthService _authService;
     private readonly IIdentityService _identityService;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IIdentityService identityService, ILogger<AuthController> logger)
+    public AuthController(
+        IAuthService authService,
+        IIdentityService identityService,
+        ILogger<AuthController> logger)
     {
+        _authService = authService;
         _identityService = identityService;
         _logger = logger;
     }
@@ -24,14 +30,21 @@ public class AuthController : ControllerBase
     /// <summary>
     /// Registers a new user.
     /// </summary>
-    /// <response code="200">User registered successfully.</response>
-    /// <response code="400">If the request is invalid.</response>
+    /// <param name="request">User registration data</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <response code="201">User registered successfully.</response>
+    /// <response code="400">Invalid request data or duplicate email.</response>
+    /// <response code="409">Email already exists.</response>
     /// <response code="500">Internal server error.</response>
     [HttpPost("register")]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Register([FromBody] UserRegisterDto model)
+    public async Task<ActionResult<ApiResponse<AuthResponseDto>>> Register(
+        [FromBody] UserRegisterDto request,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -42,64 +55,70 @@ public class AuthController : ControllerBase
                     .Select(e => e.ErrorMessage)
                     .ToList();
 
+                _logger.LogWarning("Invalid registration request. Errors: {Errors}", string.Join(", ", errors));
+
                 return BadRequest(ApiResponse<object>.FailResponse("Validation failed.", errors));
             }
 
-            if (users.Any(u => u.Email.Equals(model.Email, StringComparison.OrdinalIgnoreCase)))
-            {
-                return BadRequest(ApiResponse<object>.FailResponse("User already exists."));
-            }
+            var currentUserId = _identityService.GetUserIdentity();
+            var userIp = _identityService.GetUserIpAddress();
 
-            string loginUser = _identityService.GetUserIdentity();
+            _logger.LogInformation(
+                "Registering user. Email: {Email}, IP: {IP}",
+                request.Email, userIp);
 
-            var user = new User
-            {
-                Id = users.Count + 1,
-                Email = model.Email.Trim(),
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password),
-                FirstName = model.FirstName.Trim(),
-                LastName = model.LastName.Trim(),
-                Role = model.Role.Trim(),
-                PFNO = model.PFNO,
-                PhoneNumber = model.PhoneNumber,
-                FullName = $"{model.FirstName} {model.LastName}",
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = loginUser,
-                LoginIP = _identityService.GetUserIpAddress()
-            };
+            var result = await _authService.RegisterAsync(
+                request, currentUserId, userIp, cancellationToken);
 
-            users.Add(user);
+            _logger.LogInformation(
+                "User registered successfully. Email: {Email}, UserId: {UserId}",
+                request.Email, result.Id);
 
-            await Task.CompletedTask;
-
-            return Ok(ApiResponse<object>.SuccessResponse(new
-            {
-                user.Id,
-                user.Email,
-                user.FirstName,
-                user.LastName,
-                user.Role
-            }, "User registered successfully."));
+            return CreatedAtAction(
+                nameof(Register),
+                new { id = result.Id },
+                ApiResponse<AuthResponseDto>.SuccessResponse(result, "User registered successfully."));
+        }
+        catch (DuplicateEmailException ex)
+        {
+            _logger.LogWarning(ex, "Registration failed. Duplicate email: {Email}", request.Email);
+            return Conflict(ApiResponse<object>.FailResponse(ex.Message));
+        }
+        catch (InvalidUserDataException ex)
+        {
+            _logger.LogWarning(ex, "Registration failed with invalid data. Email: {Email}", request.Email);
+            return BadRequest(ApiResponse<object>.FailResponse(ex.Message));
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("Registration request cancelled.");
+            return StatusCode(499, ApiResponse<object>.FailResponse("Request cancelled."));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while registering user.");
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                ApiResponse<object>.FailResponse("An unexpected error occurred."));
+            _logger.LogError(ex, "Unexpected error during registration. Email: {Email}", request.Email);
+            return StatusCode(500, ApiResponse<object>.FailResponse("An unexpected error occurred during registration."));
         }
     }
 
     /// <summary>
     /// Logs in a user and returns authentication token.
     /// </summary>
+    /// <param name="request">User login credentials</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <response code="200">Login successful.</response>
+    /// <response code="400">Invalid request data.</response>
     /// <response code="401">Invalid credentials.</response>
     /// <response code="500">Internal server error.</response>
     [HttpPost("login")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Login([FromBody] UserLoginDto model)
+    public async Task<ActionResult<ApiResponse<AuthResponseDto>>> Login(
+        [FromBody] UserLoginDto request,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -110,145 +129,41 @@ public class AuthController : ControllerBase
                     .Select(e => e.ErrorMessage)
                     .ToList();
 
+                _logger.LogWarning("Invalid login request. Errors: {Errors}", string.Join(", ", errors));
                 return BadRequest(ApiResponse<object>.FailResponse("Validation failed.", errors));
             }
 
-            var user = users.FirstOrDefault(u =>
-                u.Email.Equals(model.Email, StringComparison.OrdinalIgnoreCase));
+            var userIp = _identityService.GetUserIpAddress();
 
-            if (user == null)
-            {
-                return Unauthorized(ApiResponse<object>.FailResponse("Invalid credentials."));
-            }
+            _logger.LogInformation("Login attempt. Email: {Email}, IP: {IP}", request.Email, userIp);
 
-            bool passwordValid = BCrypt.Net.BCrypt.Verify(model.Password, user.PasswordHash);
-            if (!passwordValid)
-            {
-                user.NoofAttempt += 1;
-                return Unauthorized(ApiResponse<object>.FailResponse("Invalid credentials."));
-            }
+            var result = await _authService.LoginAsync(request, userIp, cancellationToken);
 
-            user.NoOfLogin += 1;
-            user.NoofAttempt = 0;
-            user.LoginIP = _identityService.GetUserIpAddress();
-            user.UpdatedAt = DateTime.UtcNow;
-            user.UpdatedBy = user.Email;
+            _logger.LogInformation(
+                "User logged in successfully. Email: {Email}, UserId: {UserId}",
+                request.Email, result.Id);
 
-            var token = $"dummy-jwt-token-{Guid.NewGuid()}";
-
-            var response = new AuthResponseDto
-            {
-                Token = token,
-                Id = user.Id,
-                Email = user.Email,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                Role = user.Role
-            };
-
-            await Task.CompletedTask;
-
-            return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(response, "Login successful."));
+            return Ok(ApiResponse<AuthResponseDto>.SuccessResponse(result, "Login successful."));
+        }
+        catch (InvalidCredentialsException ex)
+        {
+            _logger.LogWarning(ex, "Login failed. Invalid credentials for email: {Email}", request.Email);
+            return Unauthorized(ApiResponse<object>.FailResponse(ex.Message));
+        }
+        catch (PasswordMismatchException ex)
+        {
+            _logger.LogWarning(ex, "Login failed. Password mismatch for email: {Email}", request.Email);
+            return Unauthorized(ApiResponse<object>.FailResponse(ex.Message));
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("Login request cancelled.");
+            return StatusCode(499, ApiResponse<object>.FailResponse("Request cancelled."));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while logging in.");
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                ApiResponse<object>.FailResponse("An unexpected error occurred."));
-        }
-    }
-
-    /// <summary>
-    /// Changes the password of an existing user.
-    /// </summary>
-    /// <response code="200">Password changed successfully.</response>
-    /// <response code="400">Invalid request.</response>
-    /// <response code="404">User not found.</response>
-    /// <response code="500">Internal server error.</response>
-    [HttpPost("change-password")]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto model)
-    {
-        try
-        {
-            if (!ModelState.IsValid)
-            {
-                var errors = ModelState.Values
-                    .SelectMany(v => v.Errors)
-                    .Select(e => e.ErrorMessage)
-                    .ToList();
-
-                return BadRequest(ApiResponse<object>.FailResponse("Validation failed.", errors));
-            }
-
-            var user = users.FirstOrDefault(x =>
-                x.Email.Equals(model.Email, StringComparison.OrdinalIgnoreCase));
-
-            if (user == null)
-            {
-                return NotFound(ApiResponse<object>.FailResponse("User not found."));
-            }
-
-            if (!BCrypt.Net.BCrypt.Verify(model.CurrentPassword, user.PasswordHash))
-            {
-                return BadRequest(ApiResponse<object>.FailResponse("Current password is incorrect."));
-            }
-
-            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.NewPassword);
-            user.UpdatedAt = DateTime.UtcNow;
-            user.UpdatedBy = _identityService.GetUserIdentity();
-
-            await Task.CompletedTask;
-
-            return Ok(ApiResponse<object>.SuccessResponse(null, "Password changed successfully."));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error occurred while changing password.");
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                ApiResponse<object>.FailResponse("An unexpected error occurred."));
-        }
-    }
-
-    /// <summary>
-    /// Refreshes the authentication token.
-    /// </summary>
-    /// <response code="200">Token refreshed successfully.</response>
-    /// <response code="404">User not found.</response>
-    [HttpPost("refresh-token/{email}")]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> RefreshToken(string email)
-    {
-        try
-        {
-            var user = users.FirstOrDefault(x => x.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
-            if (user == null)
-            {
-                return NotFound(ApiResponse<object>.FailResponse("User not found."));
-            }
-
-            user.RefreshToken = Guid.NewGuid().ToString();
-            user.RefreshTokenExpireTime = DateTime.UtcNow.AddDays(7);
-            user.UpdatedAt = DateTime.UtcNow;
-            user.UpdatedBy = _identityService.GetUserIdentity();
-
-            await Task.CompletedTask;
-
-            return Ok(ApiResponse<object>.SuccessResponse(new
-            {
-                user.RefreshToken,
-                user.RefreshTokenExpireTime
-            }, "Token refreshed successfully."));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error occurred while refreshing token.");
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                ApiResponse<object>.FailResponse("An unexpected error occurred."));
+            _logger.LogError(ex, "Unexpected error during login. Email: {Email}", request.Email);
+            return StatusCode(500, ApiResponse<object>.FailResponse("An unexpected error occurred during login."));
         }
     }
 }

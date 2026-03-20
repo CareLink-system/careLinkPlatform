@@ -1,44 +1,94 @@
 using Microsoft.EntityFrameworkCore;
+using AuthService;
 using AuthService.Data;
+
+Console.WriteLine("🚀 Starting AuthService...");
+
+// Check if we should run migrations directly (skipping the whole application startup)
+MigrationRunner.RunMigrations(args);
+
+// Configure thread pool for high concurrency
+ThreadPool.GetMinThreads(out int workerThreads, out int completionPortThreads);
+int newWorkerThreads = Environment.ProcessorCount * 32;
+int newCompletionPortThreads = Environment.ProcessorCount * 32;
+ThreadPool.SetMinThreads(
+    Math.Max(workerThreads, newWorkerThreads),
+    Math.Max(completionPortThreads, newCompletionPortThreads));
+
+Console.WriteLine($"✅ Thread pool configured - Min worker threads: {newWorkerThreads}, Completion ports: {newCompletionPortThreads}");
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services
+// Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new() { Title = "Auth Service API", Version = "v1" });
 
-// Add DbContext with Neon DB connection
-builder.Services.AddDbContext<AuthDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    // Add JWT authentication to Swagger
+    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "Enter 'Bearer' [space] and then your token"
+    });
 
+    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+});
+
+// Register application services
+builder.Services.RegisterServices(builder.Configuration);
+
+// Add JWT Authentication
+builder.Services.AddJwtAuthentication(builder.Configuration);
+
+// Add Health Checks
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<AuthDbContext>();
 
 var app = builder.Build();
 
-// Configure pipeline
+// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Auth Service API v1");
+        c.RoutePrefix = "swagger"; // Makes Swagger available at /swagger
+    });
+
+    // Apply migrations in development only
+    app.ApplyMigrations();
 }
 
-// Apply migrations automatically (optional)
-// ✅ THIS RUNS MIGRATIONS AUTOMATICALLY WHEN APP STARTS
-
-// this is get a controll of the scope of the db context and ensure that the migrations are applied when the application starts.
-// but i don't like this
-
-//using (var scope = app.Services.CreateScope())
-//{
-//    var dbContext = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
-//    dbContext.Database.Migrate();
-//}
-
-
-
+// Enable middleware
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
+
+// Map controllers
 app.MapControllers();
+
+// Health check endpoint
+app.MapHealthChecks("/health");
 
 // Optional: Keep the weather forecast endpoint if you want
 var summaries = new[]
@@ -59,6 +109,10 @@ app.MapGet("/weatherforecast", () =>
     return forecast;
 })
 .WithName("GetWeatherForecast");
+
+Console.WriteLine("✅ AuthService is ready!");
+Console.WriteLine($"📝 Swagger: http://localhost:5001/swagger");
+Console.WriteLine($"❤️ Health: http://localhost:5001/health");
 
 app.Run();
 

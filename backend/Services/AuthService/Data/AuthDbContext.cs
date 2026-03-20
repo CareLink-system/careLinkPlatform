@@ -1,6 +1,5 @@
-﻿using AuthService.Models;
-using Microsoft.EntityFrameworkCore;
-using System.Reflection.Emit;
+﻿using Microsoft.EntityFrameworkCore;
+using AuthService.Models;
 
 namespace AuthService.Data;
 
@@ -16,9 +15,13 @@ public class AuthDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Add unique constraint on email
-        modelBuilder.Entity<User>()
-            .HasIndex(u => u.Email)
-            .IsUnique();
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Email).IsUnique();
+            entity.Property(e => e.Email).IsRequired();
+            entity.Property(e => e.PasswordHash).IsRequired();
+            entity.Property(e => e.Role).IsRequired();
+        });
     }
 }
