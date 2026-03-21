@@ -1,3 +1,4 @@
+using AuthService.Data;
 using AuthService.DTOs.Users;
 using AuthService.Enum;
 using AuthService.Exceptions;
@@ -9,13 +10,16 @@ namespace AuthService.Services.UserService;
 public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
+    private readonly AuthDbContext _dbContext;
     private readonly ILogger<UserService> _logger;
 
     public UserService(
         IUserRepository userRepository,
+        AuthDbContext dbContext,
         ILogger<UserService> logger)
     {
         _userRepository = userRepository;
+        _dbContext = dbContext;
         _logger = logger;
     }
 
@@ -100,6 +104,7 @@ public class UserService : IUserService
         string currentUserId,
         CancellationToken cancellationToken = default)
     {
+        var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             _logger.LogInformation("Updating user. UserId: {UserId}", id);
@@ -109,6 +114,7 @@ public class UserService : IUserService
             if (user == null)
             {
                 _logger.LogWarning("User not found for update. UserId: {UserId}", id);
+                await transaction.RollbackAsync(cancellationToken);
                 throw new UserNotFoundException($"User with ID {id} not found.");
             }
 
@@ -132,6 +138,7 @@ public class UserService : IUserService
 
             await _userRepository.UpdateAsync(user, cancellationToken);
             await _userRepository.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
 
             _logger.LogInformation("User updated successfully. UserId: {UserId}", id);
 
@@ -139,10 +146,12 @@ public class UserService : IUserService
         }
         catch (UserNotFoundException)
         {
+            await transaction.RollbackAsync(cancellationToken);
             throw;
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex, "Error updating user. UserId: {UserId}", id);
             throw new InvalidUserDataException($"Failed to update user: {ex.Message}");
         }
@@ -153,6 +162,7 @@ public class UserService : IUserService
         string currentUserId,
         CancellationToken cancellationToken = default)
     {
+        var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             _logger.LogInformation("Deleting user. UserId: {UserId}", id);
@@ -162,6 +172,7 @@ public class UserService : IUserService
             if (user == null)
             {
                 _logger.LogWarning("User not found for deletion. UserId: {UserId}", id);
+                await transaction.RollbackAsync(cancellationToken);
                 throw new UserNotFoundException($"User with ID {id} not found.");
             }
 
@@ -171,17 +182,24 @@ public class UserService : IUserService
             if (result)
             {
                 await _userRepository.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
                 _logger.LogInformation("User deleted successfully. UserId: {UserId}", id);
+            }
+            else
+            {
+                await transaction.RollbackAsync(cancellationToken);
             }
 
             return result;
         }
         catch (UserNotFoundException)
         {
+            await transaction.RollbackAsync(cancellationToken);
             throw;
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex, "Error deleting user. UserId: {UserId}", id);
             throw new InvalidUserDataException($"Failed to delete user: {ex.Message}");
         }

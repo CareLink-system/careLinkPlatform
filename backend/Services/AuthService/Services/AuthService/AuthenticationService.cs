@@ -1,3 +1,4 @@
+using AuthService.Data;
 using AuthService.DTOs.Auth;
 using AuthService.DTOs.Users;
 using AuthService.Enum;
@@ -11,13 +12,16 @@ namespace AuthService.Services.AuthService;
 public class AuthenticationService : IAuthService
 {
     private readonly IUserRepository _userRepository;
+    private readonly AuthDbContext _dbContext;
     private readonly ILogger<AuthenticationService> _logger;
 
     public AuthenticationService(
         IUserRepository userRepository,
+        AuthDbContext dbContext,
         ILogger<AuthenticationService> logger)
     {
         _userRepository = userRepository;
+        _dbContext = dbContext;
         _logger = logger;
     }
 
@@ -27,6 +31,7 @@ public class AuthenticationService : IAuthService
         string userIp,
         CancellationToken cancellationToken = default)
     {
+        var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             // Check if email already exists
@@ -36,6 +41,7 @@ public class AuthenticationService : IAuthService
             if (emailExists)
             {
                 _logger.LogWarning("Registration failed. Email already exists: {Email}", request.Email);
+                await transaction.RollbackAsync(cancellationToken);
                 throw new DuplicateEmailException($"Email '{request.Email}' is already registered.");
             }
 
@@ -67,6 +73,8 @@ public class AuthenticationService : IAuthService
             await _userRepository.CreateAsync(user, cancellationToken);
             await _userRepository.SaveChangesAsync(cancellationToken);
 
+            await transaction.CommitAsync(cancellationToken);
+
             _logger.LogInformation(
                 "User registered successfully. Email: {Email}, UserId: {UserId}",
                 user.Email, user.Id);
@@ -86,10 +94,12 @@ public class AuthenticationService : IAuthService
         }
         catch (DuplicateEmailException)
         {
+            await transaction.RollbackAsync(cancellationToken);
             throw;
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex, "Error registering user. Email: {Email}", request.Email);
             throw new InvalidUserDataException($"Failed to register user: {ex.Message}");
         }
@@ -100,6 +110,7 @@ public class AuthenticationService : IAuthService
         string userIp,
         CancellationToken cancellationToken = default)
     {
+        var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             // Find user by email
@@ -109,6 +120,7 @@ public class AuthenticationService : IAuthService
             if (user == null)
             {
                 _logger.LogWarning("Login failed. User not found: {Email}", request.Email);
+                await transaction.RollbackAsync(cancellationToken);
                 throw new InvalidCredentialsException("Invalid email or password.");
             }
 
@@ -119,6 +131,7 @@ public class AuthenticationService : IAuthService
                 user.NoofAttempt += 1;
                 await _userRepository.UpdateAsync(user, cancellationToken);
                 await _userRepository.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
 
                 _logger.LogWarning(
                     "Login failed. Invalid password attempt. Email: {Email}, Attempts: {Attempts}",
@@ -136,6 +149,7 @@ public class AuthenticationService : IAuthService
 
             await _userRepository.UpdateAsync(user, cancellationToken);
             await _userRepository.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
 
             _logger.LogInformation(
                 "User logged in successfully. Email: {Email}, LoginCount: {LoginCount}",
@@ -156,14 +170,17 @@ public class AuthenticationService : IAuthService
         }
         catch (InvalidCredentialsException)
         {
+            await transaction.RollbackAsync(cancellationToken);
             throw;
         }
         catch (PasswordMismatchException)
         {
+            await transaction.RollbackAsync(cancellationToken);
             throw;
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex, "Error logging in user. Email: {Email}", request.Email);
             throw new InvalidCredentialsException("An error occurred during login.");
         }
@@ -176,12 +193,14 @@ public class AuthenticationService : IAuthService
         string currentUserId,
         CancellationToken cancellationToken = default)
     {
+        var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
             if (user == null)
             {
                 _logger.LogWarning("Change password failed. User not found: {UserId}", userId);
+                await transaction.RollbackAsync(cancellationToken);
                 throw new UserNotFoundException($"User with ID {userId} not found.");
             }
 
@@ -190,6 +209,7 @@ public class AuthenticationService : IAuthService
             if (!passwordValid)
             {
                 _logger.LogWarning("Change password failed. Invalid old password for UserId: {UserId}", userId);
+                await transaction.RollbackAsync(cancellationToken);
                 throw new PasswordMismatchException("Current password is incorrect.");
             }
 
@@ -200,20 +220,24 @@ public class AuthenticationService : IAuthService
 
             await _userRepository.UpdateAsync(user, cancellationToken);
             await _userRepository.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
 
             _logger.LogInformation("Password changed successfully for UserId: {UserId}", userId);
             return true;
         }
         catch (UserNotFoundException)
         {
+            await transaction.RollbackAsync(cancellationToken);
             throw;
         }
         catch (PasswordMismatchException)
         {
+            await transaction.RollbackAsync(cancellationToken);
             throw;
         }
         catch (Exception ex)
         {
+            await transaction.RollbackAsync(cancellationToken);
             _logger.LogError(ex, "Error changing password for UserId: {UserId}", userId);
             throw new InvalidUserDataException($"Failed to change password: {ex.Message}");
         }
