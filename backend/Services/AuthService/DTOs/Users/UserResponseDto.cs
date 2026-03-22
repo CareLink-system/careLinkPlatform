@@ -4,17 +4,19 @@ using System.ComponentModel.DataAnnotations;
 
 public class UserResponseDto
 {
-    public int Id { get; set; }
-    public string Email { get; set; } = default!;
-    public string FirstName { get; set; } = default!;
-    public string LastName { get; set; } = default!;
-    public string Role { get; set; } = default!;
-    public string? PhoneNumber { get; set; }
-    public string? FullName { get; set; }
-    public string Status { get; set; } = default!;
+    public string Id { get; set; }
+    public string Email { get; set; }
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+    public string? Titles { get; set; }
+    public string? Role { get; set; }
+    public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
-    public string? CreatedBy { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public DateTime? LastLoginAt { get; set; }
+    public string? LastLoginIp { get; set; }
 }
+
 
 public class UserCreateDto
 {
@@ -36,7 +38,6 @@ public class UserCreateDto
     public string Role { get; set; } = "Patient";
 
     public string? PhoneNumber { get; set; }
-    public string? PFNO { get; set; }
 }
 
 public class UserUpdateDto
@@ -46,17 +47,66 @@ public class UserUpdateDto
 
     [Required(ErrorMessage = "LastName is required")]
     public string LastName { get; set; } = default!;
-
+    public string? Role { get; set; }
+    public string Titles { get; set; }
     public string? PhoneNumber { get; set; }
     public string? FullName { get; set; }
     public string? Designation { get; set; }
+    public bool? IsActive { get; set; }
+
 }
 
 public class PaginatedUserResponse
 {
-    public List<UserResponseDto> Data { get; set; } = new();
+    public List<UserResponseDto> Users { get; set; } = new();
+
     public int PageNumber { get; set; }
     public int PageSize { get; set; }
     public int TotalCount { get; set; }
     public int TotalPages { get; set; }
+}
+
+// ==================== DTOs ====================
+
+public class UserRegisterDto
+{
+    [Required, EmailAddress]
+    public string Email { get; set; }
+
+    [Required, MinLength(6)]
+    public string Password { get; set; }
+
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
+    public string? Titles { get; set; }
+    public string? Role { get; set; } = "Patient";
+}
+
+public class RefreshTokenRequest
+{
+    [Required]
+    public string RefreshToken { get; set; }
+}
+
+public class ChangePasswordRequest
+{
+    [Required]
+    public string CurrentPassword { get; set; }
+
+    [Required, MinLength(6)]
+    public string NewPassword { get; set; }
+}
+
+public class UpdateProfileRequest
+{
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+    public string? Titles { get; set; }
+}
+
+public class UpdateCurrentUserRequest
+{
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+    public string? Titles { get; set; }
 }
