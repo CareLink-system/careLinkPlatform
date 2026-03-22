@@ -1,8 +1,9 @@
 using AuthService.Models;
+using Microsoft.AspNetCore.Mvc.ApplicationModels;
 
 namespace AuthService;
 
 public static class AuthControllerUsersStore
 {
-    public static List<User> Users { get; } = new();
+    public static List<ApplicationUser> Users { get; } = new();
 }
