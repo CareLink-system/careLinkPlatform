@@ -9,8 +9,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Add DbContext with Neon DB connection
-builder.Services.AddDbContext<DoctorDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+//builder.Services.AddDbContext<DoctorDbContext>(options =>
+//    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 
 var app = builder.Build();
@@ -23,11 +23,11 @@ if (app.Environment.IsDevelopment())
 }
 
 // Apply migrations automatically (optional)
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<DoctorDbContext>();
-    dbContext.Database.Migrate();
-}
+//using (var scope = app.Services.CreateScope())
+//{
+//    var dbContext = scope.ServiceProvider.GetRequiredService<DoctorDbContext>();
+//    dbContext.Database.Migrate();
+//}
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
