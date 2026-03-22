@@ -1,9 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using AuthService.Data;
+using AuthService.Models;
 using AuthService.Services;
-using AuthService.Repositories.UserRepository;
-using AuthService.Services.AuthService;
-using AuthService.Services.UserService;
 
 namespace AuthService;
 
@@ -11,22 +10,25 @@ public static class DependencyInjection
 {
     public static IServiceCollection RegisterServices(this IServiceCollection services, IConfiguration configuration)
     {
-        // ✅ Add HttpContextAccessor (required for IdentityService)
         services.AddHttpContextAccessor();
 
-        // ✅ Add DbContext with proper options
         services.AddDbContext<AuthDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
 
-        // ✅ Register services
+        services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
+        {
+            options.User.RequireUniqueEmail = true;
+
+            options.Password.RequireDigit = false;
+            options.Password.RequireUppercase = false;
+            options.Password.RequireLowercase = false;
+            options.Password.RequireNonAlphanumeric = false;
+            options.Password.RequiredLength = 6;
+        })
+        .AddEntityFrameworkStores<AuthDbContext>()
+        .AddDefaultTokenProviders();
+
         services.AddScoped<IIdentityService, IdentityService>();
-        
-        // ✅ Register Repositories
-        services.AddScoped<IUserRepository, UserRepository>();
-        
-        // ✅ Register Application Services
-        services.AddScoped<IAuthService, AuthenticationService>();
-        services.AddScoped<IUserService, UserService>();
 
         return services;
     }
