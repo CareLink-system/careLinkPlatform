@@ -1,0 +1,1260 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CareLink Platform - API Gateway</title>
+    <style>
+      :root {
+        --bg: #0a0e1a;
+        --bg2: #0f1629;
+        --bg3: #161d35;
+        --surface: #1a2240;
+        --surface2: #1f2a4a;
+        --border: #2a3a60;
+        --border2: #3a4f80;
+        --text: #e2e8f8;
+        --muted: #7a8ab0;
+        --accent: #4f8ef7;
+        --accent2: #7c5cfc;
+        --success: #34d399;
+        --danger: #f87171;
+        --warning: #fbbf24;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Segoe UI", Tahoma, sans-serif;
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(79, 142, 247, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(79, 142, 247, 0.04) 1px, transparent 1px);
+        background-size: 40px 40px;
+        pointer-events: none;
+        z-index: 0;
+      }
+      .wrap {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 24px;
+        position: relative;
+        z-index: 1;
+      }
+      nav {
+        border-bottom: 1px solid var(--border);
+        background: rgba(10, 14, 26, 0.95);
+        backdrop-filter: blur(12px);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+      .nav-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 24px;
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        font-size: 1.1rem;
+      }
+      .logo-dot {
+        width: 10px;
+        height: 10px;
+        background: var(--accent);
+        border-radius: 50%;
+        box-shadow: 0 0 10px var(--accent);
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.6;
+          transform: scale(0.8);
+        }
+      }
+      .nav-pills {
+        display: flex;
+        gap: 8px;
+      }
+      .pill {
+        font-size: 0.7rem;
+        padding: 4px 10px;
+        border-radius: 20px;
+        border: 1px solid var(--border2);
+        color: var(--muted);
+        background: var(--surface);
+      }
+      .hero {
+        padding: 32px 0 24px;
+      }
+      .gw-banner {
+        background: linear-gradient(135deg, var(--surface), var(--surface2));
+        border: 1px solid var(--border2);
+        border-radius: 16px;
+        padding: 28px 32px;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        flex-wrap: wrap;
+        position: relative;
+        overflow: hidden;
+      }
+      .gw-banner::before {
+        content: "";
+        position: absolute;
+        top: -60px;
+        right: -60px;
+        width: 200px;
+        height: 200px;
+        background: radial-gradient(
+          circle,
+          rgba(79, 142, 247, 0.15),
+          transparent 70%
+        );
+        pointer-events: none;
+      }
+      .gw-icon {
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+      }
+      .gw-info {
+        flex: 1;
+        min-width: 200px;
+      }
+      .gw-info h2 {
+        font-size: 1.3rem;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+      .gw-url {
+        font-family: monospace;
+        font-size: 0.85rem;
+        color: var(--accent);
+        background: rgba(79, 142, 247, 0.1);
+        border: 1px solid rgba(79, 142, 247, 0.3);
+        padding: 4px 12px;
+        border-radius: 6px;
+        display: inline-block;
+        margin-bottom: 6px;
+      }
+      .gw-info p {
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+      .gw-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .btn {
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: #fff;
+      }
+      .btn-primary:hover {
+        background: #6ba3f9;
+      }
+      .btn-outline {
+        background: transparent;
+        border: 1px solid var(--border2);
+        color: var(--text);
+      }
+      .btn-outline:hover {
+        background: var(--surface2);
+        border-color: var(--accent);
+      }
+      .btn-sm {
+        font-size: 0.72rem;
+        padding: 5px 10px;
+        border-radius: 6px;
+        border: 1px solid var(--border2);
+        background: var(--bg3);
+        color: var(--muted);
+        cursor: pointer;
+        transition: all 0.15s;
+        font-family: inherit;
+        font-weight: 500;
+      }
+      .btn-sm:hover {
+        border-color: var(--accent);
+        color: var(--text);
+      }
+      .sec-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 28px 0 16px;
+      }
+      .sec-head h3 {
+        font-size: 1rem;
+        font-weight: 600;
+      }
+      .sec-line {
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+      .count-badge {
+        font-size: 0.7rem;
+        color: var(--muted);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        padding: 2px 8px;
+        border-radius: 20px;
+      }
+      .svc-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+        gap: 14px;
+      }
+      .svc-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 20px;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+        overflow: hidden;
+      }
+      .svc-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--cc, #4f8ef7);
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      .svc-card:hover {
+        border-color: var(--border2);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      }
+      .svc-card:hover::before,
+      .svc-card.active::before {
+        opacity: 1;
+      }
+      .svc-card.active {
+        border-color: var(--accent);
+        background: var(--surface2);
+      }
+      .card-ico {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        margin-bottom: 12px;
+      }
+      .card-name {
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 4px;
+      }
+      .card-port {
+        font-family: monospace;
+        font-size: 0.72rem;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      .card-desc {
+        font-size: 0.75rem;
+        color: var(--muted);
+        line-height: 1.5;
+        margin-bottom: 12px;
+      }
+      .card-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+      .status-dot {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.72rem;
+        font-weight: 500;
+      }
+      .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+      }
+      .dot-on {
+        background: var(--success);
+        box-shadow: 0 0 6px var(--success);
+      }
+      .dot-off {
+        background: var(--danger);
+      }
+      .dot-ld {
+        background: var(--warning);
+        animation: pulse 1s infinite;
+      }
+      .ep-count {
+        font-family: monospace;
+        font-size: 0.68rem;
+        color: var(--muted);
+        background: var(--bg3);
+        padding: 2px 7px;
+        border-radius: 10px;
+      }
+      .card-sw {
+        width: 100%;
+        font-size: 0.75rem;
+        padding: 6px;
+        background: var(--bg3);
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        color: var(--muted);
+        text-decoration: none;
+        display: block;
+        text-align: center;
+        transition: all 0.2s;
+        margin-top: 8px;
+      }
+      .card-sw:hover {
+        border-color: var(--border2);
+        color: var(--text);
+      }
+      .svc-loading {
+        text-align: center;
+        padding: 40px;
+        color: var(--muted);
+        grid-column: 1/-1;
+      }
+      .ep-panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        overflow: hidden;
+        margin-top: 24px;
+        display: none;
+      }
+      .panel-head {
+        background: var(--bg3);
+        border-bottom: 1px solid var(--border);
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .panel-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+      }
+      .panel-acts {
+        display: flex;
+        gap: 8px;
+      }
+      .auth-alert {
+        margin: 16px 24px;
+        background: rgba(79, 142, 247, 0.1);
+        border: 1px solid rgba(79, 142, 247, 0.3);
+        border-radius: 10px;
+        padding: 12px 16px;
+        font-size: 0.82rem;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .auth-alert strong {
+        color: var(--text);
+      }
+      .tbl-wrap {
+        overflow-x: auto;
+        max-height: 520px;
+        overflow-y: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+      }
+      thead th {
+        font-family: monospace;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg3);
+        position: sticky;
+        top: 0;
+        text-align: left;
+      }
+      tbody tr {
+        border-bottom: 1px solid var(--border);
+        transition: background 0.15s;
+      }
+      tbody tr:hover {
+        background: var(--surface2);
+      }
+      tbody td {
+        padding: 10px 16px;
+        vertical-align: middle;
+      }
+      .mbadge {
+        font-family: monospace;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 5px;
+        display: inline-block;
+        min-width: 60px;
+        text-align: center;
+      }
+      .m-GET {
+        background: rgba(52, 211, 153, 0.15);
+        color: #34d399;
+        border: 1px solid rgba(52, 211, 153, 0.3);
+      }
+      .m-POST {
+        background: rgba(79, 142, 247, 0.15);
+        color: #4f8ef7;
+        border: 1px solid rgba(79, 142, 247, 0.3);
+      }
+      .m-PUT {
+        background: rgba(251, 191, 36, 0.15);
+        color: #fbbf24;
+        border: 1px solid rgba(251, 191, 36, 0.3);
+      }
+      .m-DELETE {
+        background: rgba(248, 113, 113, 0.15);
+        color: #f87171;
+        border: 1px solid rgba(248, 113, 113, 0.3);
+      }
+      .m-PATCH {
+        background: rgba(167, 139, 250, 0.15);
+        color: #a78bfa;
+        border: 1px solid rgba(167, 139, 250, 0.3);
+      }
+      .ep-path {
+        font-family: monospace;
+        font-size: 0.8rem;
+      }
+      .ep-sum {
+        font-size: 0.75rem;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+      .act-btns {
+        display: flex;
+        gap: 6px;
+      }
+      .loading-row td {
+        text-align: center;
+        padding: 40px;
+        color: var(--muted);
+      }
+      .modal-ov {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(4px);
+        z-index: 200;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s;
+      }
+      .modal-ov.open {
+        opacity: 1;
+        pointer-events: all;
+      }
+      .modal-box {
+        background: var(--bg2);
+        border: 1px solid var(--border2);
+        border-radius: 16px;
+        width: 100%;
+        max-width: 560px;
+        overflow: hidden;
+        transform: translateY(20px);
+        transition: transform 0.2s;
+      }
+      .modal-ov.open .modal-box {
+        transform: translateY(0);
+      }
+      .modal-hd {
+        background: var(--bg3);
+        border-bottom: 1px solid var(--border);
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .modal-hd h4 {
+        font-size: 0.95rem;
+        font-weight: 600;
+      }
+      .modal-cl {
+        background: none;
+        border: none;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 1.1rem;
+        line-height: 1;
+      }
+      .modal-cl:hover {
+        color: var(--text);
+      }
+      .modal-bd {
+        padding: 20px;
+      }
+      .step-lbl {
+        font-weight: 600;
+        font-size: 0.82rem;
+        margin: 14px 0 6px;
+      }
+      .step-lbl:first-child {
+        margin-top: 0;
+      }
+      .codeblk {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px;
+        font-family: monospace;
+        font-size: 0.75rem;
+        color: var(--text);
+        overflow-x: auto;
+        line-height: 1.7;
+        white-space: pre;
+      }
+      .footer {
+        margin: 40px 0 24px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 24px 32px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        text-align: center;
+      }
+      .fi h5 {
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      .fi p {
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+      .fi-ico {
+        font-size: 1.4rem;
+        margin-bottom: 6px;
+      }
+      .spin {
+        width: 18px;
+        height: 18px;
+        border: 2px solid var(--border2);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: sp 0.7s linear infinite;
+        display: inline-block;
+        vertical-align: middle;
+      }
+      @keyframes sp {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        background: var(--surface2);
+        border: 1px solid var(--border2);
+        border-radius: 10px;
+        padding: 12px 18px;
+        font-size: 0.82rem;
+        color: var(--text);
+        z-index: 300;
+        transform: translateY(20px);
+        opacity: 0;
+        transition: all 0.3s;
+        pointer-events: none;
+      }
+      .toast.show {
+        transform: translateY(0);
+        opacity: 1;
+      }
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--bg);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border2);
+        border-radius: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <div class="nav-inner">
+        <div class="logo">
+          <div class="logo-dot"></div>
+          CareLink Platform
+        </div>
+        <div class="nav-pills">
+          <span class="pill">Microservices</span>
+          <span class="pill">JWT Auth</span>
+          <span class="pill">YARP Gateway</span>
+        </div>
+      </div>
+    </nav>
+
+    <div class="wrap">
+      <div class="hero">
+        <div class="gw-banner">
+          <div class="gw-icon">&#127760;</div>
+          <div class="gw-info">
+            <h2>API Gateway</h2>
+            <div class="gw-url">http://localhost:5000</div>
+            <p>
+              Main entry point &mdash; all services accessible via
+              <code>/api/{service}/*</code>
+            </p>
+          </div>
+          <div class="gw-actions">
+            <a href="/swagger" target="_blank" class="btn btn-primary"
+              >&#128214; Swagger</a
+            >
+            <a href="/health" target="_blank" class="btn btn-outline"
+              >&#128154; Health</a
+            >
+            <button class="btn btn-outline" id="btn-auth-hero">
+              &#128273; Auth Guide
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-head">
+        <h3>Microservices</h3>
+        <div class="sec-line"></div>
+        <span class="count-badge">7 services</span>
+      </div>
+
+      <div class="svc-grid" id="svcGrid">
+        <div class="svc-loading">
+          <span class="spin"></span>&nbsp; Discovering services&hellip;
+        </div>
+      </div>
+
+      <div class="ep-panel" id="epPanel">
+        <div class="panel-head">
+          <div class="panel-title" id="panelTitle">Endpoints</div>
+          <div class="panel-acts">
+            <button class="btn-sm" id="btn-auth-panel">
+              &#128273; Auth Guide
+            </button>
+            <button class="btn-sm" id="btn-copy-token">
+              &#128203; Copy Token
+            </button>
+          </div>
+        </div>
+        <div class="auth-alert">
+          <span>&#9889;</span>
+          <strong>Authentication required</strong>
+          <span
+            >Use <code>Authorization: Bearer {token}</code> header after logging
+            in</span
+          >
+          <button class="btn-sm" id="btn-auth-alert" style="margin-left: auto">
+            Guide
+          </button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 90px">Method</th>
+                <th>Endpoint</th>
+                <th style="width: 160px">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="epBody">
+              <tr class="loading-row">
+                <td colspan="3"><span class="spin"></span> Loading&hellip;</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div class="fi">
+          <div class="fi-ico">&#128272;</div>
+          <h5>JWT Authentication</h5>
+          <p>Token expires in 24 hours</p>
+        </div>
+        <div class="fi">
+          <div class="fi-ico">&#128256;</div>
+          <h5>Gateway Routing</h5>
+          <p>/api/{service}/* &rarr; Service:Port</p>
+        </div>
+        <div class="fi">
+          <div class="fi-ico">&#128230;</div>
+          <h5>All Services</h5>
+          <p>7 microservices + 1 gateway = 8 containers</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-ov" id="authModal">
+      <div class="modal-box">
+        <div class="modal-hd">
+          <h4>&#128273; Authentication Guide</h4>
+          <button class="modal-cl" id="btn-modal-close">&#x2715;</button>
+        </div>
+        <div class="modal-bd">
+          <div class="step-lbl">Step 1 &mdash; Register a user</div>
+          <pre class="codeblk">
+POST http://localhost:5000/api/auth/register
+{
+  "email": "test@example.com",
+  "password": "Password123!",
+  "firstName": "Test",
+  "lastName": "User"
+}</pre
+          >
+          <div class="step-lbl">Step 2 &mdash; Login to get token</div>
+          <pre class="codeblk">
+POST http://localhost:5000/api/auth/login
+{
+  "email": "test@example.com",
+  "password": "Password123!"
+}</pre
+          >
+          <div class="step-lbl">Step 3 &mdash; Use token in requests</div>
+          <pre class="codeblk">
+GET http://localhost:5000/api/patients/profile
+Authorization: Bearer YOUR_TOKEN_HERE</pre
+          >
+          <button
+            class="btn btn-primary"
+            id="btn-copy-example"
+            style="width: 100%; margin-top: 16px; justify-content: center"
+          >
+            &#128203; Copy Example
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        // ── Config ──────────────────────────────────────────────────────────
+        var SERVICES = [
+          {
+            name: "Auth Service",
+            port: 5001,
+            icon: "&#128274;",
+            color: "#4f8ef7",
+            bg: "rgba(79,142,247,0.15)",
+            desc: "Registration, login, JWT tokens, user management"
+          },
+          {
+            name: "Patient Service",
+            port: 5002,
+            icon: "&#127973;",
+            color: "#34d399",
+            bg: "rgba(52,211,153,0.15)",
+            desc: "Patient profiles, medical reports, prescriptions"
+          },
+          {
+            name: "Doctor Service",
+            port: 5003,
+            icon: "&#128104;",
+            color: "#fbbf24",
+            bg: "rgba(251,191,36,0.15)",
+            desc: "Doctor profiles, availability schedules"
+          },
+          {
+            name: "Appointment Service",
+            port: 5004,
+            icon: "&#128197;",
+            color: "#a78bfa",
+            bg: "rgba(167,139,250,0.15)",
+            desc: "Book, cancel, track appointments"
+          },
+          {
+            name: "Telemedicine Service",
+            port: 5007,
+            icon: "&#128249;",
+            color: "#f472b6",
+            bg: "rgba(244,114,182,0.15)",
+            desc: "Video consultations, Agora/Jitsi integration"
+          },
+          {
+            name: "Notification Service",
+            port: 5008,
+            icon: "&#128276;",
+            color: "#fb923c",
+            bg: "rgba(251,146,60,0.15)",
+            desc: "Email and SMS notifications"
+          },
+          {
+            name: "Payment Service",
+            port: 5010,
+            icon: "&#128179;",
+            color: "#22d3ee",
+            bg: "rgba(34,211,238,0.15)",
+            desc: "Payment processing, invoices, PayHere/Stripe"
+          }
+        ];
+
+        // ── Helpers ─────────────────────────────────────────────────────────
+        function esc(str) {
+          return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+        }
+
+        function showToast(msg) {
+          var el = document.getElementById("toast");
+          el.textContent = "\u2713 " + msg;
+          el.classList.add("show");
+          setTimeout(function () {
+            el.classList.remove("show");
+          }, 2500);
+        }
+
+        // ── Modal ────────────────────────────────────────────────────────────
+        function openModal() {
+          document.getElementById("authModal").classList.add("open");
+        }
+        function closeModal() {
+          document.getElementById("authModal").classList.remove("open");
+        }
+
+        document
+          .getElementById("btn-auth-hero")
+          .addEventListener("click", openModal);
+        document
+          .getElementById("btn-auth-panel")
+          .addEventListener("click", openModal);
+        document
+          .getElementById("btn-auth-alert")
+          .addEventListener("click", openModal);
+        document
+          .getElementById("btn-modal-close")
+          .addEventListener("click", closeModal);
+        document
+          .getElementById("authModal")
+          .addEventListener("click", function (e) {
+            if (e.target === this) {
+              closeModal();
+            }
+          });
+
+        document
+          .getElementById("btn-copy-token")
+          .addEventListener("click", function () {
+            var t = localStorage.getItem("authToken") || "";
+            if (t) {
+              navigator.clipboard.writeText(t).then(function () {
+                showToast("Token copied");
+              });
+            } else {
+              showToast("No token found - login first");
+            }
+          });
+
+        document
+          .getElementById("btn-copy-example")
+          .addEventListener("click", function () {
+            var txt =
+              "POST http://localhost:5000/api/auth/register\n" +
+              '{"email":"test@example.com","password":"Password123!","firstName":"Test","lastName":"User"}\n\n' +
+              "POST http://localhost:5000/api/auth/login\n" +
+              '{"email":"test@example.com","password":"Password123!"}';
+            navigator.clipboard.writeText(txt).then(function () {
+              showToast("Example copied");
+            });
+          });
+
+        // ── Network helpers ──────────────────────────────────────────────────
+        function checkHealth(port) {
+          return fetch("http://localhost:" + port + "/health", {
+            signal: AbortSignal.timeout(2500)
+          })
+            .then(function (r) {
+              return r.ok;
+            })
+            .catch(function () {
+              return false;
+            });
+        }
+
+        function fetchSwagger(port) {
+          return fetch(
+            "http://localhost:" + port + "/swagger/v1/swagger.json",
+            {
+              signal: AbortSignal.timeout(3000)
+            }
+          )
+            .then(function (r) {
+              return r.ok ? r.json() : null;
+            })
+            .catch(function () {
+              return null;
+            });
+        }
+
+        function countEndpoints(spec) {
+          if (!spec || !spec.paths) {
+            return 0;
+          }
+          var n = 0;
+          var paths = Object.keys(spec.paths);
+          for (var i = 0; i < paths.length; i++) {
+            var methods = Object.keys(spec.paths[paths[i]]);
+            for (var j = 0; j < methods.length; j++) {
+              if (methods[j] !== "parameters") {
+                n++;
+              }
+            }
+          }
+          return n;
+        }
+
+        function parseEndpoints(spec) {
+          var out = [];
+          if (!spec || !spec.paths) {
+            return out;
+          }
+          var paths = Object.keys(spec.paths);
+          for (var i = 0; i < paths.length; i++) {
+            var path = paths[i];
+            var methods = Object.keys(spec.paths[path]);
+            for (var j = 0; j < methods.length; j++) {
+              var method = methods[j];
+              if (method === "parameters") {
+                continue;
+              }
+              var detail = spec.paths[path][method];
+              out.push({
+                method: method.toUpperCase(),
+                path: path,
+                summary: detail.summary || detail.operationId || ""
+              });
+            }
+          }
+          return out;
+        }
+
+        // ── Build service card ───────────────────────────────────────────────
+        function buildCard(svc) {
+          var div = document.createElement("div");
+          div.className = "svc-card";
+          div.setAttribute("data-port", String(svc.port));
+          div.style.cssText = "--cc:" + svc.color;
+
+          var footHtml =
+            '<div class="card-foot">' +
+            '<div class="status-dot"><div class="dot dot-ld"></div>&nbsp;Checking&hellip;</div>' +
+            '<span class="ep-count">&hellip;</span>' +
+            "</div>";
+
+          div.innerHTML =
+            '<div class="card-ico" style="background:' +
+            svc.bg +
+            '">' +
+            svc.icon +
+            "</div>" +
+            '<div class="card-name">' +
+            esc(svc.name) +
+            "</div>" +
+            '<div class="card-port">localhost:' +
+            svc.port +
+            "</div>" +
+            '<div class="card-desc">' +
+            esc(svc.desc) +
+            "</div>" +
+            footHtml +
+            '<a class="card-sw" href="http://localhost:' +
+            svc.port +
+            '/swagger" target="_blank">&#128214; Swagger UI</a>';
+
+          div.addEventListener("click", function () {
+            selectService(svc);
+          });
+          div.querySelector(".card-sw").addEventListener("click", function (e) {
+            e.stopPropagation();
+          });
+          return div;
+        }
+
+        function setCardStatus(card, online, count) {
+          var foot = card.querySelector(".card-foot");
+          foot.innerHTML =
+            '<div class="status-dot"><div class="dot ' +
+            (online ? "dot-on" : "dot-off") +
+            '"></div>&nbsp;' +
+            (online ? "Online" : "Offline") +
+            "</div>" +
+            '<span class="ep-count">' +
+            (count > 0 ? count + " endpoints" : "offline") +
+            "</span>";
+        }
+
+        // ── Init grid ────────────────────────────────────────────────────────
+        function initGrid() {
+          var grid = document.getElementById("svcGrid");
+          grid.innerHTML = "";
+
+          SERVICES.forEach(function (svc) {
+            var card = buildCard(svc);
+            grid.appendChild(card);
+
+            Promise.all([checkHealth(svc.port), fetchSwagger(svc.port)])
+              .then(function (res) {
+                setCardStatus(card, res[0], countEndpoints(res[1]));
+              })
+              .catch(function () {
+                setCardStatus(card, false, 0);
+              });
+          });
+        }
+
+        // ── Select service ───────────────────────────────────────────────────
+        function selectService(svc) {
+          document.querySelectorAll(".svc-card").forEach(function (c) {
+            c.classList.remove("active");
+          });
+          var card = document.querySelector('[data-port="' + svc.port + '"]');
+          if (card) {
+            card.classList.add("active");
+          }
+
+          var panel = document.getElementById("epPanel");
+          var tbody = document.getElementById("epBody");
+          document.getElementById("panelTitle").textContent =
+            svc.name + " - Endpoints";
+          panel.style.display = "block";
+          setTimeout(function () {
+            panel.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 50);
+
+          tbody.innerHTML =
+            '<tr class="loading-row"><td colspan="3"><span class="spin"></span>&nbsp;Loading&hellip;</td></tr>';
+
+          fetchSwagger(svc.port).then(function (spec) {
+            if (!spec) {
+              tbody.innerHTML =
+                '<tr class="loading-row"><td colspan="3">Service offline or unreachable on port ' +
+                svc.port +
+                "</td></tr>";
+              return;
+            }
+            var endpoints = parseEndpoints(spec);
+            if (endpoints.length === 0) {
+              tbody.innerHTML =
+                '<tr class="loading-row"><td colspan="3">No endpoints found</td></tr>';
+              return;
+            }
+
+            var rows = "";
+            for (var i = 0; i < endpoints.length; i++) {
+              var ep = endpoints[i];
+              rows +=
+                "<tr>" +
+                '<td><span class="mbadge m-' +
+                ep.method +
+                '">' +
+                ep.method +
+                "</span></td>" +
+                "<td>" +
+                '<div class="ep-path">' +
+                esc(ep.path) +
+                "</div>" +
+                (ep.summary
+                  ? '<div class="ep-sum">' + esc(ep.summary) + "</div>"
+                  : "") +
+                "</td>" +
+                '<td><div class="act-btns">' +
+                '<button class="btn-sm" data-action="test" data-method="' +
+                esc(ep.method) +
+                '" data-path="' +
+                esc(ep.path) +
+                '">&#9654; Test</button>' +
+                '<button class="btn-sm" data-action="curl" data-method="' +
+                esc(ep.method) +
+                '" data-path="' +
+                esc(ep.path) +
+                '">&#128203; cURL</button>' +
+                "</div></td>" +
+                "</tr>";
+            }
+            tbody.innerHTML = rows;
+          });
+        }
+
+        // ── Event delegation for table buttons ──────────────────────────────
+        document
+          .getElementById("epBody")
+          .addEventListener("click", function (e) {
+            var btn = e.target.closest("[data-action]");
+            if (!btn) {
+              return;
+            }
+            var action = btn.getAttribute("data-action");
+            var method = btn.getAttribute("data-method");
+            var path = btn.getAttribute("data-path");
+            if (action === "test") {
+              doTest(method, path);
+            } else if (action === "curl") {
+              doCurl(method, path);
+            }
+          });
+
+        // ── Test in new tab ──────────────────────────────────────────────────
+        function doTest(method, path) {
+          var token =
+            prompt(
+              "Enter JWT token (leave blank if not needed):",
+              localStorage.getItem("authToken") || ""
+            ) || "";
+          if (token) {
+            localStorage.setItem("authToken", token);
+          }
+          var url = "http://localhost:5000" + path;
+
+          var authHeader = token
+            ? "h['Authorization']='Bearer " + token + "';"
+            : "";
+
+          var pageContent =
+            "<!DOCTYPE html>" +
+            "<html><head><meta charset='UTF-8'><title>API Test<\/title>" +
+            "<style>" +
+            "body{font-family:monospace;background:#0a0e1a;color:#e2e8f8;padding:24px;margin:0}" +
+            "h2{color:#4f8ef7;margin-bottom:4px;font-size:1rem}" +
+            ".sub{color:#7a8ab0;font-size:.8rem;margin-bottom:16px}" +
+            "pre{background:#161d35;border:1px solid #2a3a60;border-radius:8px;padding:16px;overflow:auto;font-size:.8rem;white-space:pre-wrap;line-height:1.6}" +
+            ".ok{color:#34d399}.err{color:#f87171}" +
+            "<\/style><\/head><body>" +
+            "<h2>" +
+            method +
+            " " +
+            url +
+            "<\/h2>" +
+            "<p class='sub' id='st'>Sending request...<\/p>" +
+            "<pre id='out'>-<\/pre>" +
+            "<scr" +
+            "ipt>" +
+            "(function(){" +
+            "var h={'Content-Type':'application/json'};" +
+            authHeader +
+            "fetch('" +
+            url +
+            "',{method:'" +
+            method +
+            "',headers:h})" +
+            ".then(function(r){" +
+            "  var s=document.getElementById('st');" +
+            "  s.innerHTML='<span class=\"'+(r.ok?'ok':'err')+'\">HTTP '+r.status+'<\\/span>';" +
+            "  return r.text();" +
+            "})" +
+            ".then(function(t){" +
+            "  try{document.getElementById('out').textContent=JSON.stringify(JSON.parse(t),null,2);}" +
+            "  catch(e){document.getElementById('out').textContent=t;}" +
+            "})" +
+            ".catch(function(e){" +
+            "  document.getElementById('st').className='err';" +
+            "  document.getElementById('out').textContent='Error: '+e.message;" +
+            "});" +
+            "})()" +
+            "<\/scr" +
+            "ipt>" +
+            "<\/body><\/html>";
+
+          var blob = new Blob([pageContent], { type: "text/html" });
+          window.open(URL.createObjectURL(blob), "_blank");
+        }
+
+        // ── Copy cURL ────────────────────────────────────────────────────────
+        function doCurl(method, path) {
+          var url = "http://localhost:5000" + path;
+          var token = localStorage.getItem("authToken") || "";
+          var cmd = "curl -X " + method + ' "' + url + '"';
+          if (token) {
+            cmd += ' \\\n  -H "Authorization: Bearer ' + token + '"';
+          }
+          navigator.clipboard.writeText(cmd).then(function () {
+            showToast("cURL copied");
+          });
+        }
+
+        // ── Start ────────────────────────────────────────────────────────────
+        document.addEventListener("DOMContentLoaded", initGrid);
+      })();
+    </script>
+  </body>
+</html>
