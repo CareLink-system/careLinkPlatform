@@ -1,5 +1,8 @@
-﻿using DoctorService.DTOs;
+﻿using DoctorService.Data;
+using DoctorService.DTOs;
+using DoctorService.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace DoctorService.Controllers;
 
@@ -7,121 +10,164 @@ namespace DoctorService.Controllers;
 [Route("api/[controller]")]
 public class DoctorsController : ControllerBase
 {
-    [HttpGet]
-    public ActionResult<List<DoctorResponseDto>> GetAllDoctors()
+    private readonly DoctorDbContext _context;
+
+    public DoctorsController(DoctorDbContext context)
     {
-        var doctors = new List<DoctorResponseDto>
-        {
-            new DoctorResponseDto
+        _context = context;
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<DoctorResponseDto>>> GetAllDoctors()
+    {
+        var doctors = await _context.Doctors
+            .Select(d => new DoctorResponseDto
             {
-                Id = 1,
-                UserId = 101,
-                SpecializationId = "CARD",
-                LicenseNumber = "LIC12345",
-                Qualifications = "MBBS, MD",
-                Experience = "5 years",
-                Bio = "Cardiologist with experience in heart care",
-                Rating = 4.5,
-                IsAvailable = true,
-                Department = "Cardiology",
-                ConsultationFee = 3000,
-                CreatedAt = DateTime.UtcNow
-            },
-            new DoctorResponseDto
-            {
-                Id = 2,
-                UserId = 102,
-                SpecializationId = "DERM",
-                LicenseNumber = "LIC67890",
-                Qualifications = "MBBS, Diploma in Dermatology",
-                Experience = "3 years",
-                Bio = "Skin specialist",
-                Rating = 4.2,
-                IsAvailable = true,
-                Department = "Dermatology",
-                ConsultationFee = 2500,
-                CreatedAt = DateTime.UtcNow
-            }
-        };
+                Id = d.Id,
+                UserId = d.UserId,
+                SpecializationId = d.SpecializationId,
+                LicenseNumber = d.LicenseNumber,
+                Qualifications = d.Qualifications,
+                Experience = d.Experience,
+                Bio = d.Bio,
+                Rating = d.Rating,
+                IsAvailable = d.IsAvailable,
+                Department = d.Department,
+                ConsultationFee = d.ConsultationFee,
+                CreatedAt = d.CreatedAt,
+                UpdatedAt = d.UpdatedAt
+            })
+            .ToListAsync();
 
         return Ok(doctors);
     }
 
     [HttpGet("{id}")]
-    public ActionResult<DoctorResponseDto> GetDoctorById(int id)
+    public async Task<ActionResult<DoctorResponseDto>> GetDoctorById(int id)
     {
-        if (id != 1)
+        var d = await _context.Doctors.FindAsync(id);
+
+        if (d == null)
         {
             return NotFound(new { message = $"Doctor with id {id} not found" });
         }
 
         var doctor = new DoctorResponseDto
         {
-            Id = 1,
-            UserId = 101,
-            SpecializationId = "CARD",
-            LicenseNumber = "LIC12345",
-            Qualifications = "MBBS, MD",
-            Experience = "5 years",
-            Bio = "Cardiologist with experience in heart care",
-            Rating = 4.5,
-            IsAvailable = true,
-            Department = "Cardiology",
-            ConsultationFee = 3000,
-            CreatedAt = DateTime.UtcNow
+            Id = d.Id,
+            UserId = d.UserId,
+            SpecializationId = d.SpecializationId,
+            LicenseNumber = d.LicenseNumber,
+            Qualifications = d.Qualifications,
+            Experience = d.Experience,
+            Bio = d.Bio,
+            Rating = d.Rating,
+            IsAvailable = d.IsAvailable,
+            Department = d.Department,
+            ConsultationFee = d.ConsultationFee,
+            CreatedAt = d.CreatedAt,
+            UpdatedAt = d.UpdatedAt
         };
 
         return Ok(doctor);
     }
 
     [HttpPost]
-    public ActionResult<DoctorResponseDto> CreateDoctor([FromBody] CreateDoctorDto dto)
+    public async Task<ActionResult<DoctorResponseDto>> CreateDoctor([FromBody] CreateDoctorDto dto)
     {
-        var createdDoctor = new DoctorResponseDto
+        var doctor = new Doctor
         {
-            Id = 3,
             UserId = dto.UserId,
             SpecializationId = dto.SpecializationId,
             LicenseNumber = dto.LicenseNumber,
             Qualifications = dto.Qualifications,
             Experience = dto.Experience,
             Bio = dto.Bio,
-            Rating = 0,
             IsAvailable = dto.IsAvailable,
             Department = dto.Department,
             ConsultationFee = dto.ConsultationFee,
+            Rating = 0,
             CreatedAt = DateTime.UtcNow
         };
 
-        return CreatedAtAction(nameof(GetDoctorById), new { id = createdDoctor.Id }, createdDoctor);
+        _context.Doctors.Add(doctor);
+        await _context.SaveChangesAsync();
+
+        var response = new DoctorResponseDto
+        {
+            Id = doctor.Id,
+            UserId = doctor.UserId,
+            SpecializationId = doctor.SpecializationId,
+            LicenseNumber = doctor.LicenseNumber,
+            Qualifications = doctor.Qualifications,
+            Experience = doctor.Experience,
+            Bio = doctor.Bio,
+            Rating = doctor.Rating,
+            IsAvailable = doctor.IsAvailable,
+            Department = doctor.Department,
+            ConsultationFee = doctor.ConsultationFee,
+            CreatedAt = doctor.CreatedAt,
+            UpdatedAt = doctor.UpdatedAt
+        };
+
+        return CreatedAtAction(nameof(GetDoctorById), new { id = doctor.Id }, response);
     }
 
     [HttpPut("{id}")]
-    public ActionResult<DoctorResponseDto> UpdateDoctor(int id, [FromBody] UpdateDoctorDto dto)
+    public async Task<ActionResult<DoctorResponseDto>> UpdateDoctor(int id, [FromBody] UpdateDoctorDto dto)
     {
-        var updatedDoctor = new DoctorResponseDto
+        var doctor = await _context.Doctors.FindAsync(id);
+
+        if (doctor == null)
         {
-            Id = id,
-            UserId = 101,
-            SpecializationId = dto.SpecializationId,
-            LicenseNumber = dto.LicenseNumber,
-            Qualifications = dto.Qualifications,
-            Experience = dto.Experience,
-            Bio = dto.Bio,
-            Rating = 4.5,
-            IsAvailable = dto.IsAvailable,
-            Department = dto.Department,
-            ConsultationFee = dto.ConsultationFee,
-            CreatedAt = DateTime.UtcNow.AddDays(-10),
-            UpdatedAt = DateTime.UtcNow
+            return NotFound(new { message = $"Doctor with id {id} not found" });
+        }
+
+        doctor.SpecializationId = dto.SpecializationId;
+        doctor.LicenseNumber = dto.LicenseNumber;
+        doctor.Qualifications = dto.Qualifications;
+        doctor.Experience = dto.Experience;
+        doctor.Bio = dto.Bio;
+        doctor.IsAvailable = dto.IsAvailable;
+        doctor.Department = dto.Department;
+        doctor.ConsultationFee = dto.ConsultationFee;
+        doctor.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        var response = new DoctorResponseDto
+        {
+            Id = doctor.Id,
+            UserId = doctor.UserId,
+            SpecializationId = doctor.SpecializationId,
+            LicenseNumber = doctor.LicenseNumber,
+            Qualifications = doctor.Qualifications,
+            Experience = doctor.Experience,
+            Bio = doctor.Bio,
+            Rating = doctor.Rating,
+            IsAvailable = doctor.IsAvailable,
+            Department = doctor.Department,
+            ConsultationFee = doctor.ConsultationFee,
+            CreatedAt = doctor.CreatedAt,
+            UpdatedAt = doctor.UpdatedAt
         };
 
-        return Ok(updatedDoctor);
+        return Ok(response);
     }
 
     [HttpDelete("{id}")]
-    public IActionResult DeleteDoctor(int id)
+    public async Task<IActionResult> DeleteDoctor(int id)
     {
+        var doctor = await _context.Doctors.FindAsync(id);
+
+        if (doctor == null)
+        {
+            return NotFound(new { message = $"Doctor with id {id} not found" });
+        }
+
+        _context.Doctors.Remove(doctor);
+        await _context.SaveChangesAsync();
+
         return Ok(new { message = $"Doctor with id {id} deleted successfully" });
     }
 }
