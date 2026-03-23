@@ -13,15 +13,14 @@ public class TestController : ControllerBase
         {
             message = "API Gateway is running!",
             timestamp = DateTime.UtcNow,
-            routes = new[]
+            services = new[]
             {
-                "/api/auth/* → AuthService (5001)",
-                "/api/patients/* → PatientService (5002)",
-                "/api/doctors/* → DoctorService (5003)",
-                "/api/appointments/* → AppointmentService (5004)",
-                "/api/telemedicine/* → TelemedicineService (5007)",
-                "/api/payments/* → PaymentService (5010)",
-                "/api/notifications/* → NotificationService (5008)"
+                "POST   /api/auth/register",
+                "POST   /api/auth/login",
+                "GET    /api/patients/profile",
+                "GET    /api/doctors/availability",
+                "POST   /api/appointments/book",
+                "POST   /api/payments/initiate"
             }
         });
     }
