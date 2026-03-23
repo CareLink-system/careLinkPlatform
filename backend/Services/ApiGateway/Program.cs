@@ -1,6 +1,19 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Diagnostics;
+
+Console.WriteLine("Starting API Gateway.....");
+
+// Configure thread pool
+ThreadPool.GetMinThreads(out int workerThreads, out int completionPortThreads);
+int newWorkerThreads = Environment.ProcessorCount * 32;
+int newCompletionPortThreads = Environment.ProcessorCount * 32;
+ThreadPool.SetMinThreads(
+    Math.Max(workerThreads, newWorkerThreads),
+    Math.Max(completionPortThreads, newCompletionPortThreads));
+
+Console.WriteLine($"Thread pool configured with min worker threads: {newWorkerThreads}, completion port threads: {newCompletionPortThreads}");
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,12 +21,22 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
+// Add CORS for React and Swagger dashboard
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 // Add Swagger
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new() { Title = "API Gateway", Version = "v1" });
-    
-    // Add JWT authentication to Swagger
+    c.SwaggerDoc("v1", new() { Title = "CareLink API Gateway", Version = "v1" });
+
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -23,7 +46,7 @@ builder.Services.AddSwaggerGen(c =>
         In = Microsoft.OpenApi.Models.ParameterLocation.Header,
         Description = "Enter 'Bearer' [space] and then your token"
     });
-    
+
     c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
     {
         {
@@ -63,34 +86,76 @@ builder.Services.AddReverseProxy()
 
 var app = builder.Build();
 
+// Serve static files (wwwroot folder)
+app.UseStaticFiles();
+
 // Configure pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "CareLink API Gateway v1");
+        c.RoutePrefix = "swagger";
+    });
 }
 
-app.UseHttpsRedirection();
+// Middleware order
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-
-// Map reverse proxy routes
 app.MapReverseProxy();
 
+// Redirect root to dashboard
+app.MapGet("/", async context =>
+{
+    context.Response.Redirect("/index.html");
+});
+
 // Health check endpoint
-app.MapGet("/health", () => Results.Ok(new { 
-    status = "Healthy", 
+app.MapGet("/health", () => Results.Ok(new
+{
+    status = "Healthy",
     timestamp = DateTime.UtcNow,
-    services = new[] {
-        "AuthService",
-        "PatientService", 
-        "DoctorService",
-        "AppointmentService",
-        "TelemedicineService",
-        "PaymentService",
-        "NotificationService"
+    services = new[]
+    {
+        "AuthService (5001)",
+        "PatientService (5002)",
+        "DoctorService (5003)",
+        "AppointmentService (5004)",
+        "TelemedicineService (5007)",
+        "NotificationService (5008)",
+        "PaymentService (5010)"
     }
 }));
+
+Console.WriteLine("API Gateway is ready!");
+Console.WriteLine("Dashboard: http://localhost:5000");
+Console.WriteLine("Gateway Swagger: http://localhost:5000/swagger");
+Console.WriteLine("Health Check: http://localhost:5000/health");
+
+// Auto-open browser
+if (app.Environment.IsDevelopment())
+{
+    try
+    {
+        var url = "http://localhost:5000";
+        Console.WriteLine($"Opening browser at {url}");
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = url,
+            UseShellExecute = true
+        });
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Could not auto-open browser: {ex.Message}");
+    }
+}
 
 app.Run();
