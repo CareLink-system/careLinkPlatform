@@ -76,7 +76,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "default-key-for-development"))
         };
     });
 
@@ -112,7 +112,7 @@ app.MapControllers();
 app.MapReverseProxy();
 
 // Redirect root to dashboard
-app.MapGet("/", async context =>
+app.MapGet("/dashboard", async context =>
 {
     context.Response.Redirect("/index.html");
 });
@@ -135,9 +135,11 @@ app.MapGet("/health", () => Results.Ok(new
 }));
 
 Console.WriteLine("API Gateway is ready!");
-Console.WriteLine("Dashboard: http://localhost:5000");
+Console.WriteLine("Home Page: http://localhost:5000");
+Console.WriteLine("Dashboard: http://localhost:5000/dashboard");
 Console.WriteLine("Gateway Swagger: http://localhost:5000/swagger");
 Console.WriteLine("Health Check: http://localhost:5000/health");
+Console.WriteLine("API Documentation: http://localhost:5000/api/home/documentation");
 
 // Auto-open browser
 if (app.Environment.IsDevelopment())
