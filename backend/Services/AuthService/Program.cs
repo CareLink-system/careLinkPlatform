@@ -4,7 +4,7 @@ using AuthService.Data;
 
 Console.WriteLine("🚀 Starting AuthService...");
 
-// Check if we should run migrations directly (skipping the whole application startup)
+// Check if we should run migrations directly
 MigrationRunner.RunMigrations(args);
 
 // Configure thread pool for high concurrency
@@ -29,14 +29,14 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader();
     });
 });
-// Add services to the container
+
+// Add services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "Auth Service API", Version = "v1" });
 
-    // Add JWT authentication to Swagger
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -73,34 +73,51 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<AuthDbContext>();
 
+// Configure port for Render (Render expects port 8080 or dynamic)
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.UseUrls($"http://*:{port}");
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
-if (app.Environment.IsDevelopment())
+// ========== SWAGGER - ENABLED FOR ALL ENVIRONMENTS ==========
+// Remove the Development condition - enable Swagger always for testing
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Auth Service API v1");
-        c.RoutePrefix = "swagger"; // Makes Swagger available at /swagger
-    });
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Auth Service API v1");
+    c.RoutePrefix = "swagger"; // Swagger at /swagger
+});
 
-    // Apply migrations in development only
-    app.ApplyMigrations();
-}
+// Apply migrations (safe to do on startup)
+app.ApplyMigrations();
 
-// Enable middleware
-app.UseHttpsRedirection();
-app.UseAuthentication();
-app.UseAuthorization();
-
-// Map controllers
-app.MapControllers();
+// Middleware order (CRITICAL!)
+app.UseCors("AllowAll");           // CORS first
+app.UseHttpsRedirection();         // HTTPS redirect
+app.UseAuthentication();           // Auth
+app.UseAuthorization();            // Authorization
+app.MapControllers();              // Map controllers
 
 // Health check endpoint
 app.MapHealthChecks("/health");
 
-// Optional: Keep the weather forecast endpoint if you want
+// Root endpoint - so "/" doesn't return 404
+app.MapGet("/", () => Results.Ok(new
+{
+    service = "AuthService",
+    status = "Running",
+    environment = app.Environment.EnvironmentName,
+    endpoints = new
+    {
+        health = "/health",
+        swagger = "/swagger",
+        register = "/api/v1/auth/register",
+        login = "/api/v1/auth/login",
+        me = "/api/v1/auth/me"
+    }
+}));
+
+// Weather forecast endpoint
 var summaries = new[]
 {
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
@@ -121,8 +138,8 @@ app.MapGet("/weatherforecast", () =>
 .WithName("GetWeatherForecast");
 
 Console.WriteLine("✅ AuthService is ready!");
-Console.WriteLine($"📝 Swagger: http://localhost:5001/swagger");
-Console.WriteLine($"❤️ Health: http://localhost:5001/health");
+Console.WriteLine($"📝 Swagger: https://{Environment.GetEnvironmentVariable("RENDER_EXTERNAL_HOSTNAME") ?? "localhost"}/swagger");
+Console.WriteLine($"❤️ Health: https://{Environment.GetEnvironmentVariable("RENDER_EXTERNAL_HOSTNAME") ?? "localhost"}/health");
 
 app.Run();
 
