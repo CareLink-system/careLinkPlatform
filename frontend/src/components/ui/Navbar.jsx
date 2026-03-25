@@ -15,7 +15,7 @@ const Navbar = () => {
 			<div className="mx-auto w-full max-w-6xl px-4 py-3">
 				<div className="flex items-center gap-4 bg-white/80 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 shadow-lg">
 					<Link to="/" className="flex items-center gap-3">
-						<img src="/logo.png" alt="CareLink" className="h-7 w-7 rounded-md object-contain" />
+						<img src="/favicon.ico" alt="CareLink" className="h-7 w-7 rounded-md object-contain" />
 						<span className="text-primary font-semibold tracking-wide">CareLink</span>
 					</Link>
 
