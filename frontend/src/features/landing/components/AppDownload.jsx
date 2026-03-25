@@ -30,27 +30,18 @@ export default function AppDownload() {
           {/* LEFT: 3D Phone Mockup Presentation */}
           <div className="relative flex justify-center items-center perspective-[2000px] mt-10 lg:mt-0 order-2 lg:order-1">
             
-            {/* The Phone */}
+            {/* The Phone (case removed) */}
             <motion.div
               style={{ rotateX, rotateY, y: phoneY, transformStyle: "preserve-3d" }}
               className="relative z-10 w-[280px] md:w-[320px]"
             >
-              {/* Ultra-premium glassmorphic bezel */}
-              <div className="rounded-[3rem] border border-white/20 bg-white/5 p-3 shadow-[0_0_80px_rgba(34,211,238,0.15)] backdrop-blur-3xl relative">
-                
-                {/* Dynamic Edge Highlight */}
-                <div className="absolute inset-0 rounded-[3rem] border-t border-l border-white/30 pointer-events-none" />
-
-                {/* Inner Screen */}
-                         <div className="h-[660px] md:h-[720px] w-full rounded-[2.2rem] bg-[#0F172A] overflow-hidden relative shadow-inner border border-white/10">
-                  <img 
-                            src={appImg}
-                            alt="CareLink app interface"
-                            className="h-full w-full object-cover object-top transform-gpu scale-110 -translate-y-2 opacity-90 transition-opacity duration-500 hover:opacity-100"
-                  />
-                  {/* Screen Glare Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent pointer-events-none mix-blend-overlay" />
-                </div>
+              <div className="relative w-full">
+                <img
+                  src={appImg}
+                  alt="CareLink app interface"
+                  className="w-full h-[660px] md:h-[720px] object-cover rounded-[2.2rem] shadow-2xl"
+                />
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent mix-blend-overlay pointer-events-none rounded-[2.2rem]" />
               </div>
             </motion.div>
 

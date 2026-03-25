@@ -5,7 +5,7 @@ import Grainient from './Grainient'; // Adjust import path if needed
 const Footer = () => {
   return (
     // Removed the solid background color to let the Grainient be the base
-    <footer className="relative overflow-hidden text-white pt-24 border-t border-white/10">
+    <footer className="relative overflow-hidden text-white pt-24">
       
       {/* Dark Premium Grainient Background */}
       <div className="absolute inset-0 -z-30">
@@ -99,7 +99,7 @@ const Footer = () => {
         </div>
 
         {/* Massive Brand Watermark with Gradient Clip */}
-        <div className="border-t border-white/10 pt-12 pb-8 overflow-hidden relative">
+        <div className="pt-12 pb-8 overflow-hidden relative">
           <h1 className="text-[12vw] leading-none font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white/10 to-white/0 select-none text-center">
             CARELINK
           </h1>
