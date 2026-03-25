@@ -70,15 +70,7 @@ export default function Hero() {
         {/* LEFT COLUMN: Text & CTAs */}
         <motion.div className="w-full lg:col-span-5 flex flex-col text-left pointer-events-none pt-10 lg:pt-0 z-20">
           
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 w-max mb-6 backdrop-blur-md"
-          >
-            <span className="flex h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
-            <span className="text-xs font-medium tracking-wide text-cyan-100 uppercase">CareLink Platform 2.0</span>
-          </motion.div>
+          {/* Badge removed per request */}
 
           <motion.h1
             className="text-5xl font-semibold leading-[1.1] tracking-tight text-white sm:text-6xl lg:text-[4.5rem]"

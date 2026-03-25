@@ -20,14 +20,6 @@ const doctors = [
     image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=400&q=80',
   },
   {
-    specialty: 'Psychiatrist',
-    name: 'Dr. Sophia Chen',
-    availability: 'Available Tomorrow',
-    rating: '5.0',
-    reviews: '215',
-    image: 'https://images.unsplash.com/photo-1594824460734-7c91f177e486?auto=format&fit=crop&w=400&q=80',
-  },
-  {
     specialty: 'Cardiologist',
     name: 'Dr. Marcus Webb',
     availability: 'Available Thursday',
@@ -42,6 +34,14 @@ const doctors = [
     rating: '4.7',
     reviews: '88',
     image: 'https://images.unsplash.com/photo-1599447421416-3414500d18a5?auto=format&fit=crop&w=400&q=80',
+  },
+  {
+    specialty: 'Psychiatrist',
+    name: 'Dr. Sophia Chen',
+    availability: 'Available Tomorrow',
+    rating: '5.0',
+    reviews: '215',
+    image: 'https://images.unsplash.com/photo-1594824460734-7c91f177e486?auto=format&fit=crop&w=400&q=80',
   },
 ];
 

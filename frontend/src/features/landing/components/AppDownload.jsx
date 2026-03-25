@@ -42,11 +42,11 @@ export default function AppDownload() {
                 <div className="absolute inset-0 rounded-[3rem] border-t border-l border-white/30 pointer-events-none" />
 
                 {/* Inner Screen */}
-                <div className="h-[600px] w-full rounded-[2.2rem] bg-[#0F172A] overflow-hidden relative shadow-inner border border-white/10">
+                         <div className="h-[660px] md:h-[720px] w-full rounded-[2.2rem] bg-[#0F172A] overflow-hidden relative shadow-inner border border-white/10">
                   <img 
-                    src={appImg} 
-                    alt="CareLink app interface" 
-                    className="h-full w-full object-cover object-top opacity-90 transition-opacity duration-500 hover:opacity-100" 
+                            src={appImg}
+                            alt="CareLink app interface"
+                            className="h-full w-full object-cover object-top transform-gpu scale-110 -translate-y-2 opacity-90 transition-opacity duration-500 hover:opacity-100"
                   />
                   {/* Screen Glare Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent pointer-events-none mix-blend-overlay" />
