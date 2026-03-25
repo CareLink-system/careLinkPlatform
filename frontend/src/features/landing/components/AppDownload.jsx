@@ -1,5 +1,6 @@
 import React, { useRef } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
+import appImg from '../../../assets/app.webp'
 
 export default function AppDownload() {
   const ref = useRef(null)
@@ -27,32 +28,8 @@ export default function AppDownload() {
 
               <div className="rounded-3xl border border-white/40 bg-gradient-to-tr from-white/60 to-white/40 p-1 shadow-xl">
                 <div className="h-[480px] w-[240px] rounded-2xl bg-[#0f1722] overflow-hidden relative">
-                  <div className="absolute inset-0 m-3 rounded-xl bg-gradient-to-b from-[#e6f0ff] to-[#ffffff] shadow-inner">
-                    {/* fake app UI inside phone */}
-                    <div className="flex h-full flex-col p-4">
-                      <div className="mb-3 flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-lg bg-white/90" />
-                        <div className="flex-1">
-                          <div className="h-3 w-3/5 rounded bg-[#e6eefc] mb-2" />
-                          <div className="h-2 w-1/3 rounded bg-[#eef4ff]" />
-                        </div>
-                      </div>
-
-                      <div className="mt-4 flex-1 space-y-3">
-                        <div className="h-10 w-full rounded bg-white/95" />
-                        <div className="h-36 w-full rounded bg-white/95" />
-                        <div className="grid grid-cols-3 gap-3">
-                          <div className="h-20 rounded bg-white/95" />
-                          <div className="h-20 rounded bg-white/95" />
-                          <div className="h-20 rounded bg-white/95" />
-                        </div>
-                      </div>
-
-                      <div className="mt-4 flex items-center justify-between">
-                        <div className="h-3 w-24 rounded bg-[#eef4ff]" />
-                        <div className="h-9 w-20 rounded-full bg-[#1649FF]" />
-                      </div>
-                    </div>
+                  <div className="absolute inset-0 m-3 rounded-xl overflow-hidden shadow-inner">
+                    <img src={appImg} alt="CareLink app" className="h-full w-full object-cover" />
                   </div>
                 </div>
               </div>
