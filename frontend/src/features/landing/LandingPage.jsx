@@ -5,6 +5,7 @@ import SectionOne from './components/SectionOne'
 import Stats from './components/Stats'
 import DoctorFinder from './components/DoctorFinder'
 import Services from './components/Services'
+import AppDownload from './components/AppDownload'
 
 export default function LandingPage() {
   return (
@@ -15,6 +16,7 @@ export default function LandingPage() {
         <Stats />
         <DoctorFinder />
         <Services />
+        <AppDownload />
         <SectionOne />
       </main>
     </>
