@@ -1,22 +1,21 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import heroImage from '../../../assets/hero.webp'
+import dashboardImg from '../../../assets/hero-dashboard.png'
 
 const headline = 'Next-Gen Telemedicine, Powered by AI'
 const cards = [
-  { title: 'Video Consult', className: 'top-10 -left-2 md:-left-8' },
-  { title: 'AI Checker', className: 'bottom-8 left-6 md:left-20' },
   { title: 'Lab Results', className: 'top-20 -right-2 md:-right-8' },
 ]
 
 export default function Hero() {
   return (
-    <section id="home" className="relative overflow-hidden px-6 pb-24 pt-28 md:pb-32 md:pt-34">
+    <section id="home" className="relative overflow-hidden px-6 pt-28 pb-24 min-h-screen">
       <div
         className="absolute inset-0 -z-20 bg-cover bg-center"
         style={{ backgroundImage: `url(${heroImage})` }}
       />
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-white/95 via-white/88 to-white/96" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-white/20 via-white/12 to-white/20" />
       <div className="absolute -top-24 right-[-12rem] -z-10 h-[28rem] w-[28rem] rounded-full bg-[#1649FF]/20 blur-3xl" />
       <div className="absolute bottom-[-10rem] left-[-10rem] -z-10 h-[24rem] w-[24rem] rounded-full bg-[#1F2937]/10 blur-3xl" />
 
@@ -66,7 +65,18 @@ export default function Hero() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.32 }}
           >
-            <div className="h-[280px] w-full rounded-[1.8rem] border border-white/50 bg-gradient-to-br from-[#1649FF]/10 to-[#1F2937]/10 md:h-[360px]" />
+            <div className="relative h-[280px] w-full rounded-[1.8rem] border border-white/50 bg-gradient-to-br from-[#1649FF]/10 to-[#1F2937]/10 md:h-[360px]">
+              {/* small dashboard image overlay (keeps current bg image unchanged) */}
+              <img
+                src={dashboardImg}
+                alt="dashboard preview"
+                className="absolute right-6 top-6 hidden h-[220px] w-auto rounded-xl object-cover shadow-2xl md:block"
+              />
+              {/* fallback/placeholder for smaller screens */}
+              <div className="md:hidden flex items-center justify-center h-full">
+                <img src={dashboardImg} alt="dashboard preview" className="h-40 w-auto rounded-lg object-cover shadow-lg" />
+              </div>
+            </div>
           </motion.div>
 
           {cards.map((card, index) => (

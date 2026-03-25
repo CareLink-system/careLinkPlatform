@@ -1,73 +1,137 @@
-import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
+
+const navLinks = [
+    { id: 'home', label: 'Home', href: '#home' },
+    { id: 'services', label: 'Services', href: '#services' },
+    { id: 'doctors', label: 'Find Doctors', href: '#find-doctors' },
+];
 
 const Navbar = () => {
-	const [open, setOpen] = useState(false)
+    const [isOpen, setIsOpen] = useState(false);
+    const [isScrolled, setIsScrolled] = useState(false);
+    const [hoveredTab, setHoveredTab] = useState(null);
+    const { scrollY } = useScroll();
 
-	return (
-		<motion.header
-			initial={{ y: -24, opacity: 0 }}
-			animate={{ y: 0, opacity: 1 }}
-			transition={{ duration: 0.45, ease: 'easeOut' }}
-			className="sticky top-0 z-50 w-full"
-		>
-			<div className="mx-auto w-full max-w-6xl px-4 pt-4">
-				<div className="flex items-center gap-4 rounded-full border border-white/50 bg-white/80 px-4 py-2 shadow-[0_16px_40px_-24px_rgba(31,41,55,0.5)] backdrop-blur-xl">
-					<Link to="/" className="flex items-center gap-3">
-						<img src="/favicon.ico" alt="CareLink" className="h-7 w-7 rounded-md object-contain" />
-						<span className="font-semibold tracking-wide text-[#1F2937]">CareLink</span>
-					</Link>
+    // Dynamically change navbar styling based on scroll position
+    useMotionValueEvent(scrollY, "change", (latest) => {
+        setIsScrolled(latest > 50);
+    });
 
-					<nav className="flex-1 hidden justify-center gap-8 text-sm text-[#1F2937] md:flex">
-						<a href="#home" className="group relative py-1 font-medium transition-colors hover:text-[#1649FF]">
-							Home
-							<span className="absolute -bottom-0.5 left-0 h-[2px] w-full origin-left scale-x-0 rounded bg-[#1649FF] transition-transform duration-300 group-hover:scale-x-100" />
-						</a>
-						<a href="#services" className="group relative py-1 font-medium transition-colors hover:text-[#1649FF]">
-							Services
-							<span className="absolute -bottom-0.5 left-0 h-[2px] w-full origin-left scale-x-0 rounded bg-[#1649FF] transition-transform duration-300 group-hover:scale-x-100" />
-						</a>
-						<a href="#find-doctors" className="group relative py-1 font-medium transition-colors hover:text-[#1649FF]">
-							Find Doctors
-							<span className="absolute -bottom-0.5 left-0 h-[2px] w-full origin-left scale-x-0 rounded bg-[#1649FF] transition-transform duration-300 group-hover:scale-x-100" />
-						</a>
-					</nav>
+    return (
+        <motion.header
+            initial={{ y: -100 }}
+            animate={{ y: 0 }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed top-0 left-0 z-50 w-full flex justify-center pt-4 px-4 pointer-events-none"
+        >
+            <div className="w-full max-w-6xl pointer-events-auto flex flex-col items-center">
+                {/* Main Navbar Container */}
+                <motion.div
+                    animate={{
+                        width: isScrolled ? "100%" : "100%",
+                        maxWidth: isScrolled ? "800px" : "1152px",
+                        backgroundColor: isScrolled ? "rgba(255, 255, 255, 0.85)" : "rgba(255, 255, 255, 0.4)",
+                        boxShadow: isScrolled 
+                            ? "0 20px 40px -15px rgba(0,0,0,0.05)" 
+                            : "0 0px 0px 0px rgba(0,0,0,0)",
+                        borderColor: isScrolled ? "rgba(255, 255, 255, 1)" : "rgba(255, 255, 255, 0.2)"
+                    }}
+                    transition={{ duration: 0.4, ease: "easeInOut" }}
+                    className="flex items-center justify-between rounded-full border px-4 py-2.5 backdrop-blur-xl transition-all"
+                >
+                    {/* Logo */}
+                    <Link to="/" className="flex items-center gap-3 z-10 pl-2">
+                        <motion.img 
+                            whileHover={{ rotate: 180 }}
+                            transition={{ duration: 0.5, ease: "backOut" }}
+                            src="/favicon.ico" 
+                            alt="CareLink" 
+                            className="h-8 w-8 rounded object-contain" 
+                        />
+                        <span className="font-bold text-lg tracking-tight text-[#1F2937]">CareLink</span>
+                    </Link>
 
-					<div className="flex items-center gap-3 ml-auto md:ml-0">
-						<Link
-							to="/auth/register"
-							className="hidden md:inline-flex items-center rounded-full bg-[#1649FF] px-5 py-2 text-sm font-semibold text-white shadow-[0_10px_28px_-14px_rgba(22,73,255,0.85)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#0d39d4] hover:shadow-[0_14px_32px_-14px_rgba(22,73,255,0.9)]"
-						>
-							Get Started
-						</Link>
+                    {/* Desktop Navigation */}
+                    <nav className="hidden md:flex items-center absolute left-1/2 transform -translate-x-1/2">
+                        {navLinks.map((link) => (
+                            <a
+                                key={link.id}
+                                href={link.href}
+                                onMouseEnter={() => setHoveredTab(link.id)}
+                                onMouseLeave={() => setHoveredTab(null)}
+                                className="relative px-5 py-2 text-sm font-medium text-[#1F2937] transition-colors hover:text-[#1649FF]"
+                            >
+                                {hoveredTab === link.id && (
+                                    <motion.span
+                                        layoutId="nav-pill"
+                                        className="absolute inset-0 z-[-1] rounded-full bg-white/60 shadow-sm border border-white/50"
+                                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                                    />
+                                )}
+                                {link.label}
+                            </a>
+                        ))}
+                    </nav>
 
-						<button
-							aria-label={open ? 'Close menu' : 'Open menu'}
-							aria-expanded={open}
-							onClick={() => setOpen((s) => !s)}
-							className="inline-flex items-center justify-center rounded-md bg-white/40 p-1.5 text-[#1F2937] transition-colors hover:bg-white/60 md:hidden"
-						>
-							<svg className={`${open ? 'hidden' : 'block'} h-5 w-5`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
-							<svg className={`${open ? 'block' : 'hidden'} h-5 w-5`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M6 18L18 6M6 6l12 12" /></svg>
-						</button>
-					</div>
-				</div>
+                    {/* CTA & Mobile Toggle */}
+                    <div className="flex items-center gap-3 z-10">
+                        <Link
+                            to="/auth/register"
+                            className="hidden md:inline-flex items-center justify-center rounded-full bg-[#1649FF] px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-[#0b2699] hover:shadow-[0_0_20px_rgba(22,73,255,0.4)] hover:scale-105 active:scale-95"
+                        >
+                            Get Started
+                        </Link>
 
-				{open && (
-					<div className="mt-2 w-full rounded-2xl border border-white/50 bg-white/85 p-3 shadow-lg backdrop-blur-xl md:hidden">
-						<nav className="flex flex-col gap-2 text-sm text-[#1F2937]">
-							<a onClick={() => setOpen(false)} href="#home" className="block rounded px-3 py-2 transition-colors hover:bg-white/60">Home</a>
-							<a onClick={() => setOpen(false)} href="#services" className="block rounded px-3 py-2 transition-colors hover:bg-white/60">Services</a>
-							<a onClick={() => setOpen(false)} href="#find-doctors" className="block rounded px-3 py-2 transition-colors hover:bg-white/60">Find Doctors</a>
-							<Link onClick={() => setOpen(false)} to="/auth/register" className="mt-2 inline-flex w-full items-center justify-center rounded-full bg-[#1649FF] px-4 py-2 text-sm font-medium text-white shadow">Get Started</Link>
-						</nav>
-					</div>
-				)}
-			</div>
-		</motion.header>
-	)
-}
+                        {/* Mobile Menu Button */}
+                        <button
+                            onClick={() => setIsOpen(!isOpen)}
+                            className="flex md:hidden h-10 w-10 items-center justify-center rounded-full bg-white/50 border border-white/40 text-[#1F2937] backdrop-blur-md transition-colors hover:bg-white/80 active:scale-95"
+                        >
+                            <motion.div animate={{ rotate: isOpen ? 45 : 0 }} className="absolute h-[2px] w-4 bg-current" style={{ y: isOpen ? 0 : -4 }} />
+                            <motion.div animate={{ opacity: isOpen ? 0 : 1 }} className="absolute h-[2px] w-4 bg-current" />
+                            <motion.div animate={{ rotate: isOpen ? -45 : 0 }} className="absolute h-[2px] w-4 bg-current" style={{ y: isOpen ? 0 : 4 }} />
+                        </button>
+                    </div>
+                </motion.div>
 
-export default Navbar
+                {/* Mobile Dropdown Menu */}
+                <AnimatePresence>
+                    {isOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 10, scale: 1 }}
+                            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
+                            className="w-full rounded-3xl border border-white/60 bg-white/90 p-4 shadow-2xl backdrop-blur-2xl md:hidden mt-2"
+                        >
+                            <nav className="flex flex-col gap-1 text-sm font-medium text-[#1F2937]">
+                                {navLinks.map((link) => (
+                                    <a
+                                        key={link.id}
+                                        href={link.href}
+                                        onClick={() => setIsOpen(false)}
+                                        className="block rounded-xl px-4 py-3 transition-colors hover:bg-white/80 hover:text-[#1649FF]"
+                                    >
+                                        {link.label}
+                                    </a>
+                                ))}
+                                <div className="h-px w-full bg-gray-200/50 my-2" />
+                                <Link
+                                    to="/auth/register"
+                                    onClick={() => setIsOpen(false)}
+                                    className="inline-flex w-full items-center justify-center rounded-xl bg-[#1649FF] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#0b2699]"
+                                >
+                                    Get Started
+                                </Link>
+                            </nav>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+        </motion.header>
+    );
+};
 
+export default Navbar;
