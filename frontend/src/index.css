@@ -1,1 +1,15 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Project variables that mirror Tailwind theme colors */
+:root {
+	--color-primary: #1F2937;
+	--color-accent: #1649FF;
+	--color-background: #FFFFFF;
+}
+
+body {
+	background-color: var(--color-background);
+	color: var(--color-primary);
+}
