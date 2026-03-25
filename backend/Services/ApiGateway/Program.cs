@@ -17,6 +17,10 @@ Console.WriteLine($"Thread pool configured with min worker threads: {newWorkerTh
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ========== ADD PORT BINDING FOR RENDER ==========
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.UseUrls($"http://*:{port}");
+
 // Add services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -32,7 +36,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Add Swagger
+// Add Swagger (ENABLE FOR ALL ENVIRONMENTS)
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "CareLink API Gateway", Version = "v1" });
@@ -76,7 +80,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "default-key-for-development"))
         };
     });
 
@@ -89,33 +93,41 @@ var app = builder.Build();
 // Serve static files (wwwroot folder)
 app.UseStaticFiles();
 
-// Configure pipeline
-if (app.Environment.IsDevelopment())
+// ========== SWAGGER - ENABLED FOR ALL ENVIRONMENTS ==========
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "CareLink API Gateway v1");
-        c.RoutePrefix = "swagger";
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "CareLink API Gateway v1");
+    c.RoutePrefix = "swagger";
+});
 
 // Middleware order
-if (!app.Environment.IsDevelopment())
-{
-    app.UseHttpsRedirection();
-}
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapReverseProxy();
 
-// Redirect root to dashboard
-app.MapGet("/", async context =>
+// Root endpoint
+app.MapGet("/", () => Results.Ok(new
 {
-    context.Response.Redirect("/index.html");
-});
+    name = "CareLink API Gateway",
+    version = "1.0.0",
+    status = "Running",
+    endpoints = new
+    {
+        swagger = "/swagger",
+        health = "/health",
+        dashboard = "/index.html",
+        auth = "/api/auth/*",
+        patients = "/api/patients/*",
+        doctors = "/api/doctors/*",
+        appointments = "/api/appointments/*",
+        telemedicine = "/api/telemedicine/*",
+        notifications = "/api/notifications/*",
+        payments = "/api/payments/*"
+    }
+}));
 
 // Health check endpoint
 app.MapGet("/health", () => Results.Ok(new
@@ -124,38 +136,19 @@ app.MapGet("/health", () => Results.Ok(new
     timestamp = DateTime.UtcNow,
     services = new[]
     {
-        "AuthService (5001)",
-        "PatientService (5002)",
-        "DoctorService (5003)",
-        "AppointmentService (5004)",
-        "TelemedicineService (5007)",
-        "NotificationService (5008)",
-        "PaymentService (5010)"
+        "AuthService",
+        "PatientService",
+        "DoctorService",
+        "AppointmentService",
+        "TelemedicineService",
+        "NotificationService",
+        "PaymentService"
     }
 }));
 
 Console.WriteLine("API Gateway is ready!");
-Console.WriteLine("Dashboard: http://localhost:5000");
-Console.WriteLine("Gateway Swagger: http://localhost:5000/swagger");
-Console.WriteLine("Health Check: http://localhost:5000/health");
-
-// Auto-open browser
-if (app.Environment.IsDevelopment())
-{
-    try
-    {
-        var url = "http://localhost:5000";
-        Console.WriteLine($"Opening browser at {url}");
-        Process.Start(new ProcessStartInfo
-        {
-            FileName = url,
-            UseShellExecute = true
-        });
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Could not auto-open browser: {ex.Message}");
-    }
-}
+Console.WriteLine($"Gateway URL: https://{Environment.GetEnvironmentVariable("RENDER_EXTERNAL_HOSTNAME") ?? "localhost"}/");
+Console.WriteLine("Swagger: /swagger");
+Console.WriteLine("Health: /health");
 
 app.Run();
