@@ -4,6 +4,7 @@ import Hero from './components/Hero'
 import SectionOne from './components/SectionOne'
 import Stats from './components/Stats'
 import DoctorFinder from './components/DoctorFinder'
+import Services from './components/Services'
 
 export default function LandingPage() {
   return (
@@ -13,6 +14,7 @@ export default function LandingPage() {
         <Hero />
         <Stats />
         <DoctorFinder />
+        <Services />
         <SectionOne />
       </main>
     </>
