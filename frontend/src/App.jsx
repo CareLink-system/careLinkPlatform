@@ -16,9 +16,9 @@ function App() {
           <img src={viteLogo} className="vite" alt="Vite logo" />
         </div>
         <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
+          <h1 className="text-4xl font-extrabold text-blue-600 dark:text-blue-400">CareLink</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            Tailwind setup test — edit <code>src/App.jsx</code> and save
           </p>
         </div>
         <button
