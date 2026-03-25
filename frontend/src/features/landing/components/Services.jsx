@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { motion, useInView } from 'framer-motion';
+import { motion as Motion, useInView } from 'framer-motion';
 
 const features = [
   {
@@ -62,14 +62,14 @@ const features = [
   },
 ];
 
-function FeatureCard({ feature, index }) {
+function FeatureCard({ feature }) {
   return (
-    <motion.div
+    <Motion.div
       variants={{
         hidden: { opacity: 0, y: 30 },
         show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
       }}
-      className={`group relative overflow-hidden rounded-[2rem] border border-white/5 bg-white/[0.02] p-8 backdrop-blur-md transition-all duration-500 hover:border-white/10 ${feature.className}`}
+      className={`group relative overflow-hidden rounded-4xl border border-white/5 bg-white/2 p-8 backdrop-blur-md transition-all duration-500 hover:border-white/10 ${feature.className}`}
     >
       {/* Dynamic Hover Glow */}
       <div className={`absolute inset-0 -z-10 transition-colors duration-500 ${feature.glow}`} />
@@ -78,7 +78,7 @@ function FeatureCard({ feature, index }) {
       <div className="absolute -top-24 -right-24 h-48 w-48 rounded-full bg-white/5 blur-[50px] transition-all duration-500 group-hover:scale-150 group-hover:bg-white/10 pointer-events-none" />
 
       <div className="relative z-10 flex h-full flex-col">
-        <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.05] border border-white/10 shadow-inner">
+        <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 border border-white/10 shadow-inner">
           {feature.icon}
         </div>
         
@@ -89,7 +89,7 @@ function FeatureCard({ feature, index }) {
 
         {feature.visual}
       </div>
-    </motion.div>
+    </Motion.div>
   );
 }
 
@@ -100,10 +100,10 @@ export default function Services() {
   return (
     <section id="services" className="relative py-24 bg-[#050711] overflow-hidden">
       {/* Background ambient light */}
-      <div className="absolute top-0 right-1/4 w-[30rem] h-[30rem] rounded-full bg-cyan-900/10 blur-[100px] pointer-events-none" />
+      <div className="absolute top-0 right-1/4 w-120 h-120 rounded-full bg-cyan-900/10 blur-[100px] pointer-events-none" />
 
       <div className="mx-auto max-w-7xl px-6 relative z-10">
-        <motion.div 
+        <Motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8 }}
@@ -116,9 +116,9 @@ export default function Services() {
           <h2 className="text-4xl font-semibold tracking-tight text-white md:text-5xl">
             Everything you need for <span className="text-slate-400">modern healthcare.</span>
           </h2>
-        </motion.div>
+        </Motion.div>
 
-        <motion.div 
+        <Motion.div 
           ref={ref}
           variants={{
             hidden: {},
@@ -128,10 +128,10 @@ export default function Services() {
           animate={inView ? "show" : "hidden"}
           className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[280px]"
         >
-          {features.map((feature, i) => (
-            <FeatureCard key={feature.title} feature={feature} index={i} />
+          {features.map((feature) => (
+            <FeatureCard key={feature.title} feature={feature} />
           ))}
-        </motion.div>
+        </Motion.div>
       </div>
     </section>
   );

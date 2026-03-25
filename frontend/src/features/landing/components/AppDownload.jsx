@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion as Motion, useScroll, useTransform } from 'framer-motion';
 import appImg from '../../../assets/app.webp'; // Keep your existing image import
 
 export default function AppDownload() {
@@ -21,8 +21,8 @@ export default function AppDownload() {
     <section ref={ref} className="relative py-32 bg-[#050711] overflow-hidden">
       
       {/* Intense Background Glows */}
-      <div className="absolute top-1/2 left-1/4 w-[40rem] h-[40rem] -translate-y-1/2 -translate-x-1/2 rounded-full bg-blue-600/10 blur-[120px] pointer-events-none" />
-      <div className="absolute top-1/2 right-0 w-[30rem] h-[30rem] -translate-y-1/2 translate-x-1/4 rounded-full bg-cyan-400/10 blur-[100px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/4 w-160 h-160 -translate-y-1/2 -translate-x-1/2 rounded-full bg-blue-600/10 blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/2 right-0 w-120 h-120 -translate-y-1/2 translate-x-1/4 rounded-full bg-cyan-400/10 blur-[100px] pointer-events-none" />
 
       <div className="mx-auto max-w-7xl px-6 relative z-10">
         <div className="grid grid-cols-1 items-center gap-16 lg:grid-cols-2">
@@ -31,22 +31,22 @@ export default function AppDownload() {
           <div className="relative flex justify-center items-center perspective-[2000px] mt-10 lg:mt-0 order-2 lg:order-1">
             
             {/* The Phone (case removed) */}
-            <motion.div
+            <Motion.div
               style={{ rotateX, rotateY, y: phoneY, transformStyle: "preserve-3d" }}
-              className="relative z-10 w-[280px] md:w-[320px]"
+              className="relative z-10 w-70 md:w-80"
             >
               <div className="relative w-full">
                 <img
                   src={appImg}
                   alt="CareLink app interface"
-                  className="w-full h-[660px] md:h-[720px] object-cover rounded-[2.2rem] shadow-2xl"
+                  className="w-full h-165 md:h-180 object-cover rounded-[2.2rem] shadow-2xl"
                 />
-                <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent mix-blend-overlay pointer-events-none rounded-[2.2rem]" />
+                <div className="absolute inset-0 bg-linear-to-tr from-white/5 to-transparent mix-blend-overlay pointer-events-none rounded-[2.2rem]" />
               </div>
-            </motion.div>
+            </Motion.div>
 
             {/* Floating UI Element (Creates depth) */}
-            <motion.div
+            <Motion.div
               style={{ y: floatingCardY, translateZ: 100 }}
               className="absolute -right-4 bottom-20 md:-right-12 z-20 flex items-center gap-4 rounded-2xl border border-white/10 border-t-white/20 bg-slate-800/80 px-5 py-4 shadow-2xl backdrop-blur-2xl"
             >
@@ -59,7 +59,7 @@ export default function AppDownload() {
                 <h4 className="text-sm font-bold text-white">Appointment Confirmed</h4>
                 <p className="text-xs font-medium text-cyan-400">Dr. Amelia Hart • Today 2:30 PM</p>
               </div>
-            </motion.div>
+            </Motion.div>
           </div>
 
           {/* RIGHT: Promotional text + badges */}
@@ -71,7 +71,7 @@ export default function AppDownload() {
             
             <h2 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl md:text-6xl leading-[1.1]">
               Care on the go — <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">in one app.</span>
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-cyan-400 to-blue-500">in one app.</span>
             </h2>
             
             <p className="mt-6 max-w-lg text-lg text-slate-400 font-light leading-relaxed">

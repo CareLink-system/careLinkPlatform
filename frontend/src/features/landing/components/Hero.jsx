@@ -1,10 +1,8 @@
 import React, { useRef } from 'react';
-import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion';
+import { motion as Motion, useTransform, useMotionValue, useSpring } from 'framer-motion';
 
 // Asset Imports
 import dashboardImg from '../../../assets/hero-dashboard.svg';
-
-const headline = 'Next-Gen Telemedicine, Powered by AI';
 
 // Floating feature cards with icons
 const floatingCards = [
@@ -58,21 +56,21 @@ export default function Hero() {
         <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-blue-900/20 blur-[120px]" />
         
         {/* INCREASED INTENSITY: Vibrant glowing halo behind the dashboard */}
-        <motion.div 
+        <Motion.div 
           animate={{ scale: [1, 1.05, 1], opacity: [0.5, 0.7, 0.5] }}
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[10%] right-[-5%] w-[55rem] h-[55rem] rounded-full bg-gradient-to-br from-cyan-400/30 via-blue-600/30 to-purple-600/20 blur-[120px]" 
+          className="absolute top-[10%] right-[-5%] w-220 h-220 rounded-full bg-linear-to-br from-cyan-400/30 via-blue-600/30 to-purple-600/20 blur-[120px]" 
         />
       </div>
 
       <div className="mx-auto w-full max-w-7xl relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
         
         {/* LEFT COLUMN: Text & CTAs */}
-        <motion.div className="w-full lg:col-span-5 flex flex-col text-left pointer-events-none pt-10 lg:pt-0 z-20">
+        <Motion.div className="w-full lg:col-span-5 flex flex-col text-left pointer-events-none pt-10 lg:pt-0 z-20">
           
           {/* Badge removed per request */}
 
-          <motion.h1
+          <Motion.h1
             className="text-5xl font-semibold leading-[1.1] tracking-tight text-white sm:text-6xl lg:text-[4.5rem]"
             initial="hidden"
             animate="show"
@@ -84,21 +82,21 @@ export default function Hero() {
             Next-Gen <br />
             <span className="text-slate-300">Telemedicine,</span> <br />
             Powered by{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500">
+            <span className="text-transparent bg-clip-text bg-linear-to-r from-cyan-400 via-blue-500 to-indigo-500">
               AI.
             </span>
-          </motion.h1>
+          </Motion.h1>
 
-          <motion.p
+          <Motion.p
             className="mt-6 text-lg text-slate-400 font-light leading-relaxed max-w-md"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
             Book appointments, attend real-time video consultations, and get instant AI-driven health suggestions all in one secure place.
-          </motion.p>
+          </Motion.p>
 
-          <motion.div 
+          <Motion.div 
             className="flex flex-col sm:flex-row items-center gap-4 mt-8 pointer-events-auto"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -113,10 +111,10 @@ export default function Hero() {
             <button className="w-full sm:w-auto rounded-full border border-slate-700 bg-slate-800/50 px-8 py-3.5 text-sm font-medium text-white backdrop-blur-md transition-all hover:bg-slate-800 hover:border-slate-600">
               Try AI Checker
             </button>
-          </motion.div>
+          </Motion.div>
 
           {/* PULLED UP: Social Proof */}
-          <motion.div 
+          <Motion.div 
             className="mt-8 flex items-center gap-4 pointer-events-auto"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -136,32 +134,32 @@ export default function Hero() {
               <div className="flex text-cyan-400 text-sm">★★★★★</div>
               <span className="text-xs font-medium text-slate-400">Trusted by 10k+ patients</span>
             </div>
-          </motion.div>
-        </motion.div>
+          </Motion.div>
+        </Motion.div>
 
         {/* RIGHT COLUMN: 3D Dashboard Mockup */}
-        <motion.div 
+        <Motion.div 
           style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
           className="w-full lg:col-span-7 relative perspective-[2000px] z-10 pointer-events-none mt-16 lg:mt-0"
         >
-          <motion.div
-            className="relative rounded-[2rem] border border-white/10 bg-white/[0.02] p-3 shadow-[0_0_80px_rgba(34,211,238,0.15)] backdrop-blur-3xl md:p-4"
+          <Motion.div
+            className="relative rounded-4xl border border-white/10 bg-white/2 p-3 shadow-[0_0_80px_rgba(34,211,238,0.15)] backdrop-blur-3xl md:p-4"
             initial={{ opacity: 0, scale: 0.8, x: 40 }}
             animate={{ opacity: 1, scale: 1, x: 0 }}
             transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="relative overflow-hidden rounded-[1.5rem] border border-white/5 bg-[#0F172A] shadow-2xl">
+            <div className="relative overflow-hidden rounded-3xl border border-white/5 bg-[#0F172A] shadow-2xl">
               <img
                 src={dashboardImg}
                 alt="CareLink Dashboard Preview"
                 className="w-full h-auto object-cover opacity-90 transition-opacity duration-500 hover:opacity-100"
               />
-              <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent mix-blend-overlay pointer-events-none" />
+              <div className="absolute inset-0 bg-linear-to-tr from-white/5 to-transparent mix-blend-overlay pointer-events-none" />
             </div>
 
             {/* REFINED FLOATING CARDS: Thinner borders, simulated top-light reflection */}
             {floatingCards.map((card, index) => (
-              <motion.div
+              <Motion.div
                 key={card.title}
                 className={`absolute ${card.className} flex items-center gap-4 rounded-2xl border border-white/5 border-t-white/20 bg-slate-800/40 px-5 py-3 shadow-2xl backdrop-blur-2xl pointer-events-auto cursor-default`}
                 style={{ transformStyle: "preserve-3d", translateZ: 60 + (index * 30) }}
@@ -194,10 +192,10 @@ export default function Hero() {
                   <h4 className="text-sm font-bold text-white">{card.title}</h4>
                   <p className="text-[10px] font-medium uppercase tracking-wider text-cyan-400">{card.subtitle}</p>
                 </div>
-              </motion.div>
+              </Motion.div>
             ))}
-          </motion.div>
-        </motion.div>
+          </Motion.div>
+        </Motion.div>
       </div>
     </section>
   );

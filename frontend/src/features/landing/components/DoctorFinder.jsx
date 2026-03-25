@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion, useInView } from 'framer-motion';
+import { motion as Motion, useInView } from 'framer-motion';
 
 // Expanded data with high-quality images and social proof
 const doctors = [
@@ -75,12 +75,12 @@ export default function DoctorFinder() {
   return (
     <section id="find-doctors" className="relative py-24 bg-[#050711] overflow-hidden">
       {/* Subtle Background Glow */}
-      <div className="absolute top-1/2 left-0 w-[40rem] h-[40rem] -translate-y-1/2 -translate-x-1/2 rounded-full bg-blue-900/20 blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/2 left-0 w-160 h-160 -translate-y-1/2 -translate-x-1/2 rounded-full bg-blue-900/20 blur-[120px] pointer-events-none" />
 
       <div className="mx-auto max-w-7xl px-6 relative z-10">
         
         {/* Header Section */}
-        <motion.div 
+        <Motion.div 
           ref={headerRef}
           initial={{ opacity: 0, y: 20 }}
           animate={isHeaderInView ? { opacity: 1, y: 0 } : {}}
@@ -93,7 +93,7 @@ export default function DoctorFinder() {
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-400">Expert Care</p>
             </div>
             <h2 className="text-4xl font-semibold tracking-tight text-white md:text-5xl lg:text-6xl">
-              Find Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Specialist.</span>
+              Find Your <span className="text-transparent bg-clip-text bg-linear-to-r from-cyan-400 to-blue-500">Specialist.</span>
             </h2>
             <p className="mt-4 text-base text-slate-400 md:text-lg font-light leading-relaxed">
               Drag to explore our network of verified, world-class doctors available for instant telehealth sessions.
@@ -106,16 +106,16 @@ export default function DoctorFinder() {
             </svg>
             <span>Drag to explore</span>
           </div>
-        </motion.div>
+        </Motion.div>
 
         {/* Carousel Viewport with Fade Edges */}
         <div className="relative -mx-6 px-6 md:mx-0 md:px-0">
           {/* Edge Gradients for smooth fade-out */}
-          <div className="absolute top-0 left-0 bottom-0 w-12 md:w-24 bg-gradient-to-r from-[#050711] to-transparent z-10 pointer-events-none" />
-          <div className="absolute top-0 right-0 bottom-0 w-12 md:w-24 bg-gradient-to-l from-[#050711] to-transparent z-10 pointer-events-none" />
+          <div className="absolute top-0 left-0 bottom-0 w-12 md:w-24 bg-linear-to-r from-[#050711] to-transparent z-10 pointer-events-none" />
+          <div className="absolute top-0 right-0 bottom-0 w-12 md:w-24 bg-linear-to-l from-[#050711] to-transparent z-10 pointer-events-none" />
 
           <div ref={viewportRef} className="overflow-hidden pb-12 pt-4">
-            <motion.div
+            <Motion.div
               ref={trackRef}
               className="flex cursor-grab gap-6 active:cursor-grabbing w-max"
               drag="x"
@@ -124,24 +124,24 @@ export default function DoctorFinder() {
               whileTap={{ cursor: 'grabbing' }}
             >
               {doctors.map((item, index) => (
-                <motion.article
+                <Motion.article
                   key={item.name}
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={isHeaderInView ? { opacity: 1, scale: 1 } : {}}
                   transition={{ duration: 0.6, delay: index * 0.1 + 0.2 }}
                   whileHover={{ y: -8 }}
-                  className="group relative flex w-[300px] md:w-[340px] flex-col overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.03] p-4 backdrop-blur-xl transition-colors hover:border-cyan-500/30 hover:bg-white/[0.05]"
+                  className="group relative flex w-75 md:w-85 flex-col overflow-hidden rounded-4xl border border-white/10 bg-white/3 p-4 backdrop-blur-xl transition-colors hover:border-cyan-500/30 hover:bg-white/5"
                 >
                   {/* Image Container */}
-                  <div className="relative h-64 w-full overflow-hidden rounded-[1.5rem] bg-slate-800">
+                  <div className="relative h-64 w-full overflow-hidden rounded-3xl bg-slate-800">
                     <img 
                       src={item.image} 
                       alt={item.name}
-                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110 grayscale-[30%] group-hover:grayscale-0"
+                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110 grayscale-30 group-hover:grayscale-0"
                       draggable="false"
                     />
                     {/* Image Overlay Gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-transparent to-transparent opacity-80" />
+                    <div className="absolute inset-0 bg-linear-to-t from-[#0F172A] via-transparent to-transparent opacity-80" />
                     
                     {/* Specialty Badge */}
                     <div className="absolute top-4 left-4 inline-flex rounded-full border border-white/20 bg-black/40 backdrop-blur-md px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white">
@@ -170,9 +170,9 @@ export default function DoctorFinder() {
                       View Profile
                     </button>
                   </div>
-                </motion.article>
+                </Motion.article>
               ))}
-            </motion.div>
+            </Motion.div>
           </div>
         </div>
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
+import { motion as Motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
 
 const navLinks = [
     { id: 'home', label: 'Home', href: '#home' },
@@ -20,7 +20,7 @@ const Navbar = () => {
     });
 
     return (
-        <motion.header
+        <Motion.header
             initial={{ y: -100 }}
             animate={{ y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
@@ -28,7 +28,7 @@ const Navbar = () => {
         >
             <div className="w-full max-w-6xl pointer-events-auto flex flex-col items-center">
                 {/* Main Navbar Container */}
-                <motion.div
+                <Motion.div
                     animate={{
                         width: "100%",
                         maxWidth: isScrolled ? "800px" : "1152px",
@@ -43,7 +43,7 @@ const Navbar = () => {
                 >
                     {/* Logo */}
                     <Link to="/" className="flex items-center gap-3 z-10 pl-2">
-                        <motion.img 
+                        <Motion.img 
                             whileHover={{ rotate: 180 }}
                             transition={{ duration: 0.5, ease: "backOut" }}
                             src="/favicon.ico" 
@@ -64,7 +64,7 @@ const Navbar = () => {
                                 className="relative px-5 py-2 text-sm font-medium text-slate-300 transition-colors hover:text-white"
                             >
                                 {hoveredTab === link.id && (
-                                    <motion.span
+                                    <Motion.span
                                         layoutId="nav-pill"
                                         className="absolute inset-0 z-[-1] rounded-full bg-white/10 shadow-sm border border-white/5"
                                         transition={{ type: "spring", stiffness: 400, damping: 30 }}
@@ -89,17 +89,17 @@ const Navbar = () => {
                             onClick={() => setIsOpen(!isOpen)}
                             className="flex md:hidden h-10 w-10 items-center justify-center rounded-full bg-white/10 border border-white/10 text-white backdrop-blur-md transition-colors hover:bg-white/20 active:scale-95"
                         >
-                            <motion.div animate={{ rotate: isOpen ? 45 : 0 }} className="absolute h-[2px] w-4 bg-current" style={{ y: isOpen ? 0 : -4 }} />
-                            <motion.div animate={{ opacity: isOpen ? 0 : 1 }} className="absolute h-[2px] w-4 bg-current" />
-                            <motion.div animate={{ rotate: isOpen ? -45 : 0 }} className="absolute h-[2px] w-4 bg-current" style={{ y: isOpen ? 0 : 4 }} />
+                            <Motion.div animate={{ rotate: isOpen ? 45 : 0 }} className="absolute h-0.5 w-4 bg-current" style={{ y: isOpen ? 0 : -4 }} />
+                            <Motion.div animate={{ opacity: isOpen ? 0 : 1 }} className="absolute h-0.5 w-4 bg-current" />
+                            <Motion.div animate={{ rotate: isOpen ? -45 : 0 }} className="absolute h-0.5 w-4 bg-current" style={{ y: isOpen ? 0 : 4 }} />
                         </button>
                     </div>
-                </motion.div>
+                </Motion.div>
 
                 {/* Mobile Dropdown Menu - Dark Theme */}
                 <AnimatePresence>
                     {isOpen && (
-                        <motion.div
+                        <Motion.div
                             initial={{ opacity: 0, y: -20, scale: 0.95 }}
                             animate={{ opacity: 1, y: 10, scale: 1 }}
                             exit={{ opacity: 0, y: -20, scale: 0.95 }}
@@ -126,11 +126,11 @@ const Navbar = () => {
                                     Get Started
                                 </Link>
                             </nav>
-                        </motion.div>
+                        </Motion.div>
                     )}
                 </AnimatePresence>
             </div>
-        </motion.header>
+        </Motion.header>
     );
 };
 

@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import Grainient from './Grainient'; // Adjust import path if needed
 
 const Footer = () => {
@@ -38,7 +37,7 @@ const Footer = () => {
       </div>
 
       {/* Replaced full overlay with a bottom gradient fade for smooth edge blending */}
-      <div className="absolute inset-0 -z-20 bg-gradient-to-t from-[#050711] via-[#050711]/40 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 -z-20 bg-linear-to-t from-[#050711] via-[#050711]/40 to-transparent pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-12 pb-20">
@@ -100,7 +99,7 @@ const Footer = () => {
 
         {/* Massive Brand Watermark with Gradient Clip */}
         <div className="pt-12 pb-8 overflow-hidden relative">
-          <h1 className="text-[12vw] leading-none font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white/10 to-white/0 select-none text-center">
+          <h1 className="text-[12vw] leading-none font-black tracking-tighter text-transparent bg-clip-text bg-linear-to-b from-white/10 to-white/0 select-none text-center">
             CARELINK
           </h1>
           
