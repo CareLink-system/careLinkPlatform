@@ -6,31 +6,12 @@ import dashboardImg from '../../../assets/hero-dashboard.svg';
 
 const headline = 'Next-Gen Telemedicine, Powered by AI';
 
-// Upgraded floating cards with icons and better positioning
+// Floating feature cards with icons
 const floatingCards = [
-  { 
-    title: 'Video Consult', 
-    subtitle: 'HD Secure',
-    icon: '🎥',
-    className: '-top-8 -left-12', 
-    delay: 0 
-  },
-  { 
-    title: 'AI Symptom Check', 
-    subtitle: 'Instant Analysis',
-    icon: '✨',
-    className: 'top-[40%] -right-16', 
-    delay: 0.2 
-  },
-  { 
-    title: 'Lab Results', 
-    subtitle: 'Encrypted',
-    icon: '📊',
-    className: '-bottom-10 -left-6', 
-    delay: 0.4 
-  },
+  { id: 'video', title: 'Video Consult', subtitle: 'HD Secure', className: 'top-[10%] -left-6 md:-left-12', delay: 0 },
+  { id: 'ai', title: 'AI Symptom Check', subtitle: 'Instant Analysis', className: 'top-[45%] -right-4 md:-right-10', delay: 0.2 },
+  { id: 'lab', title: 'Lab Results', subtitle: 'Encrypted', className: 'bottom-[15%] -left-2 md:-left-8', delay: 0.4 },
 ];
-
 const avatars = [
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80',
   'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=100&q=80',
@@ -44,7 +25,6 @@ export default function Hero() {
   // 3D Tilt Effect on Mouse Move
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
-  
   const springConfig = { damping: 25, stiffness: 150 };
   const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], ['6deg', '-6deg']), springConfig);
   const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], ['-6deg', '6deg']), springConfig);
@@ -71,19 +51,17 @@ export default function Hero() {
       ref={containerRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      // Deep dark background
       className="relative overflow-hidden px-6 pt-32 pb-24 min-h-screen flex items-center bg-[#050711] perspective-[2000px]"
     >
-      {/* Dynamic Background Glows (Replaces the overwhelming full-screen gradient) */}
+      {/* Dynamic Background Glows */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-20 pointer-events-none">
-        {/* Soft top-left ambient light */}
         <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-blue-900/20 blur-[120px]" />
         
-        {/* Intense vibrant glow specifically behind the dashboard */}
+        {/* INCREASED INTENSITY: Vibrant glowing halo behind the dashboard */}
         <motion.div 
-          animate={{ scale: [1, 1.1, 1], opacity: [0.4, 0.6, 0.4] }}
+          animate={{ scale: [1, 1.05, 1], opacity: [0.5, 0.7, 0.5] }}
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[20%] right-[0%] w-[45rem] h-[45rem] rounded-full bg-gradient-to-br from-cyan-500/30 to-blue-600/30 blur-[100px]" 
+          className="absolute top-[10%] right-[-5%] w-[55rem] h-[55rem] rounded-full bg-gradient-to-br from-cyan-400/30 via-blue-600/30 to-purple-600/20 blur-[120px]" 
         />
       </div>
 
@@ -114,7 +92,6 @@ export default function Hero() {
             Next-Gen <br />
             <span className="text-slate-300">Telemedicine,</span> <br />
             Powered by{' '}
-            {/* Ultra-premium gradient text for AI */}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500">
               AI.
             </span>
@@ -130,7 +107,7 @@ export default function Hero() {
           </motion.p>
 
           <motion.div 
-            className="flex flex-col sm:flex-row items-center gap-4 mt-10 pointer-events-auto"
+            className="flex flex-col sm:flex-row items-center gap-4 mt-8 pointer-events-auto"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.6 }}
@@ -146,9 +123,9 @@ export default function Hero() {
             </button>
           </motion.div>
 
-          {/* Social Proof */}
+          {/* PULLED UP: Social Proof */}
           <motion.div 
-            className="mt-12 flex items-center gap-4 pointer-events-auto"
+            className="mt-8 flex items-center gap-4 pointer-events-auto"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.8 }}
@@ -175,37 +152,51 @@ export default function Hero() {
           style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
           className="w-full lg:col-span-7 relative perspective-[2000px] z-10 pointer-events-none mt-16 lg:mt-0"
         >
-          {/* Dashboard Container with Premium Dark Glassmorphism */}
           <motion.div
             className="relative rounded-[2rem] border border-white/10 bg-white/[0.02] p-3 shadow-[0_0_80px_rgba(34,211,238,0.15)] backdrop-blur-3xl md:p-4"
             initial={{ opacity: 0, scale: 0.8, x: 40 }}
             animate={{ opacity: 1, scale: 1, x: 0 }}
             transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           >
-            {/* Dashboard Image */}
             <div className="relative overflow-hidden rounded-[1.5rem] border border-white/5 bg-[#0F172A] shadow-2xl">
               <img
                 src={dashboardImg}
                 alt="CareLink Dashboard Preview"
                 className="w-full h-auto object-cover opacity-90 transition-opacity duration-500 hover:opacity-100"
               />
-              {/* Subtle glare overlay */}
               <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent mix-blend-overlay pointer-events-none" />
             </div>
 
-            {/* Upgraded Floating Cards */}
+            {/* REFINED FLOATING CARDS: Thinner borders, simulated top-light reflection */}
             {floatingCards.map((card, index) => (
               <motion.div
                 key={card.title}
-                className={`absolute ${card.className} flex items-center gap-4 rounded-2xl border border-white/10 bg-slate-900/80 px-5 py-3 shadow-2xl backdrop-blur-xl pointer-events-auto cursor-default`}
+                className={`absolute ${card.className} flex items-center gap-4 rounded-2xl border border-white/5 border-t-white/20 bg-slate-800/40 px-5 py-3 shadow-2xl backdrop-blur-2xl pointer-events-auto cursor-default`}
                 style={{ transformStyle: "preserve-3d", translateZ: 60 + (index * 30) }}
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.6, delay: 0.8 + card.delay, type: 'spring' }}
-                whileHover={{ scale: 1.05, translateZ: 100, borderColor: 'rgba(34,211,238,0.3)' }}
+                whileHover={{ scale: 1.05, translateZ: 100, borderColor: 'rgba(34,211,238,0.4)' }}
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-lg border border-white/10">
-                  {card.icon}
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-lg border border-white/10 shadow-inner">
+                  {card.id === 'video' && (
+                    <svg className="h-5 w-5 text-[#1649FF]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="3" y="6" width="13" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" />
+                      <path d="M16 10l5-3v10l-5-3" fill="currentColor" />
+                    </svg>
+                  )}
+                  {card.id === 'ai' && (
+                    <svg className="h-5 w-5 text-[#1649FF]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.2" />
+                      <path d="M8 12h8M8 8h8M8 16h5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                    </svg>
+                  )}
+                  {card.id === 'lab' && (
+                    <svg className="h-5 w-5 text-[#1649FF]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M8 2h8l-2 6v9a3 3 0 0 1-3 3 3 3 0 0 1-3-3V8L8 2z" stroke="currentColor" strokeWidth="1.5" />
+                      <path d="M9 15h6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                    </svg>
+                  )}
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-white">{card.title}</h4>

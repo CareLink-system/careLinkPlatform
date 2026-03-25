@@ -30,13 +30,13 @@ const Navbar = () => {
                 {/* Main Navbar Container */}
                 <motion.div
                     animate={{
-                        width: isScrolled ? "100%" : "100%",
+                        width: "100%",
                         maxWidth: isScrolled ? "800px" : "1152px",
-                        backgroundColor: isScrolled ? "rgba(255, 255, 255, 0.85)" : "rgba(255, 255, 255, 0.4)",
+                        backgroundColor: isScrolled ? "rgba(15, 23, 42, 0.75)" : "rgba(15, 23, 42, 0)", // Transparent to Slate-900
                         boxShadow: isScrolled 
-                            ? "0 20px 40px -15px rgba(0,0,0,0.05)" 
+                            ? "0 20px 40px -15px rgba(0,0,0,0.5)" 
                             : "0 0px 0px 0px rgba(0,0,0,0)",
-                        borderColor: isScrolled ? "rgba(255, 255, 255, 1)" : "rgba(255, 255, 255, 0.2)"
+                        borderColor: isScrolled ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0)"
                     }}
                     transition={{ duration: 0.4, ease: "easeInOut" }}
                     className="flex items-center justify-between rounded-full border px-4 py-2.5 backdrop-blur-xl transition-all"
@@ -50,7 +50,7 @@ const Navbar = () => {
                             alt="CareLink" 
                             className="h-8 w-8 rounded object-contain" 
                         />
-                        <span className="font-bold text-lg tracking-tight text-[#1F2937]">CareLink</span>
+                        <span className="font-bold text-lg tracking-tight text-white">CareLink</span>
                     </Link>
 
                     {/* Desktop Navigation */}
@@ -61,12 +61,12 @@ const Navbar = () => {
                                 href={link.href}
                                 onMouseEnter={() => setHoveredTab(link.id)}
                                 onMouseLeave={() => setHoveredTab(null)}
-                                className="relative px-5 py-2 text-sm font-medium text-[#1F2937] transition-colors hover:text-[#1649FF]"
+                                className="relative px-5 py-2 text-sm font-medium text-slate-300 transition-colors hover:text-white"
                             >
                                 {hoveredTab === link.id && (
                                     <motion.span
                                         layoutId="nav-pill"
-                                        className="absolute inset-0 z-[-1] rounded-full bg-white/60 shadow-sm border border-white/50"
+                                        className="absolute inset-0 z-[-1] rounded-full bg-white/10 shadow-sm border border-white/5"
                                         transition={{ type: "spring", stiffness: 400, damping: 30 }}
                                     />
                                 )}
@@ -79,15 +79,15 @@ const Navbar = () => {
                     <div className="flex items-center gap-3 z-10">
                         <Link
                             to="/auth/register"
-                            className="hidden md:inline-flex items-center justify-center rounded-full bg-[#1649FF] px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-[#0b2699] hover:shadow-[0_0_20px_rgba(22,73,255,0.4)] hover:scale-105 active:scale-95"
+                            className="hidden md:inline-flex items-center justify-center rounded-full bg-[#1649FF] px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-blue-600 hover:shadow-[0_0_20px_rgba(22,73,255,0.4)] hover:scale-105 active:scale-95"
                         >
                             Get Started
                         </Link>
 
-                        {/* Mobile Menu Button */}
+                        {/* Mobile Menu Button - Dark Theme */}
                         <button
                             onClick={() => setIsOpen(!isOpen)}
-                            className="flex md:hidden h-10 w-10 items-center justify-center rounded-full bg-white/50 border border-white/40 text-[#1F2937] backdrop-blur-md transition-colors hover:bg-white/80 active:scale-95"
+                            className="flex md:hidden h-10 w-10 items-center justify-center rounded-full bg-white/10 border border-white/10 text-white backdrop-blur-md transition-colors hover:bg-white/20 active:scale-95"
                         >
                             <motion.div animate={{ rotate: isOpen ? 45 : 0 }} className="absolute h-[2px] w-4 bg-current" style={{ y: isOpen ? 0 : -4 }} />
                             <motion.div animate={{ opacity: isOpen ? 0 : 1 }} className="absolute h-[2px] w-4 bg-current" />
@@ -96,7 +96,7 @@ const Navbar = () => {
                     </div>
                 </motion.div>
 
-                {/* Mobile Dropdown Menu */}
+                {/* Mobile Dropdown Menu - Dark Theme */}
                 <AnimatePresence>
                     {isOpen && (
                         <motion.div
@@ -104,24 +104,24 @@ const Navbar = () => {
                             animate={{ opacity: 1, y: 10, scale: 1 }}
                             exit={{ opacity: 0, y: -20, scale: 0.95 }}
                             transition={{ duration: 0.2, ease: "easeOut" }}
-                            className="w-full rounded-3xl border border-white/60 bg-white/90 p-4 shadow-2xl backdrop-blur-2xl md:hidden mt-2"
+                            className="w-full rounded-3xl border border-white/10 bg-slate-900/95 p-4 shadow-2xl backdrop-blur-2xl md:hidden mt-2"
                         >
-                            <nav className="flex flex-col gap-1 text-sm font-medium text-[#1F2937]">
+                            <nav className="flex flex-col gap-1 text-sm font-medium text-slate-300">
                                 {navLinks.map((link) => (
                                     <a
                                         key={link.id}
                                         href={link.href}
                                         onClick={() => setIsOpen(false)}
-                                        className="block rounded-xl px-4 py-3 transition-colors hover:bg-white/80 hover:text-[#1649FF]"
+                                        className="block rounded-xl px-4 py-3 transition-colors hover:bg-white/10 hover:text-white"
                                     >
                                         {link.label}
                                     </a>
                                 ))}
-                                <div className="h-px w-full bg-gray-200/50 my-2" />
+                                <div className="h-px w-full bg-slate-700/50 my-2" />
                                 <Link
                                     to="/auth/register"
                                     onClick={() => setIsOpen(false)}
-                                    className="inline-flex w-full items-center justify-center rounded-xl bg-[#1649FF] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#0b2699]"
+                                    className="inline-flex w-full items-center justify-center rounded-xl bg-[#1649FF] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-600"
                                 >
                                     Get Started
                                 </Link>
