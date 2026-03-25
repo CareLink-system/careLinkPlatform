@@ -1,11 +1,11 @@
 import React from 'react'
 import Navbar from '../../components/ui/Navbar'
 import Hero from './components/Hero'
-import SectionOne from './components/SectionOne'
 import Stats from './components/Stats'
 import DoctorFinder from './components/DoctorFinder'
 import Services from './components/Services'
 import AppDownload from './components/AppDownload'
+import Footer from '../../components/ui/Footer'
 
 export default function LandingPage() {
   return (
@@ -17,8 +17,8 @@ export default function LandingPage() {
         <DoctorFinder />
         <Services />
         <AppDownload />
-        <SectionOne />
       </main>
+      <Footer />
     </>
   )
 }
