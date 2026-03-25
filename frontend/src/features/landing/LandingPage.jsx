@@ -2,6 +2,7 @@ import React from 'react'
 import Navbar from '../../components/ui/Navbar'
 import Hero from './components/Hero'
 import SectionOne from './components/SectionOne'
+import Stats from './components/Stats'
 
 export default function LandingPage() {
   return (
@@ -9,6 +10,7 @@ export default function LandingPage() {
       <Navbar />
       <main className="min-h-screen bg-background">
         <Hero />
+        <Stats />
         <SectionOne />
       </main>
     </>
