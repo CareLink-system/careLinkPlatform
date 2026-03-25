@@ -1,61 +1,82 @@
-import React, { useRef, useEffect, useState } from 'react'
-import { useInView, useMotionValue, animate } from 'framer-motion'
+import React, { useRef, useEffect, useState } from 'react';
+import { useInView, useMotionValue, animate, motion } from 'framer-motion';
 
+// Refined stats array for smoother animations
 const stats = [
-  { label: 'Patients', end: 10000, type: 'kplus' },
-  { label: 'Doctors', end: 1500, type: 'plus' },
-  { label: 'Trust', end: 98, type: 'percent' },
-  { label: 'Partners', end: 50, type: 'plus' },
-]
+  { label: 'Patients', end: 10, suffix: 'k+' }, // Animates 0 to 10 smoothly
+  { label: 'Verified Doctors', end: 1500, suffix: '+' },
+  { label: 'Patient Trust', end: 98, suffix: '%' },
+  { label: 'Global Partners', end: 50, suffix: '+' },
+];
 
-function formatValue(type, value) {
-  if (type === 'kplus') {
-    const k = Math.floor(value / 1000)
-    return `${k}k+`
-  }
-  if (type === 'percent') return `${Math.round(value)}%`
-  if (type === 'plus') return `${Math.round(value)}+`
-  return value
-}
-
-function StatItem({ end, label, type }) {
-  const ref = useRef(null)
-  const inView = useInView(ref, { once: true, margin: '-80px' })
-  const m = useMotionValue(0)
-  const [display, setDisplay] = useState(0)
+function StatItem({ end, label, suffix, index }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: '-50px' });
+  const m = useMotionValue(0);
+  const [display, setDisplay] = useState(0);
 
   useEffect(() => {
-    const unsub = m.on('change', (v) => setDisplay(v))
-    return unsub
-  }, [m])
+    const unsub = m.on('change', (v) => setDisplay(Math.round(v)));
+    return unsub;
+  }, [m]);
 
   useEffect(() => {
     if (inView) {
-      const controls = animate(m, end, { duration: 1.6, ease: 'easeOut' })
-      return () => controls.stop()
+      const controls = animate(m, end, { 
+        duration: 2, 
+        ease: [0.16, 1, 0.3, 1] // Premium easing curve
+      });
+      return () => controls.stop();
     }
-  }, [inView, end, m])
+  }, [inView, end, m]);
 
   return (
-    <div ref={ref} className="flex flex-col items-center text-center">
-      <div aria-live="polite" className="text-3xl md:text-4xl font-extrabold text-primary">
-        {formatValue(type, display)}
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 20 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.8, delay: index * 0.1 + 0.2 }}
+      className="relative flex flex-col items-center justify-center text-center group py-4"
+    >
+      <div className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-400 drop-shadow-sm">
+        {display}{suffix}
       </div>
-      <div className="mt-1 text-sm text-primary/70">{label}</div>
-    </div>
-  )
+      <div className="mt-4 text-[10px] md:text-xs font-bold tracking-[0.2em] text-cyan-400/80 uppercase">
+        {label}
+      </div>
+      
+      {/* Subtle hover glow */}
+      <div className="absolute inset-0 -z-10 bg-cyan-400/0 transition-colors duration-500 group-hover:bg-cyan-400/5 rounded-2xl blur-xl" />
+    </motion.div>
+  );
 }
 
 export default function Stats() {
   return (
-    <section className="py-12">
-      <div className="mx-auto max-w-6xl px-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {stats.map((s) => (
-            <StatItem key={s.label} end={s.end} label={s.label} type={s.type} />
-          ))}
+    <section className="relative z-20 pb-24 bg-[#050711]">
+      <div className="mx-auto max-w-7xl px-6">
+        
+        {/* Premium Glassmorphic Container */}
+        <div className="relative rounded-[2rem] border border-white/5 bg-white/[0.02] px-8 py-10 shadow-[0_0_80px_rgba(0,0,0,0.4)] backdrop-blur-3xl overflow-hidden">
+          
+          {/* Subtle inner glare */}
+          <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
+
+          {/* Desktop Dividers applied via Tailwind's divide utilities */}
+          <div className="grid grid-cols-2 gap-y-12 md:grid-cols-4 md:gap-y-0 divide-x-0 md:divide-x divide-white/10 relative z-10">
+            {stats.map((s, i) => (
+              <StatItem 
+                key={s.label} 
+                end={s.end} 
+                label={s.label} 
+                suffix={s.suffix} 
+                index={i} 
+              />
+            ))}
+          </div>
         </div>
+
       </div>
     </section>
-  )
+  );
 }
