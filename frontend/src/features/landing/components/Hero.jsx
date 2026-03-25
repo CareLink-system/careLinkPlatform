@@ -2,8 +2,9 @@ import React, { useRef } from 'react';
 import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion';
 
 // Asset Imports
-import heroImage from '../../../assets/hero.webp';
+// hero image removed — using Grainient as the hero background
 import dashboardImg from '../../../assets/hero-dashboard.svg';
+import Grainient from '../../../components/ui/Grainient';
 
 const headline = 'Next-Gen Telemedicine, Powered by AI';
 
@@ -61,12 +62,35 @@ export default function Hero() {
       className="relative overflow-hidden px-6 pt-32 pb-24 min-h-screen flex flex-col items-center justify-start perspective-[2000px]"
     >
       {/* Background Image with Parallax Scale */}
-      <motion.div
-        style={{ scale: scaleBg }}
-        className="absolute inset-0 -z-30 bg-cover bg-center bg-no-repeat"
-      >
-        <div className="absolute inset-0 w-full h-full" style={{ backgroundImage: `url(${heroImage})` }} />
-      </motion.div>
+      <div className="absolute inset-0 -z-30">
+        <div style={{ width: '100%', height: '600px', position: 'relative' }}>
+          <Grainient
+            color1="#51e0f0"
+            color2="#2d4bf0"
+            color3="#e6f5ff"
+            timeSpeed={0.25}
+            colorBalance={0}
+            warpStrength={1}
+            warpFrequency={5}
+            warpSpeed={2}
+            warpAmplitude={70}
+            blendAngle={0}
+            blendSoftness={0.19}
+            rotationAmount={500}
+            noiseScale={2}
+            grainAmount={0.1}
+            grainScale={2}
+            grainAnimated={false}
+            contrast={1.1}
+            gamma={1}
+            saturation={1}
+            centerX={0}
+            centerY={0}
+            zoom={1.2}
+          />
+        </div>
+      </div>
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-white/20 via-white/12 to-white/20" />
 
       {/* Advanced Glassmorphic & Gradient Overlays */}
       <div className="absolute inset-0 -z-20 bg-white/40 backdrop-blur-[2px]" />
