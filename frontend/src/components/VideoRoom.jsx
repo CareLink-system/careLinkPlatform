@@ -16,6 +16,35 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
   const localTracksRef = useRef({ audioTrack: null, videoTrack: null });
   const localVideoRef = useRef(null);
   const remoteContainerRef = useRef(null);
+  const remoteObserverRef = useRef(null);
+  const [remoteHasChild, setRemoteHasChild] = useState(false);
+
+  const attachRemoteContainer = (node) => {
+    if (remoteObserverRef.current) {
+      remoteObserverRef.current.disconnect();
+      remoteObserverRef.current = null;
+    }
+
+    remoteContainerRef.current = node;
+
+    if (!node) {
+      setRemoteHasChild(false);
+      return;
+    }
+
+    const update = () => setRemoteHasChild(node.hasChildNodes());
+    const observer = new MutationObserver(update);
+    observer.observe(node, { childList: true });
+    remoteObserverRef.current = observer;
+    update();
+  };
+
+  useEffect(() => () => {
+    if (remoteObserverRef.current) {
+      remoteObserverRef.current.disconnect();
+      remoteObserverRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     if (!appointmentId || !appId) return;
@@ -107,8 +136,8 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
       <div className="flex-1 bg-slate-900 rounded-2xl border border-slate-800 shadow-lg relative flex flex-col overflow-hidden min-h-[500px] lg:min-h-[65vh]">
         {status && !joined && <div className="absolute inset-0 flex items-center justify-center text-slate-300 animate-pulse">{status}</div>}
 
-        <div ref={remoteContainerRef} className="w-full h-full flex items-center justify-center">
-          {!remoteContainerRef.current?.hasChildNodes() && joined && <span className="text-slate-500">Waiting for patient...</span>}
+        <div ref={attachRemoteContainer} className="w-full h-full flex items-center justify-center">
+          {!remoteHasChild && joined && <span className="text-slate-500">Waiting for patient...</span>}
         </div>
 
         {/* Local Video Overlay - improved aspect ratio and positioning */}
