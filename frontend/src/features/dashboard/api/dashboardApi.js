@@ -1,0 +1,79 @@
+import { getStoredAuth } from '../../auth/api/authApi'
+
+const AUTH_BASE_URL = import.meta.env.VITE_AUTH_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+const DOCTOR_BASE_URL = import.meta.env.VITE_DOCTOR_API_BASE_URL || 'http://localhost:5003'
+const APPOINTMENT_BASE_URL = import.meta.env.VITE_APPOINTMENT_API_BASE_URL || 'http://localhost:5004'
+
+function getToken() {
+  return getStoredAuth()?.token || null
+}
+
+function buildHeaders() {
+  const token = getToken()
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+}
+
+async function parseJson(response) {
+  try {
+    return await response.json()
+  } catch {
+    return null
+  }
+}
+
+async function safeGet(url, fallbackMessage) {
+  try {
+    const response = await fetch(url, { method: 'GET', headers: buildHeaders() })
+    const payload = await parseJson(response)
+
+    if (!response.ok) {
+      const message = payload?.message || fallbackMessage
+      return { data: [], error: message }
+    }
+
+    if (payload?.success === false) {
+      return { data: [], error: payload?.message || fallbackMessage }
+    }
+
+    return { data: payload?.data ?? payload ?? [], error: null }
+  } catch {
+    return { data: [], error: fallbackMessage }
+  }
+}
+
+export async function fetchCurrentUser() {
+  const result = await safeGet(
+    `${AUTH_BASE_URL}/api/v1/Auth/me`,
+    'Unable to load your profile right now.'
+  )
+
+  // Auth/me returns a single object, not list
+  return {
+    data: result.data && !Array.isArray(result.data) ? result.data : null,
+    error: result.error,
+  }
+}
+
+export async function fetchUpcomingAppointments() {
+  return safeGet(
+    `${APPOINTMENT_BASE_URL}/api/v1/appointments/upcoming`,
+    'Appointments service is unavailable. You are all caught up for now.'
+  )
+}
+
+export async function fetchNearbyDoctors() {
+  return safeGet(
+    `${DOCTOR_BASE_URL}/api/v1/doctors/nearby`,
+    'Doctor service is unavailable. No nearby doctors to show right now.'
+  )
+}
+
+export async function fetchRecommendedDoctors() {
+  return safeGet(
+    `${DOCTOR_BASE_URL}/api/v1/doctors/recommended`,
+    'Recommendations are unavailable at the moment. Please check again soon.'
+  )
+}

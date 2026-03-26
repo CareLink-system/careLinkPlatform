@@ -1,17 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import ContentArea from './ContentArea';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function DashboardShell() {
   const [open, setOpen] = useState(false);
-  const location = useLocation();
-
-  // Close mobile drawer when route changes
-  useEffect(() => {
-    setOpen(false);
-  }, [location.pathname]);
 
   return (
     <div className="flex h-screen w-full bg-[#F4F7F9] font-sans text-slate-900 overflow-hidden">

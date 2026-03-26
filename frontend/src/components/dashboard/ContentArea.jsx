@@ -1,68 +1,143 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import DoctorsImg from '../../assets/dashboard/doctors.svg';
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+// eslint-disable-next-line no-unused-vars
+import { motion, AnimatePresence } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
+import { useAuth } from '../../features/auth/context/AuthContext'
+import DoctorsImg from '../../assets/dashboard/doctors.svg'
+import {
+  fetchCurrentUser,
+  fetchNearbyDoctors,
+  fetchRecommendedDoctors,
+  fetchUpcomingAppointments,
+} from '../../features/dashboard/api/dashboardApi'
 
 const containerVariants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.08 } },
-};
+}
 
 const itemVariants = {
   hidden: { opacity: 0, y: 15 },
   show: { opacity: 1, y: 0, transition: { type: 'spring', damping: 20 } },
-};
+}
+
+function EmptyCard({ title, message }) {
+  return (
+    <div className="col-span-full bg-white rounded-[1.5rem] p-8 border border-slate-100 text-center shadow-sm">
+      <h4 className="text-sm font-bold text-slate-700">{title}</h4>
+      <p className="text-xs text-slate-500 mt-1">{message}</p>
+    </div>
+  )
+}
 
 export default function ContentArea() {
-  // State for Real Data
-  const [user, setUser] = useState({ firstName: 'Guest' });
-  const [appointments, setAppointments] = useState([]);
-  const [nearbyDoctors, setNearbyDoctors] = useState([]);
-  const [recommendedDoctors, setRecommendedDoctors] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate()
+  const { logout } = useAuth()
+  const initRef = useRef(false)
 
-  // FETCH REAL DATA
+  const [user, setUser] = useState({ firstName: 'There', email: '' })
+  const [appointments, setAppointments] = useState([])
+  const [nearbyDoctors, setNearbyDoctors] = useState([])
+  const [recommendedDoctors, setRecommendedDoctors] = useState([])
+  const [errors, setErrors] = useState({ appointments: '', nearby: '', recommended: '', user: '' })
+
+  const [isLoading, setIsLoading] = useState(true)
+  const [searchInput, setSearchInput] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
+
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const token = localStorage.getItem('carelink.auth');
-        const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
-        
-        const [userRes, aptRes, nearRes, recRes] = await Promise.allSettled([
-          fetch('http://localhost:5000/api/v1/users/me', { headers }),
-          fetch('http://localhost:5000/api/v1/appointments/upcoming', { headers }),
-          fetch('http://localhost:5000/api/v1/doctors/nearby', { headers }),
-          fetch('http://localhost:5000/api/v1/doctors/recommended', { headers })
-        ]);
+    if (initRef.current) return
+    initRef.current = true
 
-        if (userRes.status === 'fulfilled' && userRes.value.ok) {
-          const userData = await userRes.value.json();
-          setUser(userData.data || { firstName: 'Amelia' }); 
-        }
+    const load = async () => {
+      setIsLoading(true)
 
-        if (aptRes.status === 'fulfilled' && aptRes.value.ok) {
-          const aptData = await aptRes.value.json();
-          setAppointments(aptData.data || []);
-        } else { setAppointments([]); } 
+      const [userRes, aptRes, nearbyRes, recRes] = await Promise.all([
+        fetchCurrentUser(),
+        fetchUpcomingAppointments(),
+        fetchNearbyDoctors(),
+        fetchRecommendedDoctors(),
+      ])
 
-        if (nearRes.status === 'fulfilled' && nearRes.value.ok) {
-          const nearData = await nearRes.value.json();
-          setNearbyDoctors(nearData.data || []);
-        } else { setNearbyDoctors([]); }
-
-        if (recRes.status === 'fulfilled' && recRes.value.ok) {
-          const recData = await recRes.value.json();
-          setRecommendedDoctors(recData.data || []);
-        } else { setRecommendedDoctors([]); }
-
-      } catch (error) {
-        console.error("Failed to fetch dashboard data:", error);
-      } finally {
-        setIsLoading(false);
+      if (userRes.data) {
+        setUser(userRes.data)
       }
-    };
 
-    fetchDashboardData();
-  }, []);
+      setAppointments(Array.isArray(aptRes.data) ? aptRes.data : [])
+      setNearbyDoctors(Array.isArray(nearbyRes.data) ? nearbyRes.data : [])
+      setRecommendedDoctors(Array.isArray(recRes.data) ? recRes.data : [])
+
+      setErrors({
+        user: userRes.error || '',
+        appointments: aptRes.error || '',
+        nearby: nearbyRes.error || '',
+        recommended: recRes.error || '',
+      })
+
+      setIsLoading(false)
+    }
+
+    load()
+  }, [])
+
+  const filteredNearby = useMemo(() => {
+    if (!searchQuery.trim()) return nearbyDoctors
+    const q = searchQuery.toLowerCase()
+    return nearbyDoctors.filter((d) => `${d.name || ''} ${d.specialty || ''}`.toLowerCase().includes(q))
+  }, [nearbyDoctors, searchQuery])
+
+  const filteredRecommended = useMemo(() => {
+    if (!searchQuery.trim()) return recommendedDoctors
+    const q = searchQuery.toLowerCase()
+    return recommendedDoctors.filter((d) => `${d.name || ''} ${d.specialty || ''}`.toLowerCase().includes(q))
+  }, [recommendedDoctors, searchQuery])
+
+  const notifications = useMemo(() => {
+    const list = []
+    if (appointments.length > 0) {
+      list.push({ id: 'apt', title: 'Upcoming appointment', description: `You have ${appointments.length} upcoming appointment${appointments.length > 1 ? 's' : ''}.` })
+    }
+    if (errors.appointments) {
+      list.push({ id: 'apt-err', title: 'Appointments update delayed', description: errors.appointments })
+    }
+    if (errors.nearby || errors.recommended) {
+      list.push({ id: 'doc-err', title: 'Doctor feed unavailable', description: errors.nearby || errors.recommended })
+    }
+    if (list.length === 0) {
+      list.push({ id: 'ok', title: 'All caught up', description: 'No new notifications right now.' })
+    }
+    return list
+  }, [appointments.length, errors])
+
+  const handleSearch = () => {
+    setSearchQuery(searchInput)
+    if (searchInput.trim()) {
+      toast.success('Search updated', { description: `Showing results for "${searchInput}".` })
+    }
+  }
+
+  const handleProfileAction = (action) => {
+    setIsProfileMenuOpen(false)
+    if (action === 'profile') {
+      navigate('/profile')
+      return
+    }
+    if (action === 'settings') {
+      toast.info('User management', { description: 'Account management panel is coming soon.' })
+      return
+    }
+    if (action === 'password') {
+      navigate('/auth/change-password')
+      return
+    }
+    if (action === 'logout') {
+      logout()
+      navigate('/auth/login')
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6 md:gap-8 w-full max-w-[100vw] overflow-x-hidden">
@@ -82,11 +157,13 @@ export default function ContentArea() {
           
           {/* Mobile Bell & Profile (Hidden on Desktop) */}
           <div className="flex md:hidden items-center gap-2">
-            <button className="relative p-2 text-slate-400 hover:text-slate-800 transition-colors bg-white rounded-full border border-slate-100 shadow-sm">
+            <button onClick={() => setIsNotificationsOpen((v) => !v)} className="relative p-2 text-slate-400 hover:text-slate-800 transition-colors bg-white rounded-full border border-slate-100 shadow-sm">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
               <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
             </button>
-            <img src="https://i.pravatar.cc/100?u=user" alt="User" className="w-9 h-9 rounded-full object-cover border border-slate-200 shadow-sm" />
+            <button onClick={() => setIsProfileMenuOpen((v) => !v)} className="rounded-full">
+              <img src="https://i.pravatar.cc/100?u=user" alt="User" className="w-9 h-9 rounded-full object-cover border border-slate-200 shadow-sm" />
+            </button>
           </div>
         </div>
 
@@ -95,11 +172,14 @@ export default function ContentArea() {
             <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             <input 
               type="text" 
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               placeholder="Find doctors" 
               className="w-full sm:w-64 pl-11 pr-4 py-2.5 rounded-full bg-white border border-slate-200/80 shadow-[0_2px_8px_rgb(0,0,0,0.02)] text-sm focus:outline-none focus:ring-2 focus:ring-[#4B9AA8]/20 focus:border-[#4B9AA8] transition-all"
             />
           </div>
-          <button className="hidden sm:block bg-[#4B9AA8] text-white px-7 py-2.5 rounded-full text-sm font-bold shadow-md shadow-[#4B9AA8]/20 hover:bg-[#3c828e] transition-colors active:scale-95">
+          <button onClick={handleSearch} className="hidden sm:block bg-[#4B9AA8] text-white px-7 py-2.5 rounded-full text-sm font-bold shadow-md shadow-[#4B9AA8]/20 hover:bg-[#3c828e] transition-colors active:scale-95">
             Search
           </button>
           
@@ -107,17 +187,47 @@ export default function ContentArea() {
           
           {/* Desktop Bell & Profile */}
           <div className="hidden md:flex items-center gap-3">
-            <button className="relative p-2 text-slate-400 hover:text-slate-800 transition-colors bg-white rounded-full border border-slate-100 shadow-sm">
+            <button onClick={() => setIsNotificationsOpen((v) => !v)} className="relative p-2 text-slate-400 hover:text-slate-800 transition-colors bg-white rounded-full border border-slate-100 shadow-sm">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
             </button>
-            <div className="flex items-center gap-2 bg-white py-1.5 pl-1.5 pr-4 rounded-full border border-slate-100 shadow-sm">
+            <button onClick={() => setIsProfileMenuOpen((v) => !v)} className="flex items-center gap-2 bg-white py-1.5 pl-1.5 pr-4 rounded-full border border-slate-100 shadow-sm">
               <img src="https://i.pravatar.cc/100?u=user" alt="User" className="w-8 h-8 rounded-full object-cover" />
               <span className="text-sm font-bold text-slate-700">{user.firstName || 'User'}</span>
-            </div>
+            </button>
           </div>
+
+          <AnimatePresence>
+            {isNotificationsOpen && (
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="absolute right-0 top-[58px] z-40 w-full sm:w-[360px] bg-white border border-slate-200 rounded-2xl shadow-xl p-4">
+                <h4 className="text-sm font-bold text-slate-900 mb-3">Notifications</h4>
+                <div className="space-y-2">
+                  {notifications.map((n) => (
+                    <div key={n.id} className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                      <p className="text-sm font-semibold text-slate-800">{n.title}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{n.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {isProfileMenuOpen && (
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="absolute right-0 top-[58px] z-40 w-full sm:w-[240px] bg-white border border-slate-200 rounded-2xl shadow-xl p-2">
+                <button onClick={() => handleProfileAction('profile')} className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-sm">My Profile</button>
+                <button onClick={() => handleProfileAction('settings')} className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-sm">User Management</button>
+                <button onClick={() => handleProfileAction('password')} className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-sm">Change Password</button>
+                <div className="h-px bg-slate-100 my-1" />
+                <button onClick={() => handleProfileAction('logout')} className="w-full text-left px-3 py-2 rounded-lg hover:bg-red-50 text-red-600 text-sm">Logout</button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </motion.div>
+
+      {errors.user ? <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">{errors.user}</div> : null}
 
       {/* Main Grid */}
       {isLoading ? (
@@ -158,16 +268,10 @@ export default function ContentArea() {
               </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {nearbyDoctors.length === 0 ? (
-                  <div className="col-span-full bg-white rounded-[1.5rem] p-8 border border-slate-100 flex flex-col items-center justify-center text-center shadow-sm">
-                    <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3">
-                      <svg className="w-6 h-6 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                    </div>
-                    <h4 className="text-sm font-bold text-slate-700">No doctors nearby</h4>
-                    <p className="text-xs text-slate-500 mt-1 max-w-[250px]">We couldn't find any specialists in your immediate area.</p>
-                  </div>
+                {filteredNearby.length === 0 ? (
+                  <EmptyCard title="No nearby doctors" message={errors.nearby || (searchQuery ? 'No doctors matched your search.' : 'Looks like there are no nearby doctors at the moment.')} />
                 ) : (
-                  nearbyDoctors.map((doc, i) => (
+                  filteredNearby.map((doc, i) => (
                     <div key={i} className="bg-white rounded-[1.2rem] md:rounded-[1.5rem] p-4 md:p-5 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all cursor-pointer">
                       <div className="flex items-center gap-3 mb-4">
                         <img src={doc.image || `https://i.pravatar.cc/100?img=${i+10}`} className="w-10 h-10 md:w-12 md:h-12 rounded-[0.8rem] object-cover bg-slate-50" alt="Doctor" />
@@ -194,16 +298,10 @@ export default function ContentArea() {
               </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {recommendedDoctors.length === 0 ? (
-                  <div className="col-span-full bg-white rounded-[1.5rem] p-8 border border-slate-100 flex flex-col items-center justify-center text-center shadow-sm">
-                    <div className="w-12 h-12 bg-cyan-50 rounded-full flex items-center justify-center mb-3">
-                      <svg className="w-6 h-6 text-cyan-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
-                    </div>
-                    <h4 className="text-sm font-bold text-slate-700">No recommendations yet</h4>
-                    <p className="text-xs text-slate-500 mt-1 max-w-[250px]">Try filling out the AI Symptom Checker to get personalized recommendations.</p>
-                  </div>
+                {filteredRecommended.length === 0 ? (
+                  <EmptyCard title="No recommendations yet" message={errors.recommended || (searchQuery ? 'No recommendations matched your search.' : 'Looks like we do not have recommendations for you yet.')} />
                 ) : (
-                  recommendedDoctors.map((doc, i) => (
+                  filteredRecommended.map((doc, i) => (
                     <div key={i} className="bg-white rounded-[1.5rem] p-5 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col hover:border-cyan-100 transition-colors">
                       <div className="flex items-center gap-4 mb-5">
                         <img src={doc.image || `https://i.pravatar.cc/100?img=${i+20}`} className="w-12 h-12 rounded-full object-cover bg-slate-50 border border-slate-100" alt="Doctor" />
@@ -258,13 +356,7 @@ export default function ContentArea() {
               {/* List */}
               <div className="flex flex-col gap-3">
                 {appointments.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-10 text-center">
-                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                      <svg className="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                    </div>
-                    <h4 className="text-sm font-bold text-slate-800">No appointments scheduled</h4>
-                    <p className="text-xs text-slate-500 mt-1 mb-6 max-w-[200px]">You don't have any upcoming telemedicine or in-person visits.</p>
-                  </div>
+                  <EmptyCard title="No appointments scheduled" message={errors.appointments || 'Looks like you do not have any upcoming appointments.'} />
                 ) : (
                   appointments.map((apt, i) => {
                     const isActive = i === 0; 
@@ -296,5 +388,5 @@ export default function ContentArea() {
         </motion.div>
       )}
     </div>
-  );
+  )
 }
