@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion as Motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
+import { useAuth } from '../../features/auth/context/AuthContext';
 
 const navLinks = [
     { id: 'home', label: 'Home', href: '#home' },
@@ -12,6 +13,7 @@ const Navbar = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
     const [hoveredTab, setHoveredTab] = useState(null);
+    const { isAuthenticated, user } = useAuth();
     const { scrollY } = useScroll();
 
     // Dynamically change navbar styling based on scroll position
@@ -21,24 +23,31 @@ const Navbar = () => {
 
     return (
         <Motion.header
-            initial={{ y: -100 }}
-            animate={{ y: 0 }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
             className="fixed top-0 left-0 z-50 w-full flex justify-center pt-4 px-4 pointer-events-none"
         >
             <div className="w-full max-w-6xl pointer-events-auto flex flex-col items-center">
                 {/* Main Navbar Container */}
                 <Motion.div
+                    initial={{
+                        width: '100%',
+                        maxWidth: '1152px',
+                        backgroundColor: 'rgba(15, 23, 42, 0)',
+                        boxShadow: '0 0px 0px 0px rgba(0,0,0,0)',
+                        borderColor: 'rgba(255, 255, 255, 0)',
+                    }}
                     animate={{
                         width: "100%",
                         maxWidth: isScrolled ? "800px" : "1152px",
                         backgroundColor: isScrolled ? "rgba(15, 23, 42, 0.75)" : "rgba(15, 23, 42, 0)", // Transparent to Slate-900
-                        boxShadow: isScrolled 
-                            ? "0 20px 40px -15px rgba(0,0,0,0.5)" 
+                        boxShadow: isScrolled
+                            ? "0 20px 40px -15px rgba(0,0,0,0.5)"
                             : "0 0px 0px 0px rgba(0,0,0,0)",
                         borderColor: isScrolled ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0)"
                     }}
-                    transition={{ duration: 0.4, ease: "easeInOut" }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 28 }}
                     className="flex items-center justify-between rounded-full border px-4 py-2.5 backdrop-blur-xl transition-all"
                 >
                     {/* Logo */}
@@ -77,12 +86,38 @@ const Navbar = () => {
 
                     {/* CTA & Mobile Toggle */}
                     <div className="flex items-center gap-3 z-10">
-                        <Link
-                            to="/auth/register"
-                            className="hidden md:inline-flex items-center justify-center rounded-full bg-[#1649FF] px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-blue-600 hover:shadow-[0_0_20px_rgba(22,73,255,0.4)] hover:scale-105 active:scale-95"
-                        >
-                            Get Started
-                        </Link>
+                        {isAuthenticated ? (
+                            <>
+                                <Link
+                                    to="/"
+                                    className="hidden md:inline-flex items-center justify-center rounded-full bg-transparent border border-white/10 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/5"
+                                >
+                                    Dashboard
+                                </Link>
+                                <Link
+                                    to="/"
+                                    className="hidden md:inline-flex items-center justify-center rounded-full bg-[#1649FF] px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-blue-600 hover:shadow-[0_0_20px_rgba(22,73,255,0.4)] hover:scale-105 active:scale-95"
+                                >
+                                    {user?.firstName ? `${user.firstName} Profile` : 'Profile'}
+                                </Link>
+                            </>
+                        ) : (
+                            <>
+                                <Link
+                                    to="/auth/login"
+                                    className="hidden md:inline-flex items-center justify-center rounded-full bg-transparent border border-white/10 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/5"
+                                >
+                                    Log in
+                                </Link>
+
+                                <Link
+                                    to="/auth/register"
+                                    className="hidden md:inline-flex items-center justify-center rounded-full bg-[#1649FF] px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-blue-600 hover:shadow-[0_0_20px_rgba(22,73,255,0.4)] hover:scale-105 active:scale-95"
+                                >
+                                    Get Started
+                                </Link>
+                            </>
+                        )}
 
                         {/* Mobile Menu Button - Dark Theme */}
                         <button
@@ -118,13 +153,42 @@ const Navbar = () => {
                                     </a>
                                 ))}
                                 <div className="h-px w-full bg-slate-700/50 my-2" />
-                                <Link
-                                    to="/auth/register"
-                                    onClick={() => setIsOpen(false)}
-                                    className="inline-flex w-full items-center justify-center rounded-xl bg-[#1649FF] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-600"
-                                >
-                                    Get Started
-                                </Link>
+                                {isAuthenticated ? (
+                                    <>
+                                        <Link
+                                            to="/"
+                                            onClick={() => setIsOpen(false)}
+                                            className="block w-full rounded-xl px-4 py-3 text-sm font-medium text-slate-200 transition-colors hover:bg-white/10"
+                                        >
+                                            Dashboard
+                                        </Link>
+                                        <Link
+                                            to="/"
+                                            onClick={() => setIsOpen(false)}
+                                            className="inline-flex w-full items-center justify-center rounded-xl bg-[#1649FF] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-600"
+                                        >
+                                            {user?.firstName ? `${user.firstName} Profile` : 'Profile'}
+                                        </Link>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Link
+                                            to="/auth/login"
+                                            onClick={() => setIsOpen(false)}
+                                            className="block w-full rounded-xl px-4 py-3 text-sm font-medium text-slate-200 transition-colors hover:bg-white/10"
+                                        >
+                                            Log in
+                                        </Link>
+
+                                        <Link
+                                            to="/auth/register"
+                                            onClick={() => setIsOpen(false)}
+                                            className="inline-flex w-full items-center justify-center rounded-xl bg-[#1649FF] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-600"
+                                        >
+                                            Get Started
+                                        </Link>
+                                    </>
+                                )}
                             </nav>
                         </Motion.div>
                     )}
