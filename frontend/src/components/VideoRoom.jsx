@@ -9,7 +9,6 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
   const [mutedAudio, setMutedAudio] = useState(false);
   const [mutedVideo, setMutedVideo] = useState(false);
   
-  // Chat state
   const [chatMessage, setChatMessage] = useState('');
   const [messages, setMessages] = useState([{ sender: 'System', text: 'Chat started.', time: new Date().toLocaleTimeString() }]);
 
@@ -36,7 +35,7 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
             if (remoteContainerRef.current) remoteContainerRef.current.innerHTML = '';
             const player = document.createElement('div');
             player.id = `remote-${user.uid}`;
-            player.className = 'w-full h-full object-cover rounded-xl';
+            player.className = 'w-full h-full object-cover';
             remoteContainerRef.current?.appendChild(player);
             user.videoTrack?.play(player);
           }
@@ -51,7 +50,7 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
         if (localVideoRef.current) {
           localVideoRef.current.innerHTML = '';
           const localDiv = document.createElement('div');
-          localDiv.className = 'w-full h-full object-cover rounded-xl';
+          localDiv.className = 'w-full h-full object-cover';
           localVideoRef.current.appendChild(localDiv);
           cam.play(localDiv);
         }
@@ -100,60 +99,68 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-full gap-4 relative">
+    // Changed: Height to 100% to fill parent, removed rigid fixed heights
+    <div className="flex flex-col lg:flex-row h-full w-full gap-5">
       
-      {/* VIDEO AREA (Left) */}
-      <div className="flex-1 bg-slate-100 rounded-2xl border border-slate-200 shadow-inner relative flex flex-col overflow-hidden h-[600px] lg:h-auto">
-        {status && !joined && <div className="absolute inset-0 flex items-center justify-center text-slate-500">{status}</div>}
+      {/* VIDEO AREA */}
+      {/* Changed: Dark background, flex-grow, min-height for better aspect ratio */}
+      <div className="flex-1 bg-slate-900 rounded-2xl border border-slate-800 shadow-lg relative flex flex-col overflow-hidden min-h-[500px] lg:min-h-[65vh]">
+        {status && !joined && <div className="absolute inset-0 flex items-center justify-center text-slate-300 animate-pulse">{status}</div>}
 
-        {/* Remote Video Container */}
         <div ref={remoteContainerRef} className="w-full h-full flex items-center justify-center">
-          {!remoteContainerRef.current?.hasChildNodes() && joined && <span className="text-slate-400">Waiting for patient...</span>}
+          {!remoteContainerRef.current?.hasChildNodes() && joined && <span className="text-slate-500">Waiting for patient...</span>}
         </div>
 
-        {/* Local Video Overlay */}
-        <div ref={localVideoRef} className="absolute top-4 right-4 w-32 md:w-48 aspect-video bg-white rounded-xl shadow-lg border-2 border-white overflow-hidden z-10" style={{ opacity: joined ? 1 : 0 }} />
+        {/* Local Video Overlay - improved aspect ratio and positioning */}
+        <div ref={localVideoRef} className="absolute top-5 right-5 w-36 md:w-48 aspect-[4/3] bg-slate-800 rounded-xl shadow-2xl border-2 border-slate-600 overflow-hidden z-10 transition-opacity duration-300" style={{ opacity: joined ? 1 : 0 }} />
 
         {/* Controls */}
         {joined && (
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white/90 backdrop-blur-sm px-6 py-3 rounded-full shadow-lg border border-slate-200 z-10">
-            <button onClick={toggleAudio} className={`p-3 rounded-full ${mutedAudio ? 'bg-red-100 text-red-500' : 'bg-[#4B9AA8]/10 text-[#4B9AA8] hover:bg-[#4B9AA8]/20'}`}>
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white/90 backdrop-blur-md px-6 py-3 rounded-full shadow-2xl border border-slate-200 z-10">
+            <button onClick={toggleAudio} className={`p-3 rounded-full transition-colors ${mutedAudio ? 'bg-red-100 text-red-500' : 'bg-[#4B9AA8]/10 text-[#4B9AA8] hover:bg-[#4B9AA8]/20'}`}>
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
             </button>
-            <button onClick={toggleVideo} className={`p-3 rounded-full ${mutedVideo ? 'bg-red-100 text-red-500' : 'bg-[#4B9AA8]/10 text-[#4B9AA8] hover:bg-[#4B9AA8]/20'}`}>
+            <button onClick={toggleVideo} className={`p-3 rounded-full transition-colors ${mutedVideo ? 'bg-red-100 text-red-500' : 'bg-[#4B9AA8]/10 text-[#4B9AA8] hover:bg-[#4B9AA8]/20'}`}>
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
             </button>
-            <button onClick={leaveCall} className="px-6 py-2 bg-red-500 text-white font-medium rounded-full hover:bg-red-600 shadow-md">
+            <button onClick={leaveCall} className="px-6 py-2 bg-red-500 text-white font-semibold rounded-full hover:bg-red-600 transition-colors shadow-md">
               End Call
             </button>
           </div>
         )}
       </div>
 
-      {/* CHAT AREA (Right) */}
-      <div className="w-full lg:w-80 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col h-[600px] lg:h-auto">
-        <div className="p-4 border-b border-slate-100 font-semibold text-slate-700">Chat</div>
+      {/* CHAT AREA */}
+      {/* Changed: Set to match height of video area perfectly */}
+      <div className="w-full lg:w-[320px] bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col min-h-[500px] lg:min-h-[65vh]">
+        <div className="p-4 border-b border-slate-100 font-semibold text-slate-800 flex items-center justify-between">
+          <span>Chat</span>
+          <span className="flex h-2 w-2 relative">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+          </span>
+        </div>
         
-        <div className="flex-1 p-4 overflow-y-auto space-y-3">
+        <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-slate-50/50">
           {messages.map((msg, i) => (
             <div key={i} className={`flex flex-col ${msg.sender === 'You' ? 'items-end' : 'items-start'}`}>
-              <span className="text-[10px] text-slate-400 mb-1">{msg.sender} • {msg.time}</span>
-              <div className={`px-3 py-2 rounded-xl text-sm ${msg.sender === 'You' ? 'bg-[#4B9AA8] text-white rounded-br-none' : 'bg-slate-100 text-slate-700 rounded-bl-none'}`}>
+              <span className="text-[10px] text-slate-400 mb-1 font-medium">{msg.sender} • {msg.time}</span>
+              <div className={`px-4 py-2 rounded-2xl text-sm shadow-sm ${msg.sender === 'You' ? 'bg-[#4B9AA8] text-white rounded-br-none' : 'bg-white border border-slate-100 text-slate-700 rounded-bl-none'}`}>
                 {msg.text}
               </div>
             </div>
           ))}
         </div>
 
-        <form onSubmit={sendChat} className="p-3 border-t border-slate-100 flex gap-2">
+        <form onSubmit={sendChat} className="p-3 border-t border-slate-100 flex gap-2 bg-white rounded-b-2xl">
           <input 
             type="text" 
             value={chatMessage} 
             onChange={(e) => setChatMessage(e.target.value)} 
             placeholder="Type a message..." 
-            className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#4B9AA8]"
+            className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4B9AA8]/30 transition-all"
           />
-          <button type="submit" className="bg-[#4B9AA8] text-white p-2 rounded-lg hover:bg-[#3d7f8b]">
+          <button type="submit" className="bg-[#4B9AA8] text-white p-2.5 rounded-xl hover:bg-[#3d7f8b] transition-colors shadow-sm">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
           </button>
         </form>
