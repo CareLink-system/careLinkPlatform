@@ -164,7 +164,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={form.formState.isSubmitting}
-                className="mt-2 h-11 w-full rounded-md bg-[#3d9db8] text-sm font-semibold text-white transition hover:bg-[#2f88a1] disabled:opacity-60 disabled:cursor-not-allowed"
+                className="mt-2 h-11 w-full rounded-md bg-[#06b6d4] text-sm font-semibold text-white transition hover:bg-[#1649FF] disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {form.formState.isSubmitting ? 'Logging in...' : 'Log in'}
               </button>

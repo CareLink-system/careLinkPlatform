@@ -23,24 +23,25 @@ const Navbar = () => {
 
     return (
         <Motion.header
-            initial={{ y: -100 }}
+            initial={false}
             animate={{ y: 0 }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
             className="fixed top-0 left-0 z-50 w-full flex justify-center pt-4 px-4 pointer-events-none"
         >
             <div className="w-full max-w-6xl pointer-events-auto flex flex-col items-center">
                 {/* Main Navbar Container */}
                 <Motion.div
+                    layout
                     animate={{
                         width: "100%",
                         maxWidth: isScrolled ? "800px" : "1152px",
                         backgroundColor: isScrolled ? "rgba(15, 23, 42, 0.75)" : "rgba(15, 23, 42, 0)", // Transparent to Slate-900
-                        boxShadow: isScrolled 
-                            ? "0 20px 40px -15px rgba(0,0,0,0.5)" 
+                        boxShadow: isScrolled
+                            ? "0 20px 40px -15px rgba(0,0,0,0.5)"
                             : "0 0px 0px 0px rgba(0,0,0,0)",
                         borderColor: isScrolled ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0)"
                     }}
-                    transition={{ duration: 0.4, ease: "easeInOut" }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 28 }}
                     className="flex items-center justify-between rounded-full border px-4 py-2.5 backdrop-blur-xl transition-all"
                 >
                     {/* Logo */}
