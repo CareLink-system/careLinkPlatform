@@ -1,6 +1,5 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-// import { useAuth } from '../../features/auth/context/AuthContext'
 import DoctorLady from '../../assets/dashboard/doctor-lady.svg';
 
 const NavItem = ({ to, icon, children }) => (
@@ -20,11 +19,9 @@ const NavItem = ({ to, icon, children }) => (
 );
 
 export default function Sidebar({ close }) {
-  // const { logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    // logout();
     localStorage.removeItem('carelink.auth');
     navigate('/auth/login');
     if (close) close();
@@ -79,7 +76,6 @@ export default function Sidebar({ close }) {
         
         {/* Go Pro Card */}
         <div className="relative mt-12 rounded-[1.5rem] bg-[#2C2C2C] p-5 text-center text-white shadow-xl overflow-visible">
-          {/* Overlapping Doctor Image */}
           <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 w-[110px] pointer-events-none">
             <img src={DoctorLady} alt="Upgrade to Pro" className="w-full h-auto drop-shadow-2xl" />
           </div>
