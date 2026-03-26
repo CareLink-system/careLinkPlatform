@@ -1,34 +1,45 @@
-from pathlib import Path
-import pickle
-from typing import List, Tuple, Union
+import joblib
+import numpy as np
+import os
+import google.generativeai as genai
 
+# Configure Gemini
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+gemini_model = genai.GenerativeModel('gemini-1.5-flash')
 
 class MLService:
-    def __init__(self, model_path: str = "model.pkl"):
-        p = Path(model_path)
-        self.model = None
-        if p.exists():
-            try:
-                with p.open("rb") as fh:
-                    self.model = pickle.load(fh)
-            except Exception:
-                self.model = None
+    def __init__(self):
+        self.model = joblib.load('xgboost_symptom_model.joblib')
+        self.label_encoder = joblib.load('label_encoder.joblib')
+        self.features = joblib.load('feature_names.joblib')
+        self.specialty_map = {
+            'Fungal infection': 'Dermatologist',
+            'Allergy': 'Allergist',
+            'GERD': 'Gastroenterologist',
+            # Add the rest of your disease mappings here
+        }
 
-    async def predict(self, symptoms: Union[List[str], str]) -> Tuple[str, float]:
-        if isinstance(symptoms, list):
-            text = " ".join(symptoms)
-        else:
-            text = symptoms or ""
+    async def predict(self, payload):
+        # Convert description to list if necessary, assuming CSV format for simple text
+        symptoms_list = payload if isinstance(payload, list) else [s.strip() for s in payload.split(',')]
 
-        if self.model:
-            try:
-                pred = self.model.predict([text])[0]
-                if hasattr(self.model, "predict_proba"):
-                    proba = max(self.model.predict_proba([text])[0])
-                else:
-                    proba = 1.0
-                return str(pred), float(proba)
-            except Exception:
-                pass
+        input_vector = np.zeros(len(self.features))
+        for sym in symptoms_list:
+            if sym in self.features:
+                idx = self.features.index(sym)
+                input_vector[idx] = 1
 
-        return "unknown", 0.0
+        # Predict condition and confidence
+        prob = self.model.predict_proba([input_vector])[0]
+        max_idx = np.argmax(prob)
+        confidence = float(prob[max_idx])
+        
+        prediction_encoded = self.model.predict([input_vector])[0]
+        disease = self.label_encoder.inverse_transform([prediction_encoded])[0]
+        specialty = self.specialty_map.get(disease, 'General Physician')
+
+        # Generate Gemini Feedback
+        prompt = f"A patient has symptoms: {', '.join(symptoms_list)}. ML suspects {disease}. Give a brief, empathetic health suggestion and firmly advise consulting a {specialty}. Do not use markdown formatting."
+        response = gemini_model.generate_content(prompt)
+
+        return disease, confidence, specialty, response.text
