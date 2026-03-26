@@ -1,19 +1,22 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion as Motion } from 'framer-motion';
+// eslint-disable-next-line no-unused-vars
+import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from 'sonner';
 import FrameSvg from '../../assets/auth/Frame 5.svg';
 import AuthSvg from '../../assets/auth/auth.svg';
 import { registerSchema } from './schemas/authSchemas';
-import { registerUser, persistAuth } from './api/authApi';
+import { registerUser } from './api/authApi';
+import { useAuth } from './context/AuthContext';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/shadcn/form';
 import { Input } from '../../components/shadcn/input';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const { setAuthSession } = useAuth();
   const [apiError, setApiError] = useState('');
-  const [apiSuccess, setApiSuccess] = useState('');
 
   const form = useForm({
     resolver: zodResolver(registerSchema),
@@ -30,7 +33,6 @@ export default function RegisterPage() {
 
   const onSubmit = async (values) => {
     setApiError('');
-    setApiSuccess('');
 
     const payload = {
       firstName: values.firstName,
@@ -43,11 +45,17 @@ export default function RegisterPage() {
 
     try {
       const authData = await registerUser(payload);
-      persistAuth(authData);
-      setApiSuccess('Account created successfully. Redirecting...');
+      setAuthSession(authData);
+      toast.success('Account created', {
+        description: 'Welcome to CareLink.',
+      });
       setTimeout(() => navigate('/'), 500);
     } catch (error) {
-      setApiError(error.message || 'Unable to create account right now.');
+      const message = error.message || 'Unable to create account right now.';
+      setApiError(message);
+      toast.error('Registration failed', {
+        description: message,
+      });
     }
   };
 
@@ -75,7 +83,7 @@ export default function RegisterPage() {
         </div>
 
         {/* Floating Glassmorphic Card 1 */}
-        <Motion.div 
+        <motion.div 
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
@@ -88,10 +96,10 @@ export default function RegisterPage() {
             <h4 className="text-sm font-semibold text-white">Well qualified doctors</h4>
             <p className="text-xs text-white/70">Treat with utmost care</p>
           </div>
-        </Motion.div>
+        </motion.div>
 
         {/* Floating Glassmorphic Card 2 */}
-        <Motion.div 
+        <motion.div 
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
@@ -104,7 +112,7 @@ export default function RegisterPage() {
             <h4 className="text-sm font-semibold text-white">Book an appointment</h4>
             <p className="text-xs text-white/70">Call/text/video/inperson</p>
           </div>
-        </Motion.div>
+        </motion.div>
       </div>
 
       {/* RIGHT PANEL: Form Area */}
@@ -117,7 +125,7 @@ export default function RegisterPage() {
           </svg>
         </Link>
 
-        <Motion.div 
+        <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
@@ -205,7 +213,7 @@ export default function RegisterPage() {
                     <FormControl>
                       <select
                         {...field}
-                        className="flex h-11 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus-visible:border-[#1649FF] focus-visible:ring-2 focus-visible:ring-[#1649FF]/20"
+                        className="flex h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus-visible:border-[#1649FF] focus-visible:ring-2 focus-visible:ring-[#1649FF]/30"
                       >
                         <option value="Patient">Patient</option>
                         <option value="Doctor">Doctor</option>
@@ -245,8 +253,6 @@ export default function RegisterPage() {
               />
 
               {apiError ? <p className="text-sm text-red-600">{apiError}</p> : null}
-              {apiSuccess ? <p className="text-sm text-emerald-600">{apiSuccess}</p> : null}
-
               <button
                 type="submit"
                 disabled={form.formState.isSubmitting}
@@ -257,7 +263,7 @@ export default function RegisterPage() {
             </form>
           </Form>
           
-        </Motion.div>
+        </motion.div>
       </div>
 
     </div>

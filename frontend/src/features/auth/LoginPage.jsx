@@ -1,19 +1,22 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion as Motion } from 'framer-motion';
+// eslint-disable-next-line no-unused-vars
+import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from 'sonner';
 import FrameSvg from '../../assets/auth/Frame 5.svg';
 import AuthSvg from '../../assets/auth/auth.svg';
 import { loginSchema } from './schemas/authSchemas';
-import { loginUser, persistAuth } from './api/authApi';
+import { loginUser } from './api/authApi';
+import { useAuth } from './context/AuthContext';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/shadcn/form';
 import { Input } from '../../components/shadcn/input';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { setAuthSession } = useAuth();
   const [apiError, setApiError] = useState('');
-  const [apiSuccess, setApiSuccess] = useState('');
 
   const form = useForm({
     resolver: zodResolver(loginSchema),
@@ -25,15 +28,20 @@ export default function LoginPage() {
 
   const onSubmit = async (values) => {
     setApiError('');
-    setApiSuccess('');
 
     try {
       const authData = await loginUser(values);
-      persistAuth(authData);
-      setApiSuccess('Login successful. Redirecting...');
+      setAuthSession(authData);
+      toast.success('Login successful', {
+        description: 'Welcome back to CareLink.',
+      });
       setTimeout(() => navigate('/'), 500);
     } catch (error) {
-      setApiError(error.message || 'Unable to log in right now.');
+      const message = error.message || 'Unable to log in right now.';
+      setApiError(message);
+      toast.error('Login failed', {
+        description: message,
+      });
     }
   };
 
@@ -61,7 +69,7 @@ export default function LoginPage() {
         </div>
 
         {/* Floating Glassmorphic Card 1 */}
-        <Motion.div 
+        <motion.div 
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
@@ -74,10 +82,10 @@ export default function LoginPage() {
             <h4 className="text-sm font-semibold text-white">Well qualified doctors</h4>
             <p className="text-xs text-white/70">Treat with utmost care</p>
           </div>
-        </Motion.div>
+        </motion.div>
 
         {/* Floating Glassmorphic Card 2 */}
-        <Motion.div 
+        <motion.div 
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
@@ -90,7 +98,7 @@ export default function LoginPage() {
             <h4 className="text-sm font-semibold text-white">Book an appointment</h4>
             <p className="text-xs text-white/70">Call/text/video/inperson</p>
           </div>
-        </Motion.div>
+        </motion.div>
       </div>
 
       {/* RIGHT PANEL: Form Area */}
@@ -103,7 +111,7 @@ export default function LoginPage() {
           </svg>
         </Link>
 
-        <Motion.div 
+        <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
@@ -153,8 +161,6 @@ export default function LoginPage() {
               />
 
               {apiError ? <p className="text-sm text-red-600">{apiError}</p> : null}
-              {apiSuccess ? <p className="text-sm text-emerald-600">{apiSuccess}</p> : null}
-
               <button
                 type="submit"
                 disabled={form.formState.isSubmitting}
@@ -165,7 +171,7 @@ export default function LoginPage() {
             </form>
           </Form>
           
-        </Motion.div>
+        </motion.div>
       </div>
 
     </div>

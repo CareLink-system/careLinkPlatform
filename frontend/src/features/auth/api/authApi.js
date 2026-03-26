@@ -1,4 +1,5 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
+const AUTH_STORAGE_KEY = 'carelink.auth'
 
 function getErrorMessage(payload, fallback) {
   if (!payload) return fallback
@@ -52,5 +53,22 @@ export function persistAuth(authData) {
     },
   }
 
-  localStorage.setItem('carelink.auth', JSON.stringify(payload))
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(payload))
+  return payload
+}
+
+export function getStoredAuth() {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed?.token || !parsed?.user) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+export function clearStoredAuth() {
+  localStorage.removeItem(AUTH_STORAGE_KEY)
 }
