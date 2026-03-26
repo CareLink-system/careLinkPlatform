@@ -1,11 +1,11 @@
 import React from 'react'
 import ProtectedRoute from '../components/dashboard/ProtectedRoute'
-import DashboardShell from '../components/dashboard/DashboardShell'
+import ContentArea from '../components/dashboard/ContentArea'
 
 export default function DashboardPage() {
   return (
     <ProtectedRoute>
-      <DashboardShell />
+      <ContentArea />
     </ProtectedRoute>
   )
 }

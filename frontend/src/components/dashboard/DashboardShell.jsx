@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Sidebar from './Sidebar';
-import ContentArea from './ContentArea';
+// Use Outlet so nested routes can render inside the dashboard layout
+import { Outlet } from 'react-router-dom';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -39,7 +40,7 @@ export default function DashboardShell() {
       {/* Main Scrollable Content */}
       <main className="flex-1 overflow-y-auto pt-16 lg:pt-0 scroll-smooth relative w-full">
         <div className="max-w-[1400px] mx-auto p-4 sm:p-6 lg:p-8">
-          <ContentArea />
+          <Outlet />
         </div>
       </main>
 
