@@ -78,6 +78,13 @@ const Navbar = () => {
                     {/* CTA & Mobile Toggle */}
                     <div className="flex items-center gap-3 z-10">
                         <Link
+                            to="/auth/login"
+                            className="hidden md:inline-flex items-center justify-center rounded-full bg-transparent border border-white/10 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/5"
+                        >
+                            Log in
+                        </Link>
+
+                        <Link
                             to="/auth/register"
                             className="hidden md:inline-flex items-center justify-center rounded-full bg-[#1649FF] px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-blue-600 hover:shadow-[0_0_20px_rgba(22,73,255,0.4)] hover:scale-105 active:scale-95"
                         >
@@ -118,6 +125,14 @@ const Navbar = () => {
                                     </a>
                                 ))}
                                 <div className="h-px w-full bg-slate-700/50 my-2" />
+                                <Link
+                                    to="/auth/login"
+                                    onClick={() => setIsOpen(false)}
+                                    className="block w-full rounded-xl px-4 py-3 text-sm font-medium text-slate-200 transition-colors hover:bg-white/10"
+                                >
+                                    Log in
+                                </Link>
+
                                 <Link
                                     to="/auth/register"
                                     onClick={() => setIsOpen(false)}
