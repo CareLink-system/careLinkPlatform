@@ -16,21 +16,32 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-ml_service = MLService(model_path="model.pkl")
+ml_service = MLService()
 db = get_database()
-
 
 @app.post("/api/symptom-checker/analyze", response_model=SymptomResponse)
 async def analyze(req: SymptomRequest):
     payload = req.symptoms if req.symptoms else req.description
-    predicted, confidence = await ml_service.predict(payload)
+    
+    predicted, confidence, specialty, feedback = await ml_service.predict(payload)
 
     doc = req.dict()
-    doc.update({"predicted_condition": predicted, "confidence": confidence, "created_at": datetime.utcnow()})
+    doc.update({
+        "predicted_condition": predicted, 
+        "confidence": confidence, 
+        "recommended_specialty": specialty,
+        "ai_feedback": feedback,
+        "created_at": datetime.utcnow()
+    })
 
     try:
         await db["analyses"].insert_one(doc)
     except Exception:
-        raise HTTPException(status_code=500, detail="Failed to save analysis")
+        raise HTTPException(status_code=500, detail="Failed to save analysis to database")
 
-    return SymptomResponse(predicted_condition=predicted, confidence=confidence)
+    return SymptomResponse(
+        predicted_condition=predicted, 
+        confidence=confidence,
+        recommended_specialty=specialty,
+        ai_feedback=feedback
+    )
