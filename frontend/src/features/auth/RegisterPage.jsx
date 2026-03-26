@@ -49,7 +49,7 @@ export default function RegisterPage() {
       toast.success('Account created', {
         description: 'Welcome to CareLink.',
       });
-      setTimeout(() => navigate('/'), 500);
+      setTimeout(() => navigate('/dashboard'), 500);
     } catch (error) {
       const message = error.message || 'Unable to create account right now.';
       setApiError(message);

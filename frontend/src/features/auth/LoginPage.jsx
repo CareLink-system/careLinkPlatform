@@ -35,7 +35,7 @@ export default function LoginPage() {
       toast.success('Login successful', {
         description: 'Welcome back to CareLink.',
       });
-      setTimeout(() => navigate('/'), 500);
+      setTimeout(() => navigate('/dashboard'), 500);
     } catch (error) {
       const message = error.message || 'Unable to log in right now.';
       setApiError(message);
