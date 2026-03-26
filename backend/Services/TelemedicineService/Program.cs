@@ -1,11 +1,16 @@
+using DotNetEnv;
+
+// Load .env into environment variables (install DotNetEnv NuGet)
+Env.Load();
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add CORS
+// Add CORS (allow the frontend at http://localhost:5173)
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("LocalFrontend", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins("http://localhost:5173")
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
@@ -27,6 +32,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("LocalFrontend");
 app.UseAuthorization();
 app.MapControllers();
 
