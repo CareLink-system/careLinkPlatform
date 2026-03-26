@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import Sidebar from './Sidebar'
 import ContentArea from './ContentArea'
-import { Menu } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function DashboardShell() {
@@ -16,7 +15,11 @@ export default function DashboardShell() {
             <div className="text-cyan-600 font-bold">CareLink</div>
           </div>
           <button aria-label="Open menu" onClick={() => setOpen(true)} className="p-2 rounded-md bg-white/60 shadow">
-            <Menu size={20} />
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-slate-700">
+              <path d="M3 6h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M3 12h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M3 18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </button>
         </div>
       </header>
