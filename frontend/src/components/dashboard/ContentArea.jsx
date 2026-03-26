@@ -31,6 +31,21 @@ function EmptyCard({ title, message }) {
   )
 }
 
+function ProfileAvatar({ sizeClass = 'w-8 h-8', src }) {
+  if (src) {
+    return <img src={src} alt="User" className={`${sizeClass} rounded-full object-cover border border-slate-200`} />
+  }
+
+  return (
+    <div className={`${sizeClass} rounded-full border border-slate-200 bg-slate-100 text-slate-600 flex items-center justify-center`}>
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 21a8 8 0 0 0-16 0" />
+        <circle cx="12" cy="7" r="4" />
+      </svg>
+    </div>
+  )
+}
+
 export default function ContentArea() {
   const navigate = useNavigate()
   const { logout } = useAuth()
@@ -47,6 +62,9 @@ export default function ContentArea() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
+
+  const profileImageUrl = user?.profileImage || user?.avatarUrl || user?.photoUrl || user?.imageUrl || ''
+  const displayName = user?.firstName || user?.email || 'User'
 
   useEffect(() => {
     if (initRef.current) return
@@ -162,7 +180,7 @@ export default function ContentArea() {
               <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
             </button>
             <button onClick={() => setIsProfileMenuOpen((v) => !v)} className="rounded-full">
-              <img src="https://i.pravatar.cc/100?u=user" alt="User" className="w-9 h-9 rounded-full object-cover border border-slate-200 shadow-sm" />
+              <ProfileAvatar sizeClass="w-9 h-9" src={profileImageUrl} />
             </button>
           </div>
         </div>
@@ -192,8 +210,8 @@ export default function ContentArea() {
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
             </button>
             <button onClick={() => setIsProfileMenuOpen((v) => !v)} className="flex items-center gap-2 bg-white py-1.5 pl-1.5 pr-4 rounded-full border border-slate-100 shadow-sm">
-              <img src="https://i.pravatar.cc/100?u=user" alt="User" className="w-8 h-8 rounded-full object-cover" />
-              <span className="text-sm font-bold text-slate-700">{user.firstName || 'User'}</span>
+              <ProfileAvatar sizeClass="w-8 h-8" src={profileImageUrl} />
+              <span className="text-sm font-bold text-slate-700">{displayName}</span>
             </button>
           </div>
 

@@ -1,11 +1,24 @@
 import { getStoredAuth } from '../../auth/api/authApi'
 
 const AUTH_BASE_URL = import.meta.env.VITE_AUTH_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
-const DOCTOR_BASE_URL = import.meta.env.VITE_DOCTOR_API_BASE_URL || 'http://localhost:5003'
-const APPOINTMENT_BASE_URL = import.meta.env.VITE_APPOINTMENT_API_BASE_URL || 'http://localhost:5004'
+const DOCTOR_BASE_URL = import.meta.env.VITE_DOCTOR_API_BASE_URL || ''
+const APPOINTMENT_BASE_URL = import.meta.env.VITE_APPOINTMENT_API_BASE_URL || ''
+
+function getLegacyTokenFromStorage() {
+  try {
+    const raw = localStorage.getItem('carelink.auth')
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    return parsed?.token || null
+  } catch {
+    return null
+  }
+}
 
 function getToken() {
-  return getStoredAuth()?.token || null
+  const token = getStoredAuth()?.token || getLegacyTokenFromStorage() || null
+  if (!token) return null
+  return token.startsWith('Bearer ') ? token.slice(7) : token
 }
 
 function buildHeaders() {
@@ -46,7 +59,7 @@ async function safeGet(url, fallbackMessage) {
 
 export async function fetchCurrentUser() {
   const result = await safeGet(
-    `${AUTH_BASE_URL}/api/v1/Auth/me`,
+    `${AUTH_BASE_URL}/api/v1/Users/me`,
     'Unable to load your profile right now.'
   )
 
@@ -58,6 +71,13 @@ export async function fetchCurrentUser() {
 }
 
 export async function fetchUpcomingAppointments() {
+  if (!APPOINTMENT_BASE_URL) {
+    return {
+      data: [],
+      error: 'Appointments service is not configured yet. Set VITE_APPOINTMENT_API_BASE_URL when the service is ready.',
+    }
+  }
+
   return safeGet(
     `${APPOINTMENT_BASE_URL}/api/v1/appointments/upcoming`,
     'Appointments service is unavailable. You are all caught up for now.'
@@ -65,6 +85,13 @@ export async function fetchUpcomingAppointments() {
 }
 
 export async function fetchNearbyDoctors() {
+  if (!DOCTOR_BASE_URL) {
+    return {
+      data: [],
+      error: 'Doctor service is not configured yet. Set VITE_DOCTOR_API_BASE_URL when the service is ready.',
+    }
+  }
+
   return safeGet(
     `${DOCTOR_BASE_URL}/api/v1/doctors/nearby`,
     'Doctor service is unavailable. No nearby doctors to show right now.'
@@ -72,6 +99,13 @@ export async function fetchNearbyDoctors() {
 }
 
 export async function fetchRecommendedDoctors() {
+  if (!DOCTOR_BASE_URL) {
+    return {
+      data: [],
+      error: 'Recommendations are unavailable because doctor service is not configured yet.',
+    }
+  }
+
   return safeGet(
     `${DOCTOR_BASE_URL}/api/v1/doctors/recommended`,
     'Recommendations are unavailable at the moment. Please check again soon.'
