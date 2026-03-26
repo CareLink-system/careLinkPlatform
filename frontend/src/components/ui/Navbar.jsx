@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion as Motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
 import { useAuth } from '../../features/auth/context/AuthContext';
 
@@ -13,8 +13,14 @@ const Navbar = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
     const [hoveredTab, setHoveredTab] = useState(null);
-    const { isAuthenticated, user } = useAuth();
+    const { isAuthenticated, user, logout } = useAuth();
+    const navigate = useNavigate();
     const { scrollY } = useScroll();
+
+    const handleLogout = () => {
+      logout()
+      navigate('/auth/login')
+    }
 
     // Dynamically change navbar styling based on scroll position
     useMotionValueEvent(scrollY, "change", (latest) => {
@@ -89,7 +95,7 @@ const Navbar = () => {
                         {isAuthenticated ? (
                             <>
                                 <Link
-                                    to="/"
+                                    to="/dashboard"
                                     className="hidden md:inline-flex items-center justify-center rounded-full bg-transparent border border-white/10 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/5"
                                 >
                                     Dashboard
@@ -100,6 +106,12 @@ const Navbar = () => {
                                 >
                                     {user?.firstName ? `${user.firstName} Profile` : 'Profile'}
                                 </Link>
+                                <button
+                                    onClick={handleLogout}
+                                    className="hidden md:inline-flex items-center justify-center rounded-full bg-red-500/20 border border-red-500/30 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30"
+                                >
+                                    Logout
+                                </button>
                             </>
                         ) : (
                             <>
@@ -156,7 +168,7 @@ const Navbar = () => {
                                 {isAuthenticated ? (
                                     <>
                                         <Link
-                                            to="/"
+                                            to="/dashboard"
                                             onClick={() => setIsOpen(false)}
                                             className="block w-full rounded-xl px-4 py-3 text-sm font-medium text-slate-200 transition-colors hover:bg-white/10"
                                         >
@@ -169,6 +181,15 @@ const Navbar = () => {
                                         >
                                             {user?.firstName ? `${user.firstName} Profile` : 'Profile'}
                                         </Link>
+                                        <button
+                                            onClick={() => {
+                                              handleLogout()
+                                              setIsOpen(false)
+                                            }}
+                                            className="inline-flex w-full items-center justify-center rounded-xl bg-red-500/20 border border-red-500/30 px-4 py-3 text-sm font-semibold text-red-400 transition-colors hover:bg-red-500/30"
+                                        >
+                                            Logout
+                                        </button>
                                     </>
                                 ) : (
                                     <>
