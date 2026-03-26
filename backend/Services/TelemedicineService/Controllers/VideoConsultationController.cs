@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using AgoraToken; // install the AgoraToken NuGet package in the project
+using AgoraIO.Media;
 
 namespace TelemedicineService.Controllers
 {
@@ -52,14 +52,13 @@ namespace TelemedicineService.Controllers
             string token;
             try
             {
-                // Typical API: RtcTokenBuilder.BuildTokenWithUid(appId, appCertificate, channelName, uid, Role, privilegeExpiredTs)
-                token = RtcTokenBuilder.BuildTokenWithUid(
-                    appId: appId,
+                token = RtcTokenBuilder.buildTokenWithUID(
+                    appID: appId,
                     appCertificate: appCertificate,
                     channelName: appointmentId,
                     uid: uid,
-                    role: RtcTokenBuilder.Role.Role_Publisher,
-                    privilegeExpiredTs: privilegeExpiredTs
+                    role: RtcTokenBuilder.Role.RolePublisher,
+                    privilegeExpiredTs: (uint)privilegeExpiredTs
                 );
             }
             catch (Exception ex)

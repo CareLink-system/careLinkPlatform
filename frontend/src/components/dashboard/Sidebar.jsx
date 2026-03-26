@@ -68,6 +68,7 @@ export default function Sidebar({ close }) {
         <NavItem to="/profile" icon="👤">Profile</NavItem>
         <NavItem to="/find" icon="🔍">Find Doctors</NavItem>
         <NavItem to="/prescriptions" icon="📋">Prescriptions</NavItem>
+        <NavItem to="/telemedicine/demo" icon="🎥">Video Call</NavItem>
         <NavItem to="/help" icon="❓">Help</NavItem>
       </nav>
 
