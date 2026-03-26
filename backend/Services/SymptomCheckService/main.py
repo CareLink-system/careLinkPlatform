@@ -2,9 +2,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 
-from symptomcheckservice.schemas import SymptomRequest, SymptomResponse
-from symptomcheckservice.ml_service import MLService
-from symptomcheckservice.database import get_database
+from schemas import SymptomRequest, SymptomResponse
+from ml_service import MLService
+from database import get_database
 
 app = FastAPI()
 
