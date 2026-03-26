@@ -1,10 +1,42 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { motion as Motion } from 'framer-motion';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import FrameSvg from '../../assets/auth/Frame 5.svg';
 import AuthSvg from '../../assets/auth/auth.svg';
+import { loginSchema } from './schemas/authSchemas';
+import { loginUser, persistAuth } from './api/authApi';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/shadcn/form';
+import { Input } from '../../components/shadcn/input';
 
 export default function LoginPage() {
+  const navigate = useNavigate();
+  const [apiError, setApiError] = useState('');
+  const [apiSuccess, setApiSuccess] = useState('');
+
+  const form = useForm({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  const onSubmit = async (values) => {
+    setApiError('');
+    setApiSuccess('');
+
+    try {
+      const authData = await loginUser(values);
+      persistAuth(authData);
+      setApiSuccess('Login successful. Redirecting...');
+      setTimeout(() => navigate('/'), 500);
+    } catch (error) {
+      setApiError(error.message || 'Unable to log in right now.');
+    }
+  };
+
   return (
     <div className="flex min-h-screen w-full bg-white font-sans">
       
@@ -29,7 +61,7 @@ export default function LoginPage() {
         </div>
 
         {/* Floating Glassmorphic Card 1 */}
-        <motion.div 
+        <Motion.div 
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
@@ -42,10 +74,10 @@ export default function LoginPage() {
             <h4 className="text-sm font-semibold text-white">Well qualified doctors</h4>
             <p className="text-xs text-white/70">Treat with utmost care</p>
           </div>
-        </motion.div>
+        </Motion.div>
 
         {/* Floating Glassmorphic Card 2 */}
-        <motion.div 
+        <Motion.div 
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
@@ -58,7 +90,7 @@ export default function LoginPage() {
             <h4 className="text-sm font-semibold text-white">Book an appointment</h4>
             <p className="text-xs text-white/70">Call/text/video/inperson</p>
           </div>
-        </motion.div>
+        </Motion.div>
       </div>
 
       {/* RIGHT PANEL: Form Area */}
@@ -71,7 +103,7 @@ export default function LoginPage() {
           </svg>
         </Link>
 
-        <motion.div 
+        <Motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
@@ -90,12 +122,50 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Empty form placeholder - kept intentionally empty for wiring later */}
-          <div className="h-[300px] w-full rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center text-sm font-medium text-slate-400">
-            Form Component Goes Here
-          </div>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email address</FormLabel>
+                    <FormControl>
+                      <Input placeholder="you@example.com" type="email" autoComplete="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your password" type="password" autoComplete="current-password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {apiError ? <p className="text-sm text-red-600">{apiError}</p> : null}
+              {apiSuccess ? <p className="text-sm text-emerald-600">{apiSuccess}</p> : null}
+
+              <button
+                type="submit"
+                disabled={form.formState.isSubmitting}
+                className="mt-2 h-11 w-full rounded-md bg-[#3d9db8] text-sm font-semibold text-white transition hover:bg-[#2f88a1] disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {form.formState.isSubmitting ? 'Logging in...' : 'Log in'}
+              </button>
+            </form>
+          </Form>
           
-        </motion.div>
+        </Motion.div>
       </div>
 
     </div>

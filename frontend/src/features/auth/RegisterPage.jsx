@@ -1,10 +1,56 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { motion as Motion } from 'framer-motion';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import FrameSvg from '../../assets/auth/Frame 5.svg';
 import AuthSvg from '../../assets/auth/auth.svg';
+import { registerSchema } from './schemas/authSchemas';
+import { registerUser, persistAuth } from './api/authApi';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/shadcn/form';
+import { Input } from '../../components/shadcn/input';
 
 export default function RegisterPage() {
+  const navigate = useNavigate();
+  const [apiError, setApiError] = useState('');
+  const [apiSuccess, setApiSuccess] = useState('');
+
+  const form = useForm({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      titles: '',
+      role: 'Patient',
+    },
+  });
+
+  const onSubmit = async (values) => {
+    setApiError('');
+    setApiSuccess('');
+
+    const payload = {
+      firstName: values.firstName,
+      lastName: values.lastName,
+      email: values.email,
+      password: values.password,
+      titles: values.titles || null,
+      role: values.role,
+    };
+
+    try {
+      const authData = await registerUser(payload);
+      persistAuth(authData);
+      setApiSuccess('Account created successfully. Redirecting...');
+      setTimeout(() => navigate('/'), 500);
+    } catch (error) {
+      setApiError(error.message || 'Unable to create account right now.');
+    }
+  };
+
   return (
     <div className="flex min-h-screen w-full bg-white font-sans">
       
@@ -29,7 +75,7 @@ export default function RegisterPage() {
         </div>
 
         {/* Floating Glassmorphic Card 1 */}
-        <motion.div 
+        <Motion.div 
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
@@ -42,10 +88,10 @@ export default function RegisterPage() {
             <h4 className="text-sm font-semibold text-white">Well qualified doctors</h4>
             <p className="text-xs text-white/70">Treat with utmost care</p>
           </div>
-        </motion.div>
+        </Motion.div>
 
         {/* Floating Glassmorphic Card 2 */}
-        <motion.div 
+        <Motion.div 
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
@@ -58,7 +104,7 @@ export default function RegisterPage() {
             <h4 className="text-sm font-semibold text-white">Book an appointment</h4>
             <p className="text-xs text-white/70">Call/text/video/inperson</p>
           </div>
-        </motion.div>
+        </Motion.div>
       </div>
 
       {/* RIGHT PANEL: Form Area */}
@@ -71,7 +117,7 @@ export default function RegisterPage() {
           </svg>
         </Link>
 
-        <motion.div 
+        <Motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
@@ -90,12 +136,128 @@ export default function RegisterPage() {
             </p>
           </div>
 
-          {/* Empty form placeholder */}
-          <div className="h-[400px] w-full rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center text-sm font-medium text-slate-400">
-            Registration Form Component Goes Here
-          </div>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <FormField
+                  control={form.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>First name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="John" autoComplete="given-name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Last name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Doe" autoComplete="family-name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email address</FormLabel>
+                    <FormControl>
+                      <Input placeholder="you@example.com" type="email" autoComplete="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="titles"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title (optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Dr, Mr, Ms" maxLength={20} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <FormControl>
+                      <select
+                        {...field}
+                        className="flex h-11 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus-visible:border-[#1649FF] focus-visible:ring-2 focus-visible:ring-[#1649FF]/20"
+                      >
+                        <option value="Patient">Patient</option>
+                        <option value="Doctor">Doctor</option>
+                      </select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Create a password" type="password" autoComplete="new-password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm password</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Re-enter your password" type="password" autoComplete="new-password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {apiError ? <p className="text-sm text-red-600">{apiError}</p> : null}
+              {apiSuccess ? <p className="text-sm text-emerald-600">{apiSuccess}</p> : null}
+
+              <button
+                type="submit"
+                disabled={form.formState.isSubmitting}
+                className="mt-2 h-11 w-full rounded-md bg-[#3d9db8] text-sm font-semibold text-white transition hover:bg-[#2f88a1] disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {form.formState.isSubmitting ? 'Creating account...' : 'Create account'}
+              </button>
+            </form>
+          </Form>
           
-        </motion.div>
+        </Motion.div>
       </div>
 
     </div>
