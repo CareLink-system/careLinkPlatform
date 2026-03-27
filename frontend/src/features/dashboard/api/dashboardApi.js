@@ -1,6 +1,7 @@
 import { getStoredAuth } from '../../auth/api/authApi'
 
-const AUTH_BASE_URL = import.meta.env.VITE_AUTH_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+const AUTH_BASE_URL =
+  import.meta.env.VITE_AUTH_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
 const DOCTOR_BASE_URL = import.meta.env.VITE_DOCTOR_API_BASE_URL || ''
 const APPOINTMENT_BASE_URL = import.meta.env.VITE_APPOINTMENT_API_BASE_URL || ''
 
@@ -59,7 +60,7 @@ async function safeGet(url, fallbackMessage) {
 
 export async function fetchCurrentUser() {
   const result = await safeGet(
-    `${AUTH_BASE_URL}/api/v1/Users/me`,
+    `${AUTH_BASE_URL}/api/v1/auth/me`,
     'Unable to load your profile right now.'
   )
 
