@@ -38,11 +38,21 @@ export default function SymptomCheckerPage() {
   
   // Robust User ID extraction for .NET / JWT setups
   const getUserId = () => {
+    // First, try from useAuth hook (dynamic)
     if (auth?.user?.id) return auth.user.id;
+    
+    // Second, try from carelink.auth in localStorage (most reliable)
+    try {
+      const storedAuth = JSON.parse(localStorage.getItem('carelink.auth'));
+      if (storedAuth?.user?.id) return storedAuth.user.id;
+    } catch (e) {}
+    
+    // Fallback: check legacy user entry
     try {
       const localUser = JSON.parse(localStorage.getItem('user'));
       if (localUser?.id) return localUser.id;
     } catch (e) {}
+    
     return localStorage.getItem('user_id') || 'unknown_user';
   };
   
