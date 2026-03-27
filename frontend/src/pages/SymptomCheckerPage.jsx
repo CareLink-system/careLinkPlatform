@@ -1,14 +1,7 @@
 import React, { useState } from 'react';
 import Select from 'react-select';
 import { analyzeSymptoms } from '../api/symptomChecker';
-
-// --- Try to use useAuth if available ---
-let useAuth;
-try {
-  useAuth = require('../hooks/useAuth').default;
-} catch (e) {
-  useAuth = null;
-}
+import { useAuth } from '../features/auth/context/AuthContext';
 
 // --- REPLACE THESE WITH YOUR ACTUAL DATASET FEATURES ---
 const SYMPTOM_OPTIONS = [
@@ -35,8 +28,9 @@ const SYMPTOM_OPTIONS = [
 ];
 
 export default function SymptomCheckerPage() {
-  const auth = useAuth ? useAuth() : null;
-  const userId = auth?.user?.id || localStorage.getItem('user_id') || 'anonymous';
+  const { user, isAuthenticated } = useAuth();
+  const userId = user?.id ?? null;
+  const canSubmit = Boolean(isAuthenticated && userId);
 
   const [selectedSymptoms, setSelectedSymptoms] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -45,6 +39,12 @@ export default function SymptomCheckerPage() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+
+    if (!canSubmit) {
+      setError('You must be logged in to submit symptom analysis.');
+      return;
+    }
+
     if (selectedSymptoms.length === 0) {
       setError("Please select at least one symptom.");
       return;
@@ -138,16 +138,22 @@ export default function SymptomCheckerPage() {
 
           {error && <div className="p-4 bg-red-50 text-red-600 rounded-xl border border-red-100 text-sm font-medium">{error}</div>}
 
+          {!canSubmit && (
+            <div className="p-4 bg-amber-50 text-amber-700 rounded-xl border border-amber-200 text-sm font-medium">
+              You are not authenticated. Please log in to run symptom analysis.
+            </div>
+          )}
+
           <div className="flex items-center justify-between pt-2 border-t border-slate-100">
             <div className="text-sm text-slate-500 flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-500"></div>
-              Patient ID: <span className="font-mono text-slate-700">{userId}</span>
+              Patient ID: <span className="font-mono text-slate-700">{userId ?? 'Not available'}</span>
             </div>
             
             <button
               type="submit"
-              disabled={loading}
-              className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-white font-semibold transition-all ${loading ? 'bg-[#4B9AA8]/70 cursor-not-allowed' : 'bg-[#4B9AA8] hover:bg-[#3d7f8b] shadow-md shadow-[#4B9AA8]/20 hover:shadow-lg hover:shadow-[#4B9AA8]/30 hover:-translate-y-0.5'}`}
+              disabled={loading || !canSubmit}
+              className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-white font-semibold transition-all ${(loading || !canSubmit) ? 'bg-[#4B9AA8]/70 cursor-not-allowed' : 'bg-[#4B9AA8] hover:bg-[#3d7f8b] shadow-md shadow-[#4B9AA8]/20 hover:shadow-lg hover:shadow-[#4B9AA8]/30 hover:-translate-y-0.5'}`}
             >
               {loading ? (
                 <>
