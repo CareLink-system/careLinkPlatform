@@ -2,9 +2,17 @@ import joblib
 import numpy as np
 import os
 import google.generativeai as genai
+from dotenv import load_dotenv
 
-# Configure Gemini
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+# 1. FORCE LOAD THE .ENV FILE FIRST
+load_dotenv()
+
+# 2. Configure Gemini using the loaded key
+api_key = os.getenv("GEMINI_API_KEY")
+if not api_key:
+    print("WARNING: GEMINI_API_KEY is missing! Check your .env file.")
+
+genai.configure(api_key=api_key)
 gemini_model = genai.GenerativeModel('gemini-1.5-flash')
 
 class MLService:
