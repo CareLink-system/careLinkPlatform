@@ -1,13 +1,19 @@
-export async function analyzeSymptoms({ user_id, description }) {
+export async function analyzeSymptoms(payload) {
   const res = await fetch('http://localhost:8000/api/symptom-checker/analyze', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ user_id, description }),
+    body: JSON.stringify(payload), // Passes whatever the component sends
   });
 
   if (!res.ok) {
-    const err = await res.text();
-    throw new Error(err || 'Failed to analyze symptoms');
+    let errorMessage = 'Failed to analyze symptoms';
+    try {
+      const err = await res.json();
+      errorMessage = err.detail?.[0]?.msg || JSON.stringify(err);
+    } catch {
+      errorMessage = await res.text();
+    }
+    throw new Error(errorMessage);
   }
 
   return res.json();
