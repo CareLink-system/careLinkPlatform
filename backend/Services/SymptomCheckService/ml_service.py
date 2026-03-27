@@ -1,19 +1,19 @@
 import joblib
 import numpy as np
 import os
-import google.generativeai as genai
+from google import genai
 from dotenv import load_dotenv
 
 # 1. FORCE LOAD THE .ENV FILE FIRST
 load_dotenv()
 
-# 2. Configure Gemini using the loaded key
+# 2. Configure the NEW Gemini Client
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
     print("WARNING: GEMINI_API_KEY is missing! Check your .env file.")
 
-genai.configure(api_key=api_key)
-gemini_model = genai.GenerativeModel('gemini-1.5-flash')
+# Initialize the new SDK client
+gemini_client = genai.Client(api_key=api_key)
 
 class MLService:
     def __init__(self):
@@ -46,8 +46,12 @@ class MLService:
         disease = self.label_encoder.inverse_transform([prediction_encoded])[0]
         specialty = self.specialty_map.get(disease, 'General Physician')
 
-        # Generate Gemini Feedback
+        # Generate Gemini Feedback using the NEW SDK format
         prompt = f"A patient has symptoms: {', '.join(symptoms_list)}. ML suspects {disease}. Give a brief, empathetic health suggestion and firmly advise consulting a {specialty}. Do not use markdown formatting."
-        response = gemini_model.generate_content(prompt)
+        
+        response = gemini_client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt
+        )
 
         return disease, confidence, specialty, response.text
