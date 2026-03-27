@@ -45,3 +45,20 @@ async def analyze(req: SymptomRequest):
         recommended_specialty=specialty,
         ai_feedback=feedback
     )
+
+
+# --- NEW ENDPOINT FOR HISTORY ---
+@app.get("/api/symptom-checker/history/{user_id}")
+async def get_history(user_id: str):
+    try:
+        # Fetch user's history from MongoDB, sorted by newest first (-1)
+        cursor = db["analyses"].find({"user_id": user_id}).sort("created_at", -1).limit(10)
+        history = await cursor.to_list(length=10)
+        
+        # Convert MongoDB _id (ObjectId) to string for JSON serialization
+        for doc in history:
+            doc["_id"] = str(doc["_id"])
+            
+        return history
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch history: {str(e)}")
