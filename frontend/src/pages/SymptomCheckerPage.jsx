@@ -2,14 +2,6 @@ import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
 import { analyzeSymptoms, getSymptomHistory } from '../api/symptomChecker';
 
-// --- Auth Extraction ---
-let useAuth;
-try {
-  useAuth = require('../hooks/useAuth').default;
-} catch (e) {
-  useAuth = null;
-}
-
 const SYMPTOM_OPTIONS = [
   { value: 'itching', label: 'Itching' },
   { value: 'skin_rash', label: 'Skin Rash' },
@@ -34,25 +26,24 @@ const SYMPTOM_OPTIONS = [
 ];
 
 export default function SymptomCheckerPage() {
-  const auth = useAuth ? useAuth() : null;
-  
   // Robust User ID extraction for .NET / JWT setups
   const getUserId = () => {
-    // First, try from useAuth hook (dynamic)
-    if (auth?.user?.id) return auth.user.id;
-    
-    // Second, try from carelink.auth in localStorage (most reliable)
+    // Try from carelink.auth in localStorage (most reliable)
     try {
       const storedAuth = JSON.parse(localStorage.getItem('carelink.auth'));
       if (storedAuth?.user?.id) return storedAuth.user.id;
-    } catch (e) {}
-    
+    } catch {
+      // JSON parse or access error - continue to next fallback
+    }
+
     // Fallback: check legacy user entry
     try {
       const localUser = JSON.parse(localStorage.getItem('user'));
       if (localUser?.id) return localUser.id;
-    } catch (e) {}
-    
+    } catch {
+      // JSON parse or access error - continue to next fallback
+    }
+
     return localStorage.getItem('user_id') || 'unknown_user';
   };
   
@@ -67,20 +58,21 @@ export default function SymptomCheckerPage() {
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
 
+  const loadHistory = async () => {
+    setLoadingHistory(true);
+    const data = await getSymptomHistory(userId);
+    setHistory(data);
+    setLoadingHistory(false);
+  };
+
   useEffect(() => {
     if (userId !== 'unknown_user') {
       loadHistory();
     } else {
       setLoadingHistory(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
-
-  async function loadHistory() {
-    setLoadingHistory(true);
-    const data = await getSymptomHistory(userId);
-    setHistory(data);
-    setLoadingHistory(false);
-  }
 
   async function handleSubmit(e) {
     e.preventDefault();

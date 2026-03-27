@@ -21,6 +21,7 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
   useEffect(() => {
     if (!appointmentId || !appId) return;
     let mounted = true;
+    const hostElement = remotePlayerHostRef.current;
 
     async function init() {
       try {
@@ -104,8 +105,8 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
       videoTrack?.stop();
       audioTrack?.close();
       videoTrack?.close();
-      if (remotePlayerHostRef.current) {
-        remotePlayerHostRef.current.innerHTML = '';
+      if (hostElement) {
+        hostElement.innerHTML = '';
       }
       clientRef.current?.leave();
     };
