@@ -15,36 +15,8 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
   const clientRef = useRef(null);
   const localTracksRef = useRef({ audioTrack: null, videoTrack: null });
   const localVideoRef = useRef(null);
-  const remoteContainerRef = useRef(null);
-  const remoteObserverRef = useRef(null);
-  const [remoteHasChild, setRemoteHasChild] = useState(false);
-
-  const attachRemoteContainer = (node) => {
-    if (remoteObserverRef.current) {
-      remoteObserverRef.current.disconnect();
-      remoteObserverRef.current = null;
-    }
-
-    remoteContainerRef.current = node;
-
-    if (!node) {
-      setRemoteHasChild(false);
-      return;
-    }
-
-    const update = () => setRemoteHasChild(node.hasChildNodes());
-    const observer = new MutationObserver(update);
-    observer.observe(node, { childList: true });
-    remoteObserverRef.current = observer;
-    update();
-  };
-
-  useEffect(() => () => {
-    if (remoteObserverRef.current) {
-      remoteObserverRef.current.disconnect();
-      remoteObserverRef.current = null;
-    }
-  }, []);
+  const remotePlayerHostRef = useRef(null);
+  const [hasRemoteVideo, setHasRemoteVideo] = useState(false);
 
   useEffect(() => {
     if (!appointmentId || !appId) return;
@@ -57,18 +29,48 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
         clientRef.current = client;
 
         client.on('user-published', async (user, mediaType) => {
-          await client.subscribe(user, mediaType);
-          if (!mounted) return;
-          
-          if (mediaType === 'video') {
-            if (remoteContainerRef.current) remoteContainerRef.current.innerHTML = '';
-            const player = document.createElement('div');
-            player.id = `remote-${user.uid}`;
-            player.className = 'w-full h-full object-cover';
-            remoteContainerRef.current?.appendChild(player);
-            user.videoTrack?.play(player);
+          try {
+            await client.subscribe(user, mediaType);
+          } catch (error) {
+            // Prevent UI crashes for short-lived remote stream transitions.
+            console.warn('Subscribe failed', { uid: user.uid, mediaType, error });
+            return;
           }
-          if (mediaType === 'audio') user.audioTrack?.play();
+
+          if (!mounted) return;
+
+          if (mediaType === 'video' && user.videoTrack) {
+            if (remotePlayerHostRef.current) {
+              remotePlayerHostRef.current.innerHTML = '';
+              const player = document.createElement('div');
+              player.id = `remote-${user.uid}`;
+              player.className = 'w-full h-full object-cover';
+              remotePlayerHostRef.current.appendChild(player);
+              user.videoTrack.play(player);
+              setHasRemoteVideo(true);
+            }
+          }
+
+          if (mediaType === 'audio' && user.audioTrack) {
+            user.audioTrack.play();
+          }
+        });
+
+        client.on('user-unpublished', (user, mediaType) => {
+          if (mediaType === 'video' && remotePlayerHostRef.current) {
+            remotePlayerHostRef.current.innerHTML = '';
+            setHasRemoteVideo(false);
+          }
+          if (mediaType === 'audio' && user.audioTrack) {
+            user.audioTrack.stop();
+          }
+        });
+
+        client.on('user-left', () => {
+          if (remotePlayerHostRef.current) {
+            remotePlayerHostRef.current.innerHTML = '';
+          }
+          setHasRemoteVideo(false);
         });
 
         await client.join(appId, channelName, token || null, uid || undefined);
@@ -98,7 +100,13 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
     return () => {
       mounted = false;
       const { audioTrack, videoTrack } = localTracksRef.current;
-      audioTrack?.close(); videoTrack?.close();
+      audioTrack?.stop();
+      videoTrack?.stop();
+      audioTrack?.close();
+      videoTrack?.close();
+      if (remotePlayerHostRef.current) {
+        remotePlayerHostRef.current.innerHTML = '';
+      }
       clientRef.current?.leave();
     };
   }, [appointmentId, appId]);
@@ -115,7 +123,14 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
 
   const leaveCall = async () => {
     const { audioTrack, videoTrack } = localTracksRef.current;
-    audioTrack?.close(); videoTrack?.close();
+    audioTrack?.stop();
+    videoTrack?.stop();
+    audioTrack?.close();
+    videoTrack?.close();
+    if (remotePlayerHostRef.current) {
+      remotePlayerHostRef.current.innerHTML = '';
+    }
+    setHasRemoteVideo(false);
     await clientRef.current?.leave();
     setJoined(false); setStatus('Call Ended.');
   };
@@ -136,8 +151,9 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
       <div className="flex-1 bg-slate-900 rounded-2xl border border-slate-800 shadow-lg relative flex flex-col overflow-hidden min-h-[500px] lg:min-h-[65vh]">
         {status && !joined && <div className="absolute inset-0 flex items-center justify-center text-slate-300 animate-pulse">{status}</div>}
 
-        <div ref={attachRemoteContainer} className="w-full h-full flex items-center justify-center">
-          {!remoteHasChild && joined && <span className="text-slate-500">Waiting for patient...</span>}
+        <div className="w-full h-full relative flex items-center justify-center">
+          <div ref={remotePlayerHostRef} className="absolute inset-0" />
+          {!hasRemoteVideo && joined && <span className="text-slate-500">Waiting for patient...</span>}
         </div>
 
         {/* Local Video Overlay - improved aspect ratio and positioning */}
