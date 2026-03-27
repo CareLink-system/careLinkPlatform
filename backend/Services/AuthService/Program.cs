@@ -73,10 +73,6 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<AuthDbContext>();
 
-// Configure port for Render (Render expects port 8080 or dynamic)
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-builder.WebHost.UseUrls($"http://*:{port}");
-
 var app = builder.Build();
 
 // ========== SWAGGER - ENABLED FOR ALL ENVIRONMENTS ==========
