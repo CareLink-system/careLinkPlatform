@@ -110,6 +110,19 @@ services:
     networks:
       - carelink-network
 
+  # Symptom Checker Service (FastAPI)
+  symptom-checker-service:
+    build: ./Services/SymptomCheckService
+    container_name: carelink-symptom-checker
+    ports:
+      - "8080:8080"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/symptomcheck
+    depends_on:
+      - mongodb
+    networks:
+      - carelink-network
+
   # Notification Service
   notification-service:
     build: ./Services/NotificationService
@@ -143,7 +156,7 @@ services:
 
   # API Gateway
   api-gateway:
-    build: ./ApiGateway
+    build: ./Services/ApiGateway
     container_name: carelink-gateway
     ports:
       - "5000:5000"

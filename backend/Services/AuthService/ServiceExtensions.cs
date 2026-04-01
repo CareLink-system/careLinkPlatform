@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -10,7 +11,35 @@ public static class ServiceExtensions
 {
     public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        var jwtKey = configuration["Jwt:Key"];
+        var jwtIssuer = configuration["Jwt:Issuer"];
+        var jwtAudience = configuration["Jwt:Audience"];
+
+        // Development-safe fallbacks so authorized endpoints do not crash when Jwt settings are missing.
+        if (string.IsNullOrWhiteSpace(jwtKey))
+        {
+            jwtKey = "carelink-dev-jwt-key-minimum-32-characters-long";
+            Console.WriteLine("⚠️ Jwt:Key is missing. Using development fallback key.");
+        }
+
+        if (string.IsNullOrWhiteSpace(jwtIssuer))
+        {
+            jwtIssuer = "careLinkPlatform";
+            Console.WriteLine("⚠️ Jwt:Issuer is missing. Using development fallback issuer.");
+        }
+
+        if (string.IsNullOrWhiteSpace(jwtAudience))
+        {
+            jwtAudience = "careLinkPlatformUsers";
+            Console.WriteLine("⚠️ Jwt:Audience is missing. Using development fallback audience.");
+        }
+
+        services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
             .AddJwtBearer(options =>
             {
                 options.TokenValidationParameters = new TokenValidationParameters
@@ -19,12 +48,27 @@ public static class ServiceExtensions
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
-                    ValidIssuer = configuration["Jwt:Issuer"],
-                    ValidAudience = configuration["Jwt:Audience"],
+                    ValidIssuer = jwtIssuer,
+                    ValidAudience = jwtAudience,
                     IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(configuration["Jwt:Key"]))
+                        Encoding.UTF8.GetBytes(jwtKey))
                 };
             });
+
+        // Prevent cookie auth redirecting API clients to /Account/Login.
+        services.ConfigureApplicationCookie(options =>
+        {
+            options.Events.OnRedirectToLogin = context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return Task.CompletedTask;
+            };
+            options.Events.OnRedirectToAccessDenied = context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return Task.CompletedTask;
+            };
+        });
 
         return services;
     }

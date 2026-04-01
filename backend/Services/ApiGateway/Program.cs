@@ -129,22 +129,7 @@ app.MapGet("/", () => Results.Ok(new
     }
 }));
 
-// Health check endpoint
-app.MapGet("/health", () => Results.Ok(new
-{
-    status = "Healthy",
-    timestamp = DateTime.UtcNow,
-    services = new[]
-    {
-        "AuthService",
-        "PatientService",
-        "DoctorService",
-        "AppointmentService",
-        "TelemedicineService",
-        "NotificationService",
-        "PaymentService"
-    }
-}));
+// Note: health endpoint is provided by HomeController to avoid duplicate routes.
 
 Console.WriteLine("API Gateway is ready!");
 Console.WriteLine($"Gateway URL: https://{Environment.GetEnvironmentVariable("RENDER_EXTERNAL_HOSTNAME") ?? "localhost"}/");

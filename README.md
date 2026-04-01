@@ -1,5 +1,7 @@
 # 🏥 CareLink Platform - Backend Setup Guide
 
+See the full project setup guide in [SETUP.md](SETUP.md).
+
 ## 📋 Table of Contents
 
 - [Prerequisites](#prerequisites)
