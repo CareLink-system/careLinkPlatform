@@ -34,14 +34,15 @@ if (app.Environment.IsDevelopment())
 }
 
 // Apply migrations automatically (optional)
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<PatientDbContext>();
-    dbContext.Database.Migrate();
-}
+//using (var scope = app.Services.CreateScope())
+//{
+//    var dbContext = scope.ServiceProvider.GetRequiredService<PatientDbContext>();
+//    dbContext.Database.Migrate();
+//}
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
+
 app.MapControllers();
 
 // Optional: Keep the weather forecast endpoint if you want
