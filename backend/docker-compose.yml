@@ -154,6 +154,19 @@ services:
     networks:
       - carelink-network
 
+  # RabbitMQ messaging
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: carelink-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - carelink-network
+
   # API Gateway
   api-gateway:
     build: ./Services/ApiGateway
@@ -165,6 +178,16 @@ services:
       - Jwt__Key=your-super-secret-key-for-development-only
       - Jwt__Issuer=careLinkPlatform
       - Jwt__Audience=careLinkPlatformUsers
+      - AUTH_SERVICE_URL=http://auth-service:5001
+      - PATIENT_SERVICE_URL=http://patient-service:5002
+      - DOCTOR_SERVICE_URL=http://doctor-service:5003
+      - APPOINTMENT_SERVICE_URL=http://appointment-service:5004
+      - TELEMEDICINE_SERVICE_URL=http://telemedicine-service:5007
+      - PAYMENT_SERVICE_URL=http://payment-service:5010
+      - NOTIFICATION_SERVICE_URL=http://notification-service:5008
+      - RABBITMQ__HOST=rabbitmq
+      - RABBITMQ__USERNAME=guest
+      - RABBITMQ__PASSWORD=guest
     depends_on:
       - auth-service
       - patient-service
@@ -173,6 +196,7 @@ services:
       - telemedicine-service
       - payment-service
       - notification-service
+      - rabbitmq
     networks:
       - carelink-network
 
