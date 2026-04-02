@@ -17,10 +17,6 @@ Console.WriteLine($"Thread pool configured with min worker threads: {newWorkerTh
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ========== ADD PORT BINDING FOR RENDER ==========
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-builder.WebHost.UseUrls($"http://*:{port}");
-
 // Add services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -36,7 +32,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Add Swagger (ENABLE FOR ALL ENVIRONMENTS)
+// Add Swagger
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "CareLink API Gateway", Version = "v1" });
@@ -93,47 +89,78 @@ var app = builder.Build();
 // Serve static files (wwwroot folder)
 app.UseStaticFiles();
 
-// ========== SWAGGER - ENABLED FOR ALL ENVIRONMENTS ==========
-app.UseSwagger();
-app.UseSwaggerUI(c =>
+// Configure pipeline
+if (app.Environment.IsDevelopment())
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "CareLink API Gateway v1");
-    c.RoutePrefix = "swagger";
-});
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "CareLink API Gateway v1");
+        c.RoutePrefix = "swagger";
+    });
+}
 
 // Middleware order
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapReverseProxy();
 
-// Root endpoint
-app.MapGet("/", () => Results.Ok(new
+// Redirect root to dashboard
+app.MapGet("/dashboard", async context =>
 {
-    name = "CareLink API Gateway",
-    version = "1.0.0",
+    context.Response.Redirect("/index.html");
+});
+
+// Add gateway health endpoint
+app.MapGet("/api/Health", () => Results.Ok(new
+{
+    service = "API Gateway",
     status = "Running",
-    endpoints = new
+    timestamp = DateTime.UtcNow,
+    routes = new[]
     {
-        swagger = "/swagger",
-        health = "/health",
-        dashboard = "/index.html",
-        auth = "/api/auth/*",
-        patients = "/api/patients/*",
-        doctors = "/api/doctors/*",
-        appointments = "/api/appointments/*",
-        telemedicine = "/api/telemedicine/*",
-        notifications = "/api/notifications/*",
-        payments = "/api/payments/*"
+        "auth",
+        "patients",
+        "doctors",
+        "appointments",
+        "telemedicine",
+        "payments",
+        "notifications"
     }
 }));
 
 // Note: health endpoint is provided by HomeController to avoid duplicate routes.
 
 Console.WriteLine("API Gateway is ready!");
-Console.WriteLine($"Gateway URL: https://{Environment.GetEnvironmentVariable("RENDER_EXTERNAL_HOSTNAME") ?? "localhost"}/");
-Console.WriteLine("Swagger: /swagger");
-Console.WriteLine("Health: /health");
+Console.WriteLine("Home Page: https://localhost:5000");
+Console.WriteLine("Dashboard: https://localhost:5000/dashboard");
+Console.WriteLine("Gateway Swagger: https://localhost:5000/swagger");
+Console.WriteLine("Health Check: https://localhost:5000/health");
+Console.WriteLine("API Documentation: https://localhost:5000/api/home/documentation");
+
+// Auto-open browser
+if (app.Environment.IsDevelopment())
+{
+    try
+    {
+        var url = "https://localhost:5000";
+        Console.WriteLine($"Opening browser at {url}");
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = url,
+            UseShellExecute = true
+        });
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Could not auto-open browser: {ex.Message}");
+    }
+}
 
 app.Run();
