@@ -1,4 +1,27 @@
+using MassTransit;
+using NotificationService.Events;
+using NotificationService.Consumers;
+
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddMassTransit(x =>
+{
+    x.AddConsumer<PaymentCreatedConsumer>();
+
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host(builder.Configuration["RabbitMq:Host"] ?? "rabbitmq", h =>
+        {
+            h.Username(builder.Configuration["RabbitMq:Username"] ?? "guest");
+            h.Password(builder.Configuration["RabbitMq:Password"] ?? "guest");
+        });
+
+        cfg.ReceiveEndpoint("payment-created-event-queue", ep =>
+        {
+            ep.ConfigureConsumer<PaymentCreatedConsumer>(context);
+        });
+    });
+});
 
 // Add CORS
 builder.Services.AddCors(options =>
