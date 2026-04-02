@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using AuthService;
 using AuthService.Data;
+using System.Net;
+using System.Net.Sockets;
 
 Console.WriteLine("🚀 Starting AuthService...");
 
@@ -18,6 +20,10 @@ ThreadPool.SetMinThreads(
 Console.WriteLine($"✅ Thread pool configured - Min worker threads: {newWorkerThreads}, Completion ports: {newCompletionPortThreads}");
 
 var builder = WebApplication.CreateBuilder(args);
+
+var configuredUrls = builder.Configuration["ASPNETCORE_URLS"] ?? builder.Configuration["urls"] ?? "http://localhost:5001";
+Console.WriteLine($"🌐 Kestrel configured URLs: {configuredUrls}");
+
 
 // Add CORS
 builder.Services.AddCors(options =>
@@ -75,6 +81,21 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
+// Configure Swagger to work behind reverse proxy
+if (!app.Environment.IsDevelopment())
+{
+    app.Use((context, next) =>
+    {
+        // Handle forwarded headers for reverse proxy
+        var forwardedPath = context.Request.Headers["X-Forwarded-Prefix"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(forwardedPath))
+        {
+            context.Request.PathBase = forwardedPath;
+        }
+        return next();
+    });
+}
+
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
@@ -121,8 +142,8 @@ app.MapGet("/weatherforecast", () =>
 .WithName("GetWeatherForecast");
 
 Console.WriteLine("✅ AuthService is ready!");
-Console.WriteLine($"📝 Swagger: http://localhost:5001/swagger");
-Console.WriteLine($"❤️ Health: http://localhost:5001/health");
+Console.WriteLine($"📝 Swagger: /swagger (use the auto-selected host and port from ASPNETCORE_URLS / launchSettings)");
+Console.WriteLine($"❤️ Health: /health (use the auto-selected host and port from ASPNETCORE_URLS / launchSettings)");
 
 app.Run();
 
