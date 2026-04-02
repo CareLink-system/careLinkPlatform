@@ -13,7 +13,7 @@ using System.Text;
 namespace AuthService.Controllers;
 
 [ApiController]
-[Route("api/v1/[controller]")]
+[Route("api/v1/auth")]
 [Produces("application/json")]
 public class AuthController : ControllerBase
 {
