@@ -195,7 +195,7 @@ if (app.Environment.IsDevelopment())
     {
         Process.Start(new ProcessStartInfo
         {
-            FileName = "https://localhost:5000/swagger",
+            FileName = "https://localhost:5000/index.html",
             UseShellExecute = true
         });
     }
