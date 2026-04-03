@@ -668,7 +668,7 @@
           <div class="gw-icon">&#127760;</div>
           <div class="gw-info">
             <h2>API Gateway</h2>
-            <div class="gw-url">http://localhost:5000</div>
+            <div class="gw-url">https://localhost:5000</div>
             <p>
               Main entry point &mdash; all services accessible via
               <code>/api/{service}/*</code>
@@ -769,7 +769,7 @@
         <div class="modal-bd">
           <div class="step-lbl">Step 1 &mdash; Register a user</div>
           <pre class="codeblk">
-POST http://localhost:5000/api/auth/register
+POST https://localhost:5000/api/auth/register
 {
   "email": "test@example.com",
   "password": "Password123!",
@@ -779,7 +779,7 @@ POST http://localhost:5000/api/auth/register
           >
           <div class="step-lbl">Step 2 &mdash; Login to get token</div>
           <pre class="codeblk">
-POST http://localhost:5000/api/auth/login
+POST https://localhost:5000/api/auth/login
 {
   "email": "test@example.com",
   "password": "Password123!"
@@ -787,7 +787,7 @@ POST http://localhost:5000/api/auth/login
           >
           <div class="step-lbl">Step 3 &mdash; Use token in requests</div>
           <pre class="codeblk">
-GET http://localhost:5000/api/patients/profile
+GET https://localhost:5000/api/patients/profile
 Authorization: Bearer YOUR_TOKEN_HERE</pre
           >
           <button
@@ -811,7 +811,7 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
         var SERVICES = [
           {
             name: "Auth Service",
-            port: 5001,
+            path: "auth",
             icon: "&#128274;",
             color: "#4f8ef7",
             bg: "rgba(79,142,247,0.15)",
@@ -819,7 +819,7 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
           },
           {
             name: "Patient Service",
-            port: 5002,
+            path: "patients",
             icon: "&#127973;",
             color: "#34d399",
             bg: "rgba(52,211,153,0.15)",
@@ -827,7 +827,7 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
           },
           {
             name: "Doctor Service",
-            port: 5003,
+            path: "doctors",
             icon: "&#128104;",
             color: "#fbbf24",
             bg: "rgba(251,191,36,0.15)",
@@ -835,7 +835,7 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
           },
           {
             name: "Appointment Service",
-            port: 5004,
+            path: "appointments",
             icon: "&#128197;",
             color: "#a78bfa",
             bg: "rgba(167,139,250,0.15)",
@@ -843,7 +843,7 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
           },
           {
             name: "Telemedicine Service",
-            port: 5007,
+            path: "telemedicine",
             icon: "&#128249;",
             color: "#f472b6",
             bg: "rgba(244,114,182,0.15)",
@@ -851,7 +851,7 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
           },
           {
             name: "Notification Service",
-            port: 5008,
+            path: "notifications",
             icon: "&#128276;",
             color: "#fb923c",
             bg: "rgba(251,146,60,0.15)",
@@ -859,7 +859,7 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
           },
           {
             name: "Payment Service",
-            port: 5010,
+            path: "payments",
             icon: "&#128179;",
             color: "#22d3ee",
             bg: "rgba(34,211,238,0.15)",
@@ -930,9 +930,9 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
           .getElementById("btn-copy-example")
           .addEventListener("click", function () {
             var txt =
-              "POST http://localhost:5000/api/auth/register\n" +
+              "POST https://localhost:5000/api/auth/register\n" +
               '{"email":"test@example.com","password":"Password123!","firstName":"Test","lastName":"User"}\n\n' +
-              "POST http://localhost:5000/api/auth/login\n" +
+              "POST https://localhost:5000/api/auth/login\n" +
               '{"email":"test@example.com","password":"Password123!"}';
             navigator.clipboard.writeText(txt).then(function () {
               showToast("Example copied");
@@ -940,10 +940,13 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
           });
 
         // ── Network helpers ──────────────────────────────────────────────────
-        function checkHealth(port) {
-          return fetch("http://localhost:" + port + "/health", {
-            signal: AbortSignal.timeout(2500)
-          })
+        function checkHealth(service) {
+          return fetch(
+            window.location.origin + "/api/v1/" + service + "/health",
+            {
+              signal: AbortSignal.timeout(2500)
+            }
+          )
             .then(function (r) {
               return r.ok;
             })
@@ -952,9 +955,12 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
             });
         }
 
-        function fetchSwagger(port) {
+        function fetchSwagger(service) {
           return fetch(
-            "http://localhost:" + port + "/swagger/v1/swagger.json",
+            window.location.origin +
+              "/api/v1/" +
+              service +
+              "/swagger/v1/swagger.json",
             {
               signal: AbortSignal.timeout(3000)
             }
@@ -1031,15 +1037,17 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
             '<div class="card-name">' +
             esc(svc.name) +
             "</div>" +
-            '<div class="card-port">localhost:' +
-            svc.port +
+            '<div class="card-port">/api/v1/' +
+            svc.path +
             "</div>" +
             '<div class="card-desc">' +
             esc(svc.desc) +
             "</div>" +
             footHtml +
-            '<a class="card-sw" href="http://localhost:' +
-            svc.port +
+            '<a class="card-sw" href="' +
+            window.location.origin +
+            "/api/v1/" +
+            svc.path +
             '/swagger" target="_blank">&#128214; Swagger UI</a>';
 
           div.addEventListener("click", function () {
@@ -1073,7 +1081,7 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
             var card = buildCard(svc);
             grid.appendChild(card);
 
-            Promise.all([checkHealth(svc.port), fetchSwagger(svc.port)])
+            Promise.all([checkHealth(svc.path), fetchSwagger(svc.path)])
               .then(function (res) {
                 setCardStatus(card, res[0], countEndpoints(res[1]));
               })
@@ -1184,7 +1192,7 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
           if (token) {
             localStorage.setItem("authToken", token);
           }
-          var url = "http://localhost:5000" + path;
+          var url = window.location.origin + path;
 
           var authHeader = token
             ? "h['Authorization']='Bearer " + token + "';"
@@ -1241,7 +1249,7 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
 
         // ── Copy cURL ────────────────────────────────────────────────────────
         function doCurl(method, path) {
-          var url = "http://localhost:5000" + path;
+          var url = "https://localhost:5000" + path;
           var token = localStorage.getItem("authToken") || "";
           var cmd = "curl -X " + method + ' "' + url + '"';
           if (token) {
