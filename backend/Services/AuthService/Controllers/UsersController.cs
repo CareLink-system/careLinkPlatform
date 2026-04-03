@@ -10,9 +10,10 @@ using System.Security.Claims;
 
 namespace AuthService.Controllers;
 
-[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+// Comment for Testing 
+//[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [ApiController]
-[Route("api/v1/[controller]")]
+[Route("api/v1/Auth/[controller]")]
 [Produces("application/json")]
 public class UsersController : ControllerBase
 {
@@ -42,7 +43,8 @@ public class UsersController : ControllerBase
     /// Gets all users with optional filtering and pagination.
     /// </summary>
     [HttpGet]
-    [Authorize(Roles = "Admin")]
+    //[Authorize(Roles = "Admin")]
+    [AllowAnonymous] // only for test
     [ProducesResponseType(typeof(ApiResponse<PaginatedUserResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
