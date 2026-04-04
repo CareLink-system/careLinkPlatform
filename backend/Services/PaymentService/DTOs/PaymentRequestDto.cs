@@ -1,3 +1,5 @@
+
+using PaymentService.Enum;
 namespace PaymentService.DTOs;
 
 public class PaymentRequestDto
@@ -8,7 +10,7 @@ public class PaymentRequestDto
     public decimal Amount { get; set; }
     public string Currency { get; set; } = "LKR";
     public string PaymentMethod { get; set; } = default!;
-    public string PaymentStatus { get; set; } = "Pending";
+    public CommonStatus PaymentStatus { get; set; } = CommonStatus.Active;
     public string? TransactionId { get; set; }
     public string? PaymentGateway { get; set; }
     public DateTime? PaidAt { get; set; }
