@@ -9,6 +9,7 @@ public static class DependencyInjection
     public static IServiceCollection RegisterServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddHttpContextAccessor();
+        services.AddMemoryCache();
 
         services.AddDbContext<PaymentDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
