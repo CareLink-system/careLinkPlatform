@@ -2,8 +2,29 @@ using Microsoft.EntityFrameworkCore;
 using AuthService;
 using AuthService.Data;
 using Microsoft.AspNetCore.HttpOverrides;
+using DotNetEnv;
+using SharedConfiguration.Extensions;
 
 Console.WriteLine("🚀 Starting AuthService...");
+
+// Load root .env file
+var rootPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", ".."));
+var envPath = Path.Combine(rootPath, ".env");
+
+if (File.Exists(envPath))
+{
+    Env.Load(envPath);
+    Console.WriteLine($"✅ Loaded .env from: {envPath}");
+}
+else
+{
+    Console.WriteLine($"⚠️ .env file not found at: {envPath}");
+}
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Apply shared environment-based configuration
+builder.AddSharedEnvironmentConfiguration();
 
 // Check if we should run migrations directly (skipping the whole application startup)
 MigrationRunner.RunMigrations(args);
@@ -17,8 +38,6 @@ ThreadPool.SetMinThreads(
     Math.Max(completionPortThreads, newCompletionPortThreads));
 
 Console.WriteLine($"✅ Thread pool configured - Min worker threads: {newWorkerThreads}, Completion ports: {newCompletionPortThreads}");
-
-var builder = WebApplication.CreateBuilder(args);
 
 var configuredUrls = builder.Configuration["ASPNETCORE_URLS"] ?? builder.Configuration["urls"] ?? "https://localhost:5001";
 Console.WriteLine($"🌐 Kestrel configured URLs: {configuredUrls}");
