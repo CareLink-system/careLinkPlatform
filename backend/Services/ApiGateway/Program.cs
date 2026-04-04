@@ -2,9 +2,12 @@ using ApiGateway.Model;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
-using Microsoft.OpenApi.Models;  // ← This is the correct namespace
+using Microsoft.OpenApi.Models;
 using System.Diagnostics;
 using System.Text;
+using System.Reflection;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using ApiGateway.Filters;
 
 Console.WriteLine("Starting API Gateway.....");
 
@@ -100,8 +103,7 @@ builder.Services.AddSwaggerGen(c =>
 var app = builder.Build();
 
 // ── Swagger UI ────────────────────────────────────────────────────────────────
-if (app.Environment.IsDevelopment())
-{
+
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
@@ -121,7 +123,6 @@ if (app.Environment.IsDevelopment())
         c.DocumentTitle = "CareLink Platform API";
         c.DefaultModelsExpandDepth(-1);
     });
-}
 
 // ── Static files ──────────────────────────────────────────────────────────────
 app.UseStaticFiles();
