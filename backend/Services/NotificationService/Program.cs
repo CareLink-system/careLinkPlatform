@@ -1,6 +1,10 @@
 using MassTransit;
 using NotificationService.Events;
 using NotificationService.Consumers;
+using Microsoft.OpenApi.Models;
+using System.Reflection;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using NotificationService.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,7 +41,86 @@ builder.Services.AddCors(options =>
 // Add services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+// ✅ ENHANCED: Add Swagger with complete documentation support
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Notification Service API",
+        Version = "v1",
+        Description = @"
+            <h3>Notification Service for CareLink Platform</h3>
+            <p>Handles all notification-related operations including:</p>
+            <ul>
+                <li>Event-driven notifications</li>
+                <li>Email notifications</li>
+                <li>SMS notifications</li>
+                <li>Push notifications</li>
+            </ul>
+        ",
+        Contact = new OpenApiContact
+        {
+            Name = "CareLink Support",
+            Email = "support@carelink.com",
+            Url = new Uri("https://carelinkplatform.com")
+        },
+        License = new OpenApiLicense
+        {
+            Name = "MIT License",
+            Url = new Uri("https://opensource.org/licenses/MIT")
+        },
+        TermsOfService = new Uri("https://carelinkplatform.com/terms")
+    });
+
+    // ✅ Add JWT Authentication
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = @"
+            **JWT Authorization header using the Bearer scheme.**
+            
+            **How to get token:**
+            1. Call POST /api/v1/Auth/login from AuthService
+            2. Use credentials: email & password
+            3. Copy the 'token' from response
+            
+            **Example:** Bearer eyJhbGciOiJIUzI1NiIs...
+        "
+    });
+
+    // ✅ Add security requirement
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new[] { "read", "write" }
+        }
+    });
+
+    // ✅ Include XML comments
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        c.IncludeXmlComments(xmlPath);
+    }
+
+    // ✅ Add operation filters
+    c.OperationFilter<AddRequiredHeaderParameter>();
+    c.OperationFilter<AddDefaultResponses>();
+});
 
 var app = builder.Build();
 
