@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PaymentService.DTOs;
@@ -6,8 +7,9 @@ using PaymentService.Services;
 namespace PaymentService.Controllers;
 
 [ApiController]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [Route("api/v1/payments")]
-//[Authorize]
+[Authorize]
 public class PaymentController : ControllerBase
 {
     private readonly IPaymentService _paymentService;
