@@ -119,5 +119,5 @@ coverage/
 *.coveragexml
 
 # Ignore REAL config files with secrets
-**/appsettings.json
+
 **/appsettings.*.json
