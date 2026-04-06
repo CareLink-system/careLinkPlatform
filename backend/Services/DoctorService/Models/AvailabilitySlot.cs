@@ -1,4 +1,3 @@
-using DoctorService.Enum;
 using DoctorService.Models.Common;
 using System.ComponentModel.DataAnnotations;
 
@@ -11,18 +10,23 @@ public class AvailabilitySlot : AuditableEntity
     [Required]
     public int DoctorId { get; set; }
 
+    public Doctor Doctor { get; set; } = default!;
+
     [Required]
     public DateTime SlotDate { get; set; }
 
     [Required]
+    [MaxLength(10)]
     public string StartTime { get; set; } = default!;
 
     [Required]
+    [MaxLength(10)]
     public string EndTime { get; set; } = default!;
 
     public bool IsBooked { get; set; } = false;
 
     public int? AppointmentId { get; set; }
 
-    public string DayOfWeek { get; set; } = default!;
+    [MaxLength(20)]
+    public string? DayOfWeek { get; set; }
 }

@@ -1,6 +1,5 @@
 ﻿using DoctorService.Models;
 using Microsoft.EntityFrameworkCore;
-using System.Numerics;
 
 namespace DoctorService.Data;
 
@@ -12,4 +11,23 @@ public class DoctorDbContext : DbContext
 
     public DbSet<Doctor> Doctors { get; set; }
     public DbSet<AvailabilitySlot> AvailabilitySlots { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Doctor>()
+            .HasMany(d => d.AvailabilitySlots)
+            .WithOne(a => a.Doctor)
+            .HasForeignKey(a => a.DoctorId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Doctor>()
+            .HasIndex(d => d.UserId)
+            .IsUnique();
+
+        modelBuilder.Entity<Doctor>()
+            .HasIndex(d => d.LicenseNumber)
+            .IsUnique();
+    }
 }
