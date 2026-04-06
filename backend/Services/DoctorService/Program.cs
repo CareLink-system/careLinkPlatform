@@ -1,11 +1,12 @@
-using Microsoft.EntityFrameworkCore;
+using DoctorService;
 using DoctorService.Data;
-using DotNetEnv;
-using SharedConfiguration.Extensions;
-using Microsoft.OpenApi.Models;
-using System.Reflection;
-using Swashbuckle.AspNetCore.SwaggerGen;
 using DoctorService.Filters;
+using DotNetEnv;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
+using SharedConfiguration.Extensions;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using System.Reflection;
 
 Console.WriteLine("🚀 Starting DoctorService...");
 
@@ -27,6 +28,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Apply shared environment-based configuration
 builder.AddSharedEnvironmentConfiguration();
+builder.Services.AddDoctorDependencies();
 
 // Add CORS
 builder.Services.AddCors(options =>

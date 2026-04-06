@@ -22,6 +22,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TelemedicineService", "back
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApiGateway", "backend\Services\ApiGateway\ApiGateway.csproj", "{00ABCBBF-6385-4A28-20A9-817DA882F546}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharedConfiguration", "backend\Shared\SharedConfiguration\SharedConfiguration.csproj", "{4B0BA8E2-60E7-09EF-15B9-52E972A55C54}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -60,6 +62,10 @@ Global
 		{00ABCBBF-6385-4A28-20A9-817DA882F546}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{00ABCBBF-6385-4A28-20A9-817DA882F546}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{00ABCBBF-6385-4A28-20A9-817DA882F546}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4B0BA8E2-60E7-09EF-15B9-52E972A55C54}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4B0BA8E2-60E7-09EF-15B9-52E972A55C54}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4B0BA8E2-60E7-09EF-15B9-52E972A55C54}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4B0BA8E2-60E7-09EF-15B9-52E972A55C54}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -74,6 +80,7 @@ Global
 		{6627424C-9D51-D404-2656-BB255268742D} = {3C755975-A7BD-44BC-C8F9-5B13F14529BF}
 		{CAF4A309-E0AF-BF72-87AC-CEFC284ED993} = {3C755975-A7BD-44BC-C8F9-5B13F14529BF}
 		{00ABCBBF-6385-4A28-20A9-817DA882F546} = {3C755975-A7BD-44BC-C8F9-5B13F14529BF}
+		{4B0BA8E2-60E7-09EF-15B9-52E972A55C54} = {1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {9DF08EE3-FA78-40B5-8F23-82E3268622EE}
