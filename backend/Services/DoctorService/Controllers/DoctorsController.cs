@@ -1,6 +1,7 @@
 ﻿using DoctorService.DTOs;
 using DoctorService.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DoctorService.Controllers;
 
@@ -15,13 +16,15 @@ public class DoctorsController : ControllerBase
         _doctorService = doctorService;
     }
 
+    [Authorize(Roles = "Doctor,Admin")]
     [HttpPost]
     public async Task<IActionResult> CreateDoctor([FromBody] CreateDoctorDto dto)
     {
-        var result = await _doctorService.CreateDoctorAsync(dto, "system");
+        var result = await _doctorService.CreateDoctorAsync(dto, User.Identity?.Name ?? "system");
         return CreatedAtAction(nameof(GetDoctorById), new { id = result.Id }, result);
     }
 
+    [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> GetAllDoctors()
     {
@@ -29,18 +32,19 @@ public class DoctorsController : ControllerBase
         return Ok(doctors);
     }
 
+    [AllowAnonymous]
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetDoctorById(int id)
     {
         var doctor = await _doctorService.GetDoctorByIdAsync(id);
+
         if (doctor == null)
-        {
             return NotFound(new { message = "Doctor not found." });
-        }
 
         return Ok(doctor);
     }
 
+    [AllowAnonymous]
     [HttpGet("verified")]
     public async Task<IActionResult> GetVerifiedDoctors()
     {
@@ -48,6 +52,7 @@ public class DoctorsController : ControllerBase
         return Ok(doctors);
     }
 
+    [AllowAnonymous]
     [HttpGet("specialization/{specializationId}")]
     public async Task<IActionResult> GetDoctorsBySpecialization(string specializationId)
     {
@@ -55,42 +60,43 @@ public class DoctorsController : ControllerBase
         return Ok(doctors);
     }
 
+    [Authorize(Roles = "Doctor,Admin")]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> UpdateDoctor(int id, [FromBody] UpdateDoctorDto dto)
     {
-        var updatedDoctor = await _doctorService.UpdateDoctorAsync(id, dto, "system");
+        var updatedDoctor = await _doctorService.UpdateDoctorAsync(id, dto, User.Identity?.Name ?? "system");
+
         if (updatedDoctor == null)
-        {
             return NotFound(new { message = "Doctor not found." });
-        }
 
         return Ok(updatedDoctor);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id:int}/verify")]
     public async Task<IActionResult> VerifyDoctor(int id)
     {
-        var verifiedDoctor = await _doctorService.VerifyDoctorAsync(id, "admin");
+        var verifiedDoctor = await _doctorService.VerifyDoctorAsync(id, User.Identity?.Name ?? "admin");
+
         if (verifiedDoctor == null)
-        {
             return NotFound(new { message = "Doctor not found." });
-        }
 
         return Ok(verifiedDoctor);
     }
 
+    [Authorize(Roles = "Doctor,Admin")]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteDoctor(int id)
     {
-        var deleted = await _doctorService.SoftDeleteDoctorAsync(id, "system");
+        var deleted = await _doctorService.SoftDeleteDoctorAsync(id, User.Identity?.Name ?? "system");
+
         if (!deleted)
-        {
             return NotFound(new { message = "Doctor not found." });
-        }
 
         return Ok(new { message = "Doctor deleted successfully." });
     }
 
+    [AllowAnonymous]
     [HttpGet("search")]
     public async Task<IActionResult> SearchDoctors([FromQuery] DoctorSearchDto searchDto)
     {
