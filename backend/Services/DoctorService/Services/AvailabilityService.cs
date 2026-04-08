@@ -27,10 +27,22 @@ public class AvailabilityService : IAvailabilityService
             return null;
         }
 
-        var slot = new AvailabilitySlot
+        ValidateTimeRange(dto.StartTime, dto.EndTime);
+
+        var existingSlots = await _availabilityRepository.GetByDoctorIdAndDateAsync(dto.DoctorId, dto.SlotDate);
+
+        bool hasOverlap = existingSlots.Any(slot =>
+            IsTimeOverlapping(dto.StartTime, dto.EndTime, slot.StartTime, slot.EndTime));
+
+        if (hasOverlap)
+        {
+            throw new InvalidOperationException("This slot overlaps with an existing availability slot.");
+        }
+
+        var slotEntity = new AvailabilitySlot
         {
             DoctorId = dto.DoctorId,
-            SlotDate = dto.SlotDate,
+            SlotDate = DateTime.SpecifyKind(dto.SlotDate.Date, DateTimeKind.Utc),
             StartTime = dto.StartTime,
             EndTime = dto.EndTime,
             DayOfWeek = dto.SlotDate.DayOfWeek.ToString(),
@@ -40,7 +52,7 @@ public class AvailabilityService : IAvailabilityService
             Status = CommonStatus.Active
         };
 
-        var createdSlot = await _availabilityRepository.AddAsync(slot);
+        var createdSlot = await _availabilityRepository.AddAsync(slotEntity);
 
         return new CreateAvailabilitySlotDto
         {
@@ -65,7 +77,7 @@ public class AvailabilityService : IAvailabilityService
             slot.IsBooked,
             slot.AppointmentId,
             slot.DayOfWeek,
-            slot.Status,
+            Status = slot.Status.ToString(),
             slot.CreatedAt
         });
     }
@@ -88,7 +100,7 @@ public class AvailabilityService : IAvailabilityService
             slot.IsBooked,
             slot.AppointmentId,
             slot.DayOfWeek,
-            slot.Status,
+            Status = slot.Status.ToString(),
             slot.CreatedAt
         };
     }
@@ -101,7 +113,20 @@ public class AvailabilityService : IAvailabilityService
             return null;
         }
 
-        slot.SlotDate = dto.SlotDate;
+        ValidateTimeRange(dto.StartTime, dto.EndTime);
+
+        var existingSlots = await _availabilityRepository.GetByDoctorIdAndDateAsync(slot.DoctorId, dto.SlotDate);
+
+        bool hasOverlap = existingSlots.Any(existing =>
+            existing.Id != id &&
+            IsTimeOverlapping(dto.StartTime, dto.EndTime, existing.StartTime, existing.EndTime));
+
+        if (hasOverlap)
+        {
+            throw new InvalidOperationException("Updated slot overlaps with an existing availability slot.");
+        }
+
+        slot.SlotDate = DateTime.SpecifyKind(dto.SlotDate.Date, DateTimeKind.Utc);
         slot.StartTime = dto.StartTime;
         slot.EndTime = dto.EndTime;
         slot.IsBooked = dto.IsBooked;
@@ -122,7 +147,7 @@ public class AvailabilityService : IAvailabilityService
             slot.IsBooked,
             slot.AppointmentId,
             slot.DayOfWeek,
-            slot.Status,
+            Status = slot.Status.ToString(),
             slot.UpdatedAt
         };
     }
@@ -142,5 +167,33 @@ public class AvailabilityService : IAvailabilityService
 
         await _availabilityRepository.DeleteAsync(slot);
         return true;
+    }
+
+    private static void ValidateTimeRange(string startTime, string endTime)
+    {
+        if (!TimeOnly.TryParse(startTime, out var start))
+        {
+            throw new InvalidOperationException("Invalid start time format.");
+        }
+
+        if (!TimeOnly.TryParse(endTime, out var end))
+        {
+            throw new InvalidOperationException("Invalid end time format.");
+        }
+
+        if (start >= end)
+        {
+            throw new InvalidOperationException("Start time must be earlier than end time.");
+        }
+    }
+
+    private static bool IsTimeOverlapping(string newStart, string newEnd, string existingStart, string existingEnd)
+    {
+        var newStartTime = TimeOnly.Parse(newStart);
+        var newEndTime = TimeOnly.Parse(newEnd);
+        var existingStartTime = TimeOnly.Parse(existingStart);
+        var existingEndTime = TimeOnly.Parse(existingEnd);
+
+        return newStartTime < existingEndTime && newEndTime > existingStartTime;
     }
 }
