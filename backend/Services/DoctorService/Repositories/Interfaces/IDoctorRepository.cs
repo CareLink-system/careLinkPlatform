@@ -10,5 +10,7 @@ public interface IDoctorRepository
     Task<IEnumerable<Doctor>> GetAllAsync();
     Task<IEnumerable<Doctor>> GetVerifiedAsync();
     Task<IEnumerable<Doctor>> GetBySpecializationAsync(string specializationId);
+
+    Task<IEnumerable<Doctor>> SearchAsync(string? specializationId, string? department, bool? isAvailable, bool? isVerified);
     Task UpdateAsync(Doctor doctor);
 }

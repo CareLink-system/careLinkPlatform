@@ -9,6 +9,7 @@ public interface IDoctorService
     Task<DoctorResponseDto?> GetDoctorByIdAsync(int id);
     Task<IEnumerable<DoctorResponseDto>> GetVerifiedDoctorsAsync();
     Task<IEnumerable<DoctorResponseDto>> GetDoctorsBySpecializationAsync(string specializationId);
+    Task<IEnumerable<DoctorResponseDto>> SearchDoctorsAsync(DoctorSearchDto searchDto);
     Task<DoctorResponseDto?> UpdateDoctorAsync(int id, UpdateDoctorDto dto, string? updatedBy = null);
     Task<bool> SoftDeleteDoctorAsync(int id, string? deletedBy = null);
     Task<DoctorResponseDto?> VerifyDoctorAsync(int id, string? updatedBy = null);

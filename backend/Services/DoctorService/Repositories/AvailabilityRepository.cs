@@ -45,4 +45,17 @@ public class AvailabilityRepository : IAvailabilityRepository
         _context.AvailabilitySlots.Update(slot);
         await _context.SaveChangesAsync();
     }
+
+    public async Task<IEnumerable<AvailabilitySlot>> GetByDoctorIdAndDateAsync(int doctorId, DateTime slotDate)
+    {
+        var startOfDay = DateTime.SpecifyKind(slotDate.Date, DateTimeKind.Utc);
+        var endOfDay = startOfDay.AddDays(1);
+
+        return await _context.AvailabilitySlots
+            .Where(a => a.DoctorId == doctorId
+                        && !a.IsDeleted
+                        && a.SlotDate >= startOfDay
+                        && a.SlotDate < endOfDay)
+            .ToListAsync();
+    }
 }

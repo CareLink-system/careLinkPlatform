@@ -145,4 +145,16 @@ public class DoctorService : IDoctorService
             CreatedAt = doctor.CreatedAt
         };
     }
+
+    public async Task<IEnumerable<DoctorResponseDto>> SearchDoctorsAsync(DoctorSearchDto searchDto)
+    {
+        var doctors = await _doctorRepository.SearchAsync(
+            searchDto.SpecializationId,
+            searchDto.Department,
+            searchDto.IsAvailable,
+            searchDto.IsVerified
+        );
+
+        return doctors.Select(MapToResponseDto);
+    }
 }

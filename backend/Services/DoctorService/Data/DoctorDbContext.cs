@@ -11,6 +11,7 @@ public class DoctorDbContext : DbContext
 
     public DbSet<Doctor> Doctors { get; set; }
     public DbSet<AvailabilitySlot> AvailabilitySlots { get; set; }
+    public DbSet<Prescription> Prescriptions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -29,5 +30,11 @@ public class DoctorDbContext : DbContext
         modelBuilder.Entity<Doctor>()
             .HasIndex(d => d.LicenseNumber)
             .IsUnique();
+
+        modelBuilder.Entity<Prescription>()
+            .HasOne(p => p.Doctor)
+            .WithMany()
+            .HasForeignKey(p => p.DoctorId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
