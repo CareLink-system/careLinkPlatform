@@ -18,13 +18,20 @@ public class AvailabilityController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateSlot([FromBody] CreateAvailabilitySlotDto dto)
     {
-        var result = await _availabilityService.CreateSlotAsync(dto, "system");
-        if (result == null)
+        try
         {
-            return NotFound(new { message = "Doctor not found." });
-        }
+            var result = await _availabilityService.CreateSlotAsync(dto, "system");
+            if (result == null)
+            {
+                return NotFound(new { message = "Doctor not found." });
+            }
 
-        return Ok(result);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpGet("doctor/{doctorId:int}")]
@@ -49,13 +56,20 @@ public class AvailabilityController : ControllerBase
     [HttpPut("{id:int}")]
     public async Task<IActionResult> UpdateSlot(int id, [FromBody] UpdateAvailabilitySlotDto dto)
     {
-        var updatedSlot = await _availabilityService.UpdateSlotAsync(id, dto, "system");
-        if (updatedSlot == null)
+        try
         {
-            return NotFound(new { message = "Availability slot not found." });
-        }
+            var updatedSlot = await _availabilityService.UpdateSlotAsync(id, dto, "system");
+            if (updatedSlot == null)
+            {
+                return NotFound(new { message = "Availability slot not found." });
+            }
 
-        return Ok(updatedSlot);
+            return Ok(updatedSlot);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpDelete("{id:int}")]
