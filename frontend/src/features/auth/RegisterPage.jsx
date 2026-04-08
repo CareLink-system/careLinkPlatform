@@ -17,6 +17,8 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const { setAuthSession } = useAuth();
   const [apiError, setApiError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(registerSchema),
@@ -231,7 +233,36 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input placeholder="Create a password" type="password" autoComplete="new-password" {...field} />
+                      <div className="relative">
+                        <Input
+                          placeholder="Create a password"
+                          type={showPassword ? 'text' : 'password'}
+                          autoComplete="new-password"
+                          className="pr-11"
+                          {...field}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword((prev) => !prev)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition hover:text-slate-700"
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                          title={showPassword ? 'Hide password' : 'Show password'}
+                        >
+                          {showPassword ? (
+                            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M10.58 10.58a2 2 0 102.83 2.83" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M9.88 5.09A10.94 10.94 0 0112 4.91c5.05 0 9.27 3.11 10.5 7.09a11.65 11.65 0 01-4.12 5.94" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6.61 6.61A11.71 11.71 0 001.5 12c.58 1.86 1.8 3.47 3.43 4.68" />
+                            </svg>
+                          ) : (
+                            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12z" />
+                              <circle cx="12" cy="12" r="3" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -245,7 +276,36 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel>Confirm password</FormLabel>
                     <FormControl>
-                      <Input placeholder="Re-enter your password" type="password" autoComplete="new-password" {...field} />
+                      <div className="relative">
+                        <Input
+                          placeholder="Re-enter your password"
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          autoComplete="new-password"
+                          className="pr-11"
+                          {...field}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword((prev) => !prev)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition hover:text-slate-700"
+                          aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                          title={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                        >
+                          {showConfirmPassword ? (
+                            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M10.58 10.58a2 2 0 102.83 2.83" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M9.88 5.09A10.94 10.94 0 0112 4.91c5.05 0 9.27 3.11 10.5 7.09a11.65 11.65 0 01-4.12 5.94" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6.61 6.61A11.71 11.71 0 001.5 12c.58 1.86 1.8 3.47 3.43 4.68" />
+                            </svg>
+                          ) : (
+                            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12z" />
+                              <circle cx="12" cy="12" r="3" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

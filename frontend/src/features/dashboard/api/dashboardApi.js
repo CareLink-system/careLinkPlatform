@@ -1,4 +1,5 @@
 import { getStoredAuth } from '../../auth/api/authApi'
+import axios from 'axios'
 
 const AUTH_BASE_URL =
   import.meta.env.VITE_AUTH_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
@@ -30,20 +31,12 @@ function buildHeaders() {
   }
 }
 
-async function parseJson(response) {
-  try {
-    return await response.json()
-  } catch {
-    return null
-  }
-}
-
 async function safeGet(url, fallbackMessage) {
   try {
-    const response = await fetch(url, { method: 'GET', headers: buildHeaders() })
-    const payload = await parseJson(response)
+    const res = await axios.get(url, { headers: buildHeaders() })
+    const payload = res.data
 
-    if (!response.ok) {
+    if (res.status >= 400) {
       const message = payload?.message || fallbackMessage
       return { data: [], error: message }
     }
@@ -53,8 +46,9 @@ async function safeGet(url, fallbackMessage) {
     }
 
     return { data: payload?.data ?? payload ?? [], error: null }
-  } catch {
-    return { data: [], error: fallbackMessage }
+  } catch (err) {
+    const message = err?.response?.data?.message || fallbackMessage
+    return { data: [], error: message }
   }
 }
 
