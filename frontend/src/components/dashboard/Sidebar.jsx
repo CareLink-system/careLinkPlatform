@@ -74,19 +74,27 @@ export default function Sidebar({ close }) {
       </nav>
 
       {/* Fixed Bottom Section */}
-      <div className="px-6 space-y-6 mt-2 flex-shrink-0">
+      <div className="px-6 space-y-6 mt-2 flex-shrink-0 pb-8">
         
-        {/* Go Pro Card */}
-        <div className="relative mt-12 rounded-[1.5rem] bg-[#2C2C2C] p-5 text-center text-white shadow-xl overflow-visible">
-          <div className="absolute -top-[4.5rem] left-1/2 -translate-x-1/2 w-[110px] pointer-events-none">
+        {/* Go Pro semicircle */}
+        <div className="relative mt-6 flex items-center justify-center">
+          {/* Doctor image - lower so only head peeks above semicircle */}
+          <div className="absolute -top-[3.5rem] left-[55%] -translate-x-1/2 w-[110px] pointer-events-none">
             <img src={DoctorLady} alt="Upgrade to Pro" className="w-full h-auto drop-shadow-2xl" />
           </div>
-          
-          <div className="mt-12 relative z-10">
-            <h4 className="text-[13px] font-bold leading-snug tracking-wide">Get faster<br/>and better<br/>Healthcare</h4>
-            <button className="mt-4 w-full rounded-lg bg-[#4B9AA8] py-2.5 text-xs font-bold text-white shadow-md transition-transform hover:scale-105 active:scale-95">
-              Go Pro
-            </button>
+
+          {/* True semicircle: use a full circle clipped by an overflow-hidden half-height container */}
+          <div className="w-full max-w-[220px]">
+            <div className="h-[110px] overflow-hidden flex justify-center">
+              <div className="w-[220px] h-[220px] rounded-full bg-[#2C2C2C] shadow-xl flex items-start justify-center">
+                <div className="mt-12 text-center text-white px-4">
+                  <h4 className="text-[13px] font-bold leading-snug tracking-wide">Get faster<br/>and better<br/>Healthcare</h4>
+                  <button className="mt-3 w-32 rounded-md bg-[#4B9AA8] py-2 text-xs font-bold text-white shadow-md transition-transform hover:scale-105 active:scale-95">
+                    Go Pro
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
