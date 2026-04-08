@@ -90,4 +90,11 @@ public class DoctorsController : ControllerBase
 
         return Ok(new { message = "Doctor deleted successfully." });
     }
+
+    [HttpGet("search")]
+    public async Task<IActionResult> SearchDoctors([FromQuery] DoctorSearchDto searchDto)
+    {
+        var doctors = await _doctorService.SearchDoctorsAsync(searchDto);
+        return Ok(doctors);
+    }
 }

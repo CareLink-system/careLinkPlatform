@@ -60,4 +60,31 @@ public class DoctorRepository : IDoctorRepository
         _context.Doctors.Update(doctor);
         await _context.SaveChangesAsync();
     }
+
+    public async Task<IEnumerable<Doctor>> SearchAsync(string? specializationId, string? department, bool? isAvailable, bool? isVerified)
+    {
+        var query = _context.Doctors.Where(d => !d.IsDeleted).AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(specializationId))
+        {
+            query = query.Where(d => d.SpecializationId == specializationId);
+        }
+
+        if (!string.IsNullOrWhiteSpace(department))
+        {
+            query = query.Where(d => d.Department != null && d.Department == department);
+        }
+
+        if (isAvailable.HasValue)
+        {
+            query = query.Where(d => d.IsAvailable == isAvailable.Value);
+        }
+
+        if (isVerified.HasValue)
+        {
+            query = query.Where(d => d.IsVerified == isVerified.Value);
+        }
+
+        return await query.ToListAsync();
+    }
 }
