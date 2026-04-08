@@ -1,5 +1,12 @@
+import axios from 'axios'
+
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
+const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: { 'Content-Type': 'application/json' },
+})
 const AUTH_STORAGE_KEY = 'carelink.auth'
 
 function getErrorMessage(payload, fallback) {
@@ -11,26 +18,19 @@ function getErrorMessage(payload, fallback) {
 }
 
 async function request(path, body) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  })
-
-  let payload = null
   try {
-    payload = await response.json()
-  } catch {
-    // Keep payload null when response body is not JSON.
-  }
+    const res = await apiClient.post(path, body)
+    const payload = res.data
 
-  if (!response.ok || !payload?.success) {
-    throw new Error(getErrorMessage(payload, 'Something went wrong. Please try again.'))
-  }
+    if (!res.status || res.status >= 400 || payload?.success === false) {
+      throw new Error(getErrorMessage(payload, 'Something went wrong. Please try again.'))
+    }
 
-  return payload.data
+    return payload.data
+  } catch (err) {
+    const payload = err?.response?.data || null
+    throw new Error(getErrorMessage(payload, err.message || 'Something went wrong. Please try again.'))
+  }
 }
 
 export async function loginUser(data) {
