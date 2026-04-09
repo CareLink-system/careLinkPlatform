@@ -124,6 +124,7 @@ builder.Services.AddSwaggerGen(c =>
     // ✅ Add operation filters
     c.OperationFilter<AddRequiredHeaderParameter>();
     c.OperationFilter<AddDefaultResponses>();
+    
 });
 
 // Add DbContext with Neon DB connection

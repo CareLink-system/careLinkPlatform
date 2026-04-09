@@ -4,6 +4,7 @@ using AuthService.Data;
 using Microsoft.AspNetCore.HttpOverrides;
 using DotNetEnv;
 using SharedConfiguration.Extensions;
+using System.Reflection;
 
 Console.WriteLine("🚀 Starting AuthService...");
 
@@ -85,6 +86,9 @@ builder.Services.AddSwaggerGen(c =>
             new string[] {}
         }
     });
+    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
+    c.IncludeXmlComments(xmlPath);
 });
 
 // Register application services
