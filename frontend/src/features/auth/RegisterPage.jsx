@@ -10,6 +10,7 @@ import AuthSvg from '../../assets/auth/auth.svg';
 import { registerSchema } from './schemas/authSchemas';
 import { registerUser } from './api/authApi';
 import { useAuth } from './context/AuthContext';
+import { getDashboardRoute } from './utils/roleRouting';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/shadcn/form';
 import { Input } from '../../components/shadcn/input';
 
@@ -51,7 +52,7 @@ export default function RegisterPage() {
       toast.success('Account created', {
         description: 'Welcome to CareLink.',
       });
-      setTimeout(() => navigate('/dashboard'), 500);
+      setTimeout(() => navigate(getDashboardRoute(authData?.user?.role || authData?.role)), 500);
     } catch (error) {
       const message = error.message || 'Unable to create account right now.';
       setApiError(message);
@@ -74,7 +75,7 @@ export default function RegisterPage() {
         </div>
 
         {/* Subtle Dark Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/10 pointer-events-none" />
+        <div className="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-black/10 pointer-events-none" />
 
         {/* Top Branding */}
         <div className="absolute top-10 left-10 z-20 flex items-center gap-3 text-white">
