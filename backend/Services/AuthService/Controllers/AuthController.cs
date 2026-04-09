@@ -17,6 +17,8 @@ namespace AuthService.Controllers;
 [Produces("application/json")]
 public class AuthController : ControllerBase
 {
+    private static readonly string[] SupportedRoles = { "Patient", "Doctor", "Admin" };
+
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<ApplicationRole> _roleManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
@@ -92,7 +94,7 @@ public class AuthController : ControllerBase
                 Email = request.Email,
                 FirstName = request.FirstName,
                 LastName = request.LastName,
-                Role = request.Role ?? "Patient",
+                Role = NormalizeRole(request.Role),
                 Titles = request.Titles,
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
@@ -108,7 +110,11 @@ public class AuthController : ControllerBase
             }
 
             // Assign role
-            var role = request.Role ?? "Patient";
+            if (!TryNormalizeRole(request.Role, out var role))
+            {
+                return BadRequest(ApiResponse<object>.FailResponse("Invalid role selected. Supported roles are Patient, Doctor, and Admin."));
+            }
+
             if (!await _roleManager.RoleExistsAsync(role))
             {
                 await _roleManager.CreateAsync(new ApplicationRole { Name = role });
@@ -215,7 +221,7 @@ public class AuthController : ControllerBase
 
             // Get user roles
             var roles = await _userManager.GetRolesAsync(user);
-            var role = roles.FirstOrDefault() ?? user.Role;
+            var role = GetEffectiveRole(user, roles);
 
             var response = new AuthResponseDto
             {
@@ -271,7 +277,7 @@ public class AuthController : ControllerBase
             await _userManager.UpdateAsync(user);
 
             var roles = await _userManager.GetRolesAsync(user);
-            var role = roles.FirstOrDefault() ?? user.Role;
+            var role = GetEffectiveRole(user, roles);
 
             var response = new AuthResponseDto
             {
@@ -358,7 +364,7 @@ public class AuthController : ControllerBase
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Titles = user.Titles,
-                Role = roles.FirstOrDefault() ?? user.Role,
+                Role = GetEffectiveRole(user, roles),
                 IsActive = user.IsActive,
                 CreatedAt = user.CreatedAt,
                 LastLoginAt = user.LastLoginAt,
@@ -458,7 +464,7 @@ public class AuthController : ControllerBase
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Titles = user.Titles,
-                Role = roles.FirstOrDefault() ?? user.Role,
+                Role = GetEffectiveRole(user, roles),
                 IsActive = user.IsActive,
                 CreatedAt = user.CreatedAt,
                 LastLoginAt = user.LastLoginAt
@@ -512,6 +518,12 @@ public class AuthController : ControllerBase
         var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"] ?? "your-super-secret-key-at-least-32-characters-long");
 
         var roles = await _userManager.GetRolesAsync(user);
+        var effectiveRoles = roles.Where(IsSupportedRole).ToList();
+
+        if (effectiveRoles.Count == 0)
+        {
+            effectiveRoles.Add(GetEffectiveRole(user));
+        }
 
         var claims = new List<Claim>
         {
@@ -525,7 +537,7 @@ public class AuthController : ControllerBase
         };
 
         // Add roles as claims
-        foreach (var role in roles)
+        foreach (var role in effectiveRoles)
         {
             claims.Add(new Claim(ClaimTypes.Role, role));
         }
@@ -546,5 +558,45 @@ public class AuthController : ControllerBase
     private string GenerateRefreshToken()
     {
         return Convert.ToBase64String(Guid.NewGuid().ToByteArray());
+    }
+
+    private static bool IsSupportedRole(string? role)
+    {
+        return SupportedRoles.Any(supported => string.Equals(supported, role?.Trim(), StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool TryNormalizeRole(string? role, out string normalizedRole)
+    {
+        if (string.IsNullOrWhiteSpace(role))
+        {
+            normalizedRole = "Patient";
+            return true;
+        }
+
+        var match = SupportedRoles.FirstOrDefault(supported => string.Equals(supported, role.Trim(), StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrEmpty(match))
+        {
+            normalizedRole = match;
+            return true;
+        }
+
+        normalizedRole = "Patient";
+        return false;
+    }
+
+    private static string NormalizeRole(string? role)
+    {
+        return TryNormalizeRole(role, out var normalizedRole) ? normalizedRole : "Patient";
+    }
+
+    private static string GetEffectiveRole(ApplicationUser user, IEnumerable<string>? roles = null)
+    {
+        var normalizedRole = roles?.FirstOrDefault(IsSupportedRole);
+        if (!string.IsNullOrWhiteSpace(normalizedRole))
+        {
+            return NormalizeRole(normalizedRole);
+        }
+
+        return NormalizeRole(user.Role);
     }
 }
