@@ -8,26 +8,29 @@ public class Payment : AuditableEntity
 {
     public int Id { get; set; }
 
-    [Required]
-    public int PatientId { get; set; }
-
-    [Required]
+    // 🔗 Relationships
     public int AppointmentId { get; set; }
+    public string PatientId { get; set; } = default!;
+    public string DoctorId { get; set; } = default!;
 
-    [Required]
+    // 💰 Payment Info
     public decimal Amount { get; set; }
+    public string Currency { get; set; } = "LKR";
 
-    [Required]
-    public string PaymentMethod { get; set; } = default!;
+    // 💳 Payment Method
+    public string PaymentMethod { get; set; } = default!; // Card, Cash, Online
 
-    [Required]
-    public string PaymentStatus { get; set; } = "Pending";
+    // 📊 Payment Status
+    public string PaymentStatus { get; set; } = "Pending"; // Pending, Completed, Failed, Refunded
 
-    public string? TransactionId { get; set; }
+    // 🧾 Transaction Details
+    public string? TransactionId { get; set; } // from payment gateway
+    public string? PaymentGateway { get; set; } // Stripe, PayHere, etc.
 
-    public DateTime? PaymentDate { get; set; }
+    // 🕒 Dates
+    public DateTime? PaidAt { get; set; }
 
+    // 📝 Optional
     public string? Notes { get; set; }
-
-    public string? ReceiptUrl { get; set; }
 }
+

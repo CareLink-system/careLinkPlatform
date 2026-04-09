@@ -1,8 +1,30 @@
 using Microsoft.EntityFrameworkCore;
 using AuthService;
 using AuthService.Data;
+using Microsoft.AspNetCore.HttpOverrides;
+using DotNetEnv;
+using SharedConfiguration.Extensions;
 
 Console.WriteLine("🚀 Starting AuthService...");
+
+// Load root .env file
+var rootPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", ".."));
+var envPath = Path.Combine(rootPath, ".env");
+
+if (File.Exists(envPath))
+{
+    Env.Load(envPath);
+    Console.WriteLine($"✅ Loaded .env from: {envPath}");
+}
+else
+{
+    Console.WriteLine($"⚠️ .env file not found at: {envPath}");
+}
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Apply shared environment-based configuration
+builder.AddSharedEnvironmentConfiguration();
 
 // Check if we should run migrations directly (skipping the whole application startup)
 MigrationRunner.RunMigrations(args);
@@ -17,7 +39,8 @@ ThreadPool.SetMinThreads(
 
 Console.WriteLine($"✅ Thread pool configured - Min worker threads: {newWorkerThreads}, Completion ports: {newCompletionPortThreads}");
 
-var builder = WebApplication.CreateBuilder(args);
+var configuredUrls = builder.Configuration["ASPNETCORE_URLS"] ?? builder.Configuration["urls"] ?? "https://localhost:5001";
+Console.WriteLine($"🌐 Kestrel configured URLs: {configuredUrls}");
 
 // Add CORS
 builder.Services.AddCors(options =>
@@ -29,6 +52,7 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader();
     });
 });
+
 // Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -75,14 +99,76 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
+// Configure forwarded headers for reverse proxy
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost
+});
+
+// CRITICAL FIX: Handle base path for reverse proxy
+app.Use((context, next) =>
+{
+    var request = context.Request;
+    var headers = request.Headers;
+    
+    // Check for forwarded prefix from gateway
+    var forwardedPath = headers["X-Forwarded-Prefix"].FirstOrDefault();
+    if (!string.IsNullOrEmpty(forwardedPath))
+    {
+        request.PathBase = forwardedPath;
+        Console.WriteLine($"Setting PathBase to: {forwardedPath}");
+    }
+    
+    // Log for debugging
+    if (request.Path.Value?.Contains("swagger") == true)
+    {
+        Console.WriteLine($"Swagger request - Path: {request.Path}, PathBase: {request.PathBase}, Headers: X-Forwarded-Prefix={forwardedPath}");
+    }
+    
+    return next();
+});
+
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
+    app.UseSwagger(c =>
+    {
+        // Configure Swagger to use the correct base path
+        c.PreSerializeFilters.Add((swaggerDoc, httpReq) =>
+        {
+            var headers = httpReq.Headers;
+            var forwardedPath = headers["X-Forwarded-Prefix"].FirstOrDefault();
+            var forwardedHost = headers["X-Forwarded-Host"].FirstOrDefault();
+            var forwardedProto = headers["X-Forwarded-Proto"].FirstOrDefault();
+            
+            if (!string.IsNullOrEmpty(forwardedPath))
+            {
+                // Build the correct server URL
+                var serverUrl = forwardedPath;
+                if (!string.IsNullOrEmpty(forwardedProto) && !string.IsNullOrEmpty(forwardedHost))
+                {
+                    serverUrl = $"{forwardedProto}://{forwardedHost}{forwardedPath}";
+                }
+                
+                swaggerDoc.Servers = new List<Microsoft.OpenApi.Models.OpenApiServer>
+                {
+                    new Microsoft.OpenApi.Models.OpenApiServer { Url = serverUrl }
+                };
+                
+                Console.WriteLine($"Swagger configured with server URL: {serverUrl}");
+            }
+        });
+    });
+    
     app.UseSwaggerUI(c =>
     {
+        // CRITICAL: Use absolute path for Swagger endpoint
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Auth Service API v1");
-        c.RoutePrefix = "swagger"; // Makes Swagger available at /swagger
+        c.RoutePrefix = "swagger";
+        c.ConfigObject.AdditionalItems["deepLinking"] = true;
+        c.ConfigObject.AdditionalItems["displayOperationId"] = true;
+        
+        Console.WriteLine("Swagger UI configured with endpoint: /api/v1/auth/swagger/v1/swagger.json");
     });
 
     // Apply migrations in development only
@@ -100,7 +186,7 @@ app.MapControllers();
 // Health check endpoint
 app.MapHealthChecks("/health");
 
-// Optional: Keep the weather forecast endpoint if you want
+// Optional: Keep the weather forecast endpoint
 var summaries = new[]
 {
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
@@ -121,8 +207,9 @@ app.MapGet("/weatherforecast", () =>
 .WithName("GetWeatherForecast");
 
 Console.WriteLine("✅ AuthService is ready!");
-Console.WriteLine($"📝 Swagger: http://localhost:5001/swagger");
-Console.WriteLine($"❤️ Health: http://localhost:5001/health");
+Console.WriteLine($"📝 Direct Swagger: https://localhost:5001/swagger");
+Console.WriteLine($"📝 Gateway Swagger: https://localhost:5000/api/v1/auth/swagger");
+Console.WriteLine($"❤️ Health: /health");
 
 app.Run();
 

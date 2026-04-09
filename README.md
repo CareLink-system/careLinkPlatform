@@ -1,5 +1,7 @@
 # 🏥 CareLink Platform - Backend Setup Guide
 
+See the full project setup guide in [SETUP.md](SETUP.md).
+
 ## 📋 Table of Contents
 
 - [Prerequisites](#prerequisites)
@@ -644,6 +646,8 @@ docker-compose up -d
 docker-compose logs -f
 text
 
+userName - dinildulneth@gmail.com
+Password - dinildulnet123!@#
 ---
 
 **Now you have a complete README for your backend!** 📚🚀

@@ -23,11 +23,10 @@ public class MedicalReport : AuditableEntity
     [Required]
     public string Diagnosis { get; set; } = default!;
 
-    public string? Prescription { get; set; }
+    // Store multiple file paths as comma-separated string
+    public string? Reports { get; set; }
 
     public string? Notes { get; set; }
-
-    public string? FileUrl { get; set; }
 
     [Required]
     public string ReportType { get; set; } = default!;
