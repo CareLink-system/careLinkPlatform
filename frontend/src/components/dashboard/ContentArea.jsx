@@ -48,10 +48,10 @@ function ProfileAvatar({ sizeClass = 'w-8 h-8', src }) {
 
 export default function ContentArea() {
   const navigate = useNavigate()
-  const { logout } = useAuth()
+  const { logout, user: authUser } = useAuth()
   const initRef = useRef(false)
 
-  const [user, setUser] = useState({ firstName: 'There', email: '' })
+  const [user, setUser] = useState(() => authUser || { firstName: 'There', email: '' })
   const [appointments, setAppointments] = useState([])
   const [nearbyDoctors, setNearbyDoctors] = useState([])
   const [recommendedDoctors, setRecommendedDoctors] = useState([])
@@ -73,14 +73,18 @@ export default function ContentArea() {
     const load = async () => {
       setIsLoading(true)
 
+      if (authUser) {
+        setUser(authUser)
+      }
+
       const [userRes, aptRes, nearbyRes, recRes] = await Promise.all([
-        fetchCurrentUser(),
+        authUser ? Promise.resolve({ data: authUser, error: null }) : fetchCurrentUser(),
         fetchUpcomingAppointments(),
         fetchNearbyDoctors(),
         fetchRecommendedDoctors(),
       ])
 
-      if (userRes.data) {
+      if (!authUser && userRes.data) {
         setUser(userRes.data)
       }
 
@@ -99,7 +103,7 @@ export default function ContentArea() {
     }
 
     load()
-  }, [])
+  }, [authUser])
 
   const filteredNearby = useMemo(() => {
     if (!searchQuery.trim()) return nearbyDoctors

@@ -18,6 +18,8 @@ namespace AuthService.Controllers;
 public class AuthController : ControllerBase
 {
     private static readonly string[] SupportedRoles = { "Patient", "Doctor", "Admin" };
+    private static readonly string[] PublicRegistrationRoles = { "Patient", "Doctor" };
+    private const string DevJwtKeyFallback = "carelink-dev-jwt-key-minimum-32-characters-long";
 
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<ApplicationRole> _roleManager;
@@ -94,7 +96,7 @@ public class AuthController : ControllerBase
                 Email = request.Email,
                 FirstName = request.FirstName,
                 LastName = request.LastName,
-                Role = NormalizeRole(request.Role),
+                Role = NormalizeRegistrationRole(request.Role),
                 Titles = request.Titles,
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
@@ -110,9 +112,9 @@ public class AuthController : ControllerBase
             }
 
             // Assign role
-            if (!TryNormalizeRole(request.Role, out var role))
+            if (!TryNormalizeRegistrationRole(request.Role, out var role))
             {
-                return BadRequest(ApiResponse<object>.FailResponse("Invalid role selected. Supported roles are Patient, Doctor, and Admin."));
+                return BadRequest(ApiResponse<object>.FailResponse("Invalid role selected. Only Patient and Doctor can be created from public registration."));
             }
 
             if (!await _roleManager.RoleExistsAsync(role))
@@ -515,7 +517,7 @@ public class AuthController : ControllerBase
     private async Task<string> GenerateJwtToken(ApplicationUser user)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"] ?? "your-super-secret-key-at-least-32-characters-long");
+        var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"] ?? DevJwtKeyFallback);
 
         var roles = await _userManager.GetRolesAsync(user);
         var effectiveRoles = roles.Where(IsSupportedRole).ToList();
@@ -587,6 +589,36 @@ public class AuthController : ControllerBase
     private static string NormalizeRole(string? role)
     {
         return TryNormalizeRole(role, out var normalizedRole) ? normalizedRole : "Patient";
+    }
+
+    private static string NormalizeRegistrationRole(string? role)
+    {
+        if (string.IsNullOrWhiteSpace(role))
+        {
+            return "Patient";
+        }
+
+        var match = PublicRegistrationRoles.FirstOrDefault(supported => string.Equals(supported, role.Trim(), StringComparison.OrdinalIgnoreCase));
+        return match ?? "Patient";
+    }
+
+    private static bool TryNormalizeRegistrationRole(string? role, out string normalizedRole)
+    {
+        if (string.IsNullOrWhiteSpace(role))
+        {
+            normalizedRole = "Patient";
+            return true;
+        }
+
+        var match = PublicRegistrationRoles.FirstOrDefault(supported => string.Equals(supported, role.Trim(), StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrEmpty(match))
+        {
+            normalizedRole = match;
+            return true;
+        }
+
+        normalizedRole = "Patient";
+        return false;
     }
 
     private static string GetEffectiveRole(ApplicationUser user, IEnumerable<string>? roles = null)

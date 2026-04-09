@@ -220,7 +220,6 @@ export default function RegisterPage() {
                       >
                         <option value="Patient">Patient</option>
                         <option value="Doctor">Doctor</option>
-                        <option value="Admin">Admin</option>
                       </select>
                     </FormControl>
                     <FormMessage />

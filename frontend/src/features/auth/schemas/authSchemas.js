@@ -29,7 +29,7 @@ export const registerSchema = z
       .regex(/[0-9]/, 'Password must include at least one number'),
     confirmPassword: z.string().min(1, 'Confirm your password'),
     titles: z.string().max(20, 'Title must be 20 characters or less').optional().or(z.literal('')),
-    role: z.enum(['Patient', 'Doctor', 'Admin']),
+    role: z.enum(['Patient', 'Doctor']),
   })
   .refine((data) => data.password === data.confirmPassword, {
     path: ['confirmPassword'],

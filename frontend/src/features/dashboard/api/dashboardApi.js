@@ -53,14 +53,22 @@ async function safeGet(url, fallbackMessage) {
 }
 
 export async function fetchCurrentUser() {
+  const storedAuth = getStoredAuth()
   const result = await safeGet(
     `${AUTH_BASE_URL}/api/v1/auth/me`,
     'Unable to load your profile right now.'
   )
 
-  // Auth/me returns a single object, not list
+  // Auth/me returns a single object, not list. On failure, fall back to the cached session.
+  if (result.error && storedAuth?.user) {
+    return {
+      data: storedAuth.user,
+      error: null,
+    }
+  }
+
   return {
-    data: result.data && !Array.isArray(result.data) ? result.data : null,
+    data: result.data && !Array.isArray(result.data) ? result.data : storedAuth?.user ?? null,
     error: result.error,
   }
 }
