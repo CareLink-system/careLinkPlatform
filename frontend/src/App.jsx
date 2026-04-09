@@ -9,6 +9,7 @@ import AdminDashboardPage from './pages/AdminDashboardPage'
 import TelemedicinePage from './pages/TelemedicinePage'
 import SymptomCheckerPage from './pages/SymptomCheckerPage'
 import DashboardShell from './components/dashboard/DashboardShell'
+import ProtectedRoute from './components/dashboard/ProtectedRoute'
 import './App.css'
 
 function App() {
@@ -22,7 +23,14 @@ function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/doctor-dashboard" element={<DoctorDashboardPage />} />
         <Route path="/admin-dashboard" element={<AdminDashboardPage />} />
-        <Route path="/telemedicine/:appointmentId" element={<TelemedicinePage />} />
+        <Route
+          path="/telemedicine/:appointmentId"
+          element={(
+            <ProtectedRoute allowedRoles={['Patient', 'Doctor']}>
+              <TelemedicinePage />
+            </ProtectedRoute>
+          )}
+        />
         <Route path="/symptom-checker" element={<SymptomCheckerPage />} />
       </Route>
     </Routes>

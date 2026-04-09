@@ -31,7 +31,7 @@ const doctorDashboardConfig = {
   actionsTitle: 'Quick actions',
   actionsSubtitle: 'Shortcuts for the tasks doctors use most often.',
   actions: [
-    { label: 'Start consultation', description: 'Join a live patient session.', icon: '🎥' },
+    { label: 'Start consultation', description: 'Join a live patient session.', icon: '🎥', to: '/telemedicine/demo-consult-room' },
     { label: 'Review patient record', description: 'Open the latest notes and history.', icon: '🩺' },
     { label: 'Write prescription', description: 'Prepare or renew a medication plan.', icon: '📋' },
   ],

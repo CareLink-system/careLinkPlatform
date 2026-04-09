@@ -1,6 +1,7 @@
 import React from 'react'
 // eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../features/auth/context/AuthContext'
 import { getRoleLabel, normalizeRole } from '../../features/auth/utils/roleRouting'
 
@@ -43,6 +44,7 @@ function SectionCard({ title, subtitle, children, action }) {
 }
 
 export default function RoleDashboardContent({ config }) {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const role = normalizeRole(user?.role)
   const displayName = user?.firstName || 'There'
@@ -129,6 +131,7 @@ export default function RoleDashboardContent({ config }) {
               {config.actions.map((action) => (
                 <button
                   key={action.label}
+                  onClick={() => action.to && navigate(action.to)}
                   className="rounded-2xl border border-slate-100 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                 >
                   <div className="text-lg">{action.icon}</div>

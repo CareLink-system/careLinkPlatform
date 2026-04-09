@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 import { getAgoraToken } from '../api/telemedicine';
 
-export default function VideoRoom({ appointmentId, appId: propAppId }) {
+export default function VideoRoom({ appointmentId, appId: propAppId, participantRole = 'patient' }) {
   const appId = propAppId || import.meta.env.VITE_AGORA_APP_ID;
   const [status, setStatus] = useState('Connecting...');
   const [joined, setJoined] = useState(false);
@@ -17,6 +17,7 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
   const localVideoRef = useRef(null);
   const remotePlayerHostRef = useRef(null);
   const [hasRemoteVideo, setHasRemoteVideo] = useState(false);
+  const waitingText = participantRole === 'doctor' ? 'Waiting for patient...' : 'Waiting for doctor...';
 
   useEffect(() => {
     if (!appointmentId || !appId) return;
@@ -154,7 +155,7 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
 
         <div className="w-full h-full relative flex items-center justify-center">
           <div ref={remotePlayerHostRef} className="absolute inset-0" />
-          {!hasRemoteVideo && joined && <span className="text-slate-500">Waiting for patient...</span>}
+          {!hasRemoteVideo && joined && <span className="text-slate-500">{waitingText}</span>}
         </div>
 
         {/* Local Video Overlay - improved aspect ratio and positioning */}
