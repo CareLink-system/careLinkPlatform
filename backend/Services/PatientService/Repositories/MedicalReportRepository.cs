@@ -41,12 +41,12 @@ namespace PatientService.Repositories
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<MedicalReport>> GetByDoctorIdAsync(int doctorId)
-        {
-            return await _context.MedicalReports
-                .Where(r => r.DoctorId == doctorId && !r.IsDeleted)
-                .ToListAsync();
-        }
+        //public async Task<IEnumerable<MedicalReport>> GetByDoctorIdAsync(int doctorId)
+        //{
+        //    return await _context.MedicalReports
+        //        .Where(r => r.DoctorId == doctorId && !r.IsDeleted)
+        //        .ToListAsync();
+        //}
 
         public async Task<IEnumerable<MedicalReport>> GetByAppointmentIdAsync(int appointmentId)
         {

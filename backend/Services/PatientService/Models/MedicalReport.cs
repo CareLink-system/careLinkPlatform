@@ -8,14 +8,16 @@ public class MedicalReport : AuditableEntity
 {
     public int Id { get; set; }
 
-    [Required]
+    
     public int PatientId { get; set; }
 
-    [Required]
-    public int DoctorId { get; set; }
+    
+    //public int DoctorId { get; set; }
 
-    [Required]
+  
     public int AppointmentId { get; set; }
+    [Required]
+    public string PatientName { get; set; } = default!;
 
     [Required]
     public DateTime ReportDate { get; set; }

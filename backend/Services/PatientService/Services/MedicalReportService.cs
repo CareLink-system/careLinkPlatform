@@ -20,8 +20,9 @@ namespace PatientService.Services
             var report = new MedicalReport
             {
                 PatientId = dto.PatientId,
-                DoctorId = dto.DoctorId,
+                //DoctorId = dto.DoctorId,
                 AppointmentId = dto.AppointmentId,
+                PatientName = dto.PatientName,
                 ReportDate = dto.ReportDate,
                 Diagnosis = dto.Diagnosis,
                 Reports = dto.Reports,
@@ -54,11 +55,11 @@ namespace PatientService.Services
             return reports.Select(MapToDto);
         }
 
-        public async Task<IEnumerable<MedicalReportResponseDto>> GetByDoctorIdAsync(int doctorId)
-        {
-            var reports = await _repository.GetByDoctorIdAsync(doctorId);
-            return reports.Select(MapToDto);
-        }
+        //public async Task<IEnumerable<MedicalReportResponseDto>> GetByDoctorIdAsync(int doctorId)
+        //{
+        //    var reports = await _repository.GetByDoctorIdAsync(doctorId);
+        //    return reports.Select(MapToDto);
+        //}
 
         public async Task<IEnumerable<MedicalReportResponseDto>> GetByAppointmentIdAsync(int appointmentId)
         {
@@ -73,6 +74,7 @@ namespace PatientService.Services
 
             
             //report.ReportDate = dto.ReportDate;
+            report.PatientName = dto.PatientName;
             report.Diagnosis = dto.Diagnosis;
             report.Reports = dto.Reports;
             report.Notes = dto.Notes;
@@ -104,7 +106,7 @@ namespace PatientService.Services
             {
                 Id = report.Id,
                 PatientId = report.PatientId,
-                DoctorId = report.DoctorId,
+                //DoctorId = report.DoctorId,
                 AppointmentId = report.AppointmentId,
                 ReportDate = report.ReportDate,
                 Diagnosis = report.Diagnosis,
