@@ -49,13 +49,13 @@ namespace PatientService.Controllers
             return Ok(reports);
         }
 
-        [Authorize(Roles = "Doctor,Admin,Patient")]
-        [HttpGet("doctor/{doctorId:int}")]
-        public async Task<IActionResult> GetByDoctorId(int doctorId)
-        {
-            var reports = await _service.GetByDoctorIdAsync(doctorId);
-            return Ok(reports);
-        }
+        //[Authorize(Roles = "Doctor,Admin,Patient")]
+        //[HttpGet("doctor/{doctorId:int}")]
+        //public async Task<IActionResult> GetByDoctorId(int doctorId)
+        //{
+        //    var reports = await _service.GetByDoctorIdAsync(doctorId);
+        //    return Ok(reports);
+        //}
 
         [Authorize(Roles = "Doctor,Admin,Patient")]
         [HttpGet("appointment/{appointmentId:int}")]
