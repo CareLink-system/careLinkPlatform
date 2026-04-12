@@ -12,7 +12,7 @@ public class Prescription : AuditableEntity
 
     public Doctor Doctor { get; set; } = default!;
 
-     
+    [Required]
     public int PatientId { get; set; }
 
     public int? AppointmentId { get; set; }
