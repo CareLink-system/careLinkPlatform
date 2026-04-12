@@ -87,10 +87,10 @@ export default function PatientCalendar() {
 
       {/* ================= HEADER (IMPROVED) ================= */}
       <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 text-white p-6 rounded-2xl shadow-lg">
-        <h1 className="text-3xl font-bold">Sri Lanka Calendar</h1>
+        <h1 className="text-3xl font-bold">Patient Calendar</h1>
 
         <p className="text-sm opacity-90 mt-1">
-          Sri Lanka Public Holidays • Poya Days • Observances • 2026 Calendar
+          Holidays • 2026 Calendar
         </p>
       </div>
 
@@ -116,7 +116,7 @@ export default function PatientCalendar() {
           />
 
           <div className="text-center text-xs text-gray-500 mt-4">
-            Red dot = Holiday in Sri Lanka
+            Red dot = Holiday 
           </div>
         </div>
 
@@ -161,7 +161,7 @@ export default function PatientCalendar() {
           )}
 
           <div className="pt-4 border-t text-xs text-gray-500">
-            System supports Sri Lanka holidays, Poya days, and observances.
+            System supports holidays, Poya days, and observances.
           </div>
         </div>
       </div>
