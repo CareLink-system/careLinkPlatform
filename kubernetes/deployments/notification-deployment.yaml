@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: carelink
+  labels:
+    app: notification-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+    spec:
+      containers:
+        - name: notification-service
+          image: carelink/notification-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5008
+              name: http
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: ASPNETCORE_ENVIRONMENT
+            - name: MongoDb__ConnectionString
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: MongoDb__ConnectionString
+            - name: MongoDb__Database
+              value: notificationdb
+            - name: RabbitMq__Host
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: RabbitMq__Host
+            - name: RabbitMq__Username
+              value: guest
+            - name: RabbitMq__Password
+              valueFrom:
+                secretKeyRef:
+                  name: carelink-secrets
+                  key: RabbitMq__Password
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: carelink
+spec:
+  selector:
+    app: notification-service
+  ports:
+    - port: 5008
+      targetPort: 5008
+  type: ClusterIP
