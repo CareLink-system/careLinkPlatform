@@ -15,6 +15,8 @@ export default function PatientProfilePage() {
   const [patient, setPatient] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  const [actionLoading, setActionLoading] = useState(false)
+
   const [form, setForm] = useState({
     fullName: '',
     phone: '',
@@ -26,26 +28,30 @@ export default function PatientProfilePage() {
   // ================= LOAD =================
   useEffect(() => {
     const load = async () => {
-      if (!userId) {
+      try {
+        if (!userId) {
+          setLoading(false)
+          return
+        }
+
+        const res = await getPatientByUserId(userId)
+
+        if (res.data) {
+          setPatient(res.data)
+
+          setForm({
+            fullName: res.data.fullName || '',
+            phone: res.data.phone || '',
+            dateOfBirth: res.data.dateOfBirth || '',
+            gender: res.data.gender || '',
+            bloodGroup: res.data.bloodGroup || '',
+          })
+        }
+      } catch (err) {
+        toast.error('Failed to load profile')
+      } finally {
         setLoading(false)
-        return
       }
-
-      const res = await getPatientByUserId(userId)
-
-      if (res.data) {
-        setPatient(res.data)
-
-        setForm({
-          fullName: res.data.fullName || '',
-          phone: res.data.phone || '',
-          dateOfBirth: res.data.dateOfBirth || '',
-          gender: res.data.gender || '',
-          bloodGroup: res.data.bloodGroup || '',
-        })
-      }
-
-      setLoading(false)
     }
 
     load()
@@ -57,6 +63,8 @@ export default function PatientProfilePage() {
 
   // ================= CREATE =================
   const handleCreate = async () => {
+    setActionLoading(true)
+
     const res = await createPatientProfile({
       ...form,
       userId,
@@ -68,10 +76,14 @@ export default function PatientProfilePage() {
     } else {
       toast.error(res.error)
     }
+
+    setActionLoading(false)
   }
 
   // ================= UPDATE =================
   const handleUpdate = async () => {
+    setActionLoading(true)
+
     const res = await updatePatientProfile(patient.id || patient._id, form)
 
     if (res.data) {
@@ -80,12 +92,22 @@ export default function PatientProfilePage() {
     } else {
       toast.error(res.error)
     }
+
+    setActionLoading(false)
   }
 
+  // ================= LOADING UI (FIXED) =================
   if (loading) {
     return (
-      <div className="p-10 text-center text-gray-500">
-        Loading patient profile...
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="flex flex-col items-center gap-4">
+          
+          {/* Spinner */}
+          <div className="w-12 h-12 border-1 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+
+          {/* Text */}
+          <p className="text-gray-500 text-sm">Loading patient profile...</p>
+        </div>
       </div>
     )
   }
@@ -131,7 +153,6 @@ export default function PatientProfilePage() {
 
         <div className="grid md:grid-cols-2 gap-4">
 
-          {/* Full Name */}
           <input
             name="fullName"
             value={form.fullName}
@@ -140,7 +161,6 @@ export default function PatientProfilePage() {
             className="border p-3 rounded-lg w-full"
           />
 
-          {/* Phone (10 digits only) */}
           <input
             name="phone"
             value={form.phone}
@@ -152,7 +172,6 @@ export default function PatientProfilePage() {
             className="border p-3 rounded-lg w-full"
           />
 
-          {/* DOB */}
           <input
             name="dateOfBirth"
             value={form.dateOfBirth}
@@ -161,7 +180,6 @@ export default function PatientProfilePage() {
             className="border p-3 rounded-lg w-full"
           />
 
-          {/* Gender Dropdown */}
           <select
             name="gender"
             value={form.gender}
@@ -174,7 +192,6 @@ export default function PatientProfilePage() {
             <option value="Other">Other</option>
           </select>
 
-          {/* Blood Group Dropdown */}
           <select
             name="bloodGroup"
             value={form.bloodGroup}
@@ -198,16 +215,18 @@ export default function PatientProfilePage() {
           {!patient ? (
             <button
               onClick={handleCreate}
-              className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg cursor-pointer"
+              disabled={actionLoading}
+              className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg disabled:opacity-50"
             >
-              Create Patient Profile
+              {actionLoading ? 'Creating...' : 'Create Patient Profile'}
             </button>
           ) : (
             <button
               onClick={handleUpdate}
-              className="bg-[#1649FF] hover:bg-blue-700 text-white px-5 py-2 rounded-lg cursor-pointer"
+              disabled={actionLoading}
+              className="bg-[#1649FF] hover:bg-blue-700 text-white px-5 py-2 rounded-lg disabled:opacity-50"
             >
-              Update Patient Profile
+              {actionLoading ? 'Updating...' : 'Update Patient Profile'}
             </button>
           )}
         </div>
