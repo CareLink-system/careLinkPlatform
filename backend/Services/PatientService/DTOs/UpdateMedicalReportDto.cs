@@ -5,6 +5,8 @@ namespace PatientService.DTOs
     public class UpdateMedicalReportDto
     {
         [Required]
+        public string PatientName { get; set; } = default!;
+        [Required]
         public string Diagnosis { get; set; } = default!;
 
 
