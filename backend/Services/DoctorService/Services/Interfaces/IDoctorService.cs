@@ -7,6 +7,10 @@ public interface IDoctorService
     Task<DoctorResponseDto> CreateDoctorAsync(CreateDoctorDto dto, string? createdBy = null);
     Task<IEnumerable<DoctorResponseDto>> GetAllDoctorsAsync();
     Task<DoctorResponseDto?> GetDoctorByIdAsync(int id);
+
+    // ✅ ADD THIS NEW METHOD
+    Task<DoctorResponseDto?> GetDoctorByUserIdAsync(string userId);
+
     Task<IEnumerable<DoctorResponseDto>> GetVerifiedDoctorsAsync();
     Task<IEnumerable<DoctorResponseDto>> GetDoctorsBySpecializationAsync(string specializationId);
     Task<IEnumerable<DoctorResponseDto>> SearchDoctorsAsync(DoctorSearchDto searchDto);
