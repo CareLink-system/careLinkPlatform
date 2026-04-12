@@ -72,7 +72,7 @@ public class DoctorsController : ControllerBase
         return Ok(updatedDoctor);
     }
 
-    [Authorize(Roles = "Admin , Doctor")]
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id:int}/verify")]
     public async Task<IActionResult> VerifyDoctor(int id)
     {
@@ -102,15 +102,5 @@ public class DoctorsController : ControllerBase
     {
         var doctors = await _doctorService.SearchDoctorsAsync(searchDto);
         return Ok(doctors);
-    }
-
-    [Authorize(Roles = "Doctor")]
-    [HttpGet("me")]
-    public async Task<IActionResult> GetMyProfile()
-    {
-        var userId = User.Identity?.Name;
-        var doctor = await _doctorService.GetDoctorByUserIdAsync(userId);
-        if (doctor == null) return NotFound();
-        return Ok(doctor);
     }
 }

@@ -157,14 +157,4 @@ public class DoctorService : IDoctorService
 
         return doctors.Select(MapToResponseDto);
     }
-
-    public async Task<DoctorResponseDto?> GetDoctorByUserIdAsync(string userId)
-    {
-        if (string.IsNullOrWhiteSpace(userId))
-            return null;
-
-        var doctor = await _doctorRepository.GetByUserIdAsync(userId);
-
-        return doctor == null ? null : MapToResponseDto(doctor);
-    }
 }

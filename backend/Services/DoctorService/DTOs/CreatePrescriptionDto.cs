@@ -7,7 +7,7 @@ public class CreatePrescriptionDto
     [Required]
     public int DoctorId { get; set; }
 
-     
+    [Required]
     public int PatientId { get; set; }
 
     public int? AppointmentId { get; set; }

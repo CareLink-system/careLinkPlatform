@@ -35,7 +35,7 @@ public class DoctorRepository : IDoctorRepository
             .FirstOrDefaultAsync(d => d.Id == id && !d.IsDeleted);
     }
 
-    public async Task<Doctor?> GetByUserIdAsync(string userId)
+    public async Task<Doctor?> GetByUserIdAsync(int userId)
     {
         return await _context.Doctors
             .FirstOrDefaultAsync(d => d.UserId == userId && !d.IsDeleted);

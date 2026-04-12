@@ -5,7 +5,7 @@ namespace DoctorService.DTOs;
 public class CreateDoctorDto
 {
     [Required]
-    public string UserId { get; set; }
+    public int UserId { get; set; }
 
     [Required]
     public string SpecializationId { get; set; } = default!;
