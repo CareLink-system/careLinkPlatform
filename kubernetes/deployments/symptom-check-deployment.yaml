@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: symptom-check-service
+  namespace: carelink
+  labels:
+    app: symptom-check-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: symptom-check-service
+  template:
+    metadata:
+      labels:
+        app: symptom-check-service
+    spec:
+      containers:
+        - name: symptom-check-service
+          image: carelink/symptom-check-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: MONGO_URI
+              value: mongodb://mongodb-service:27017/symptomcheck
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: symptom-check-service
+  namespace: carelink
+spec:
+  selector:
+    app: symptom-check-service
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: ClusterIP

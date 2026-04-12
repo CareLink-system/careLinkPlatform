@@ -27,7 +27,15 @@ function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/doctor-dashboard" element={<DoctorDashboardPage />} />
         <Route path="/admin-dashboard" element={<AdminDashboardPage />} />
-        <Route path="/telemedicine/:appointmentId" element={<TelemedicinePage />} />
+        <Route path="/admin/users" element={<UserManagementPage />} />
+        <Route
+          path="/payments"
+          element={<BasicFinancialTransactionMonitoringPage />}
+        />
+        <Route
+          path="/telemedicine/:appointmentId"
+          element={<TelemedicinePage />}
+        />
         <Route path="/symptom-checker" element={<SymptomCheckerPage />} />
         <Route path="/patient-profile" element={<PatientProfilePage />} />
         <Route path="/medical-reports" element={<MedicalReportsPage />} />
@@ -35,7 +43,7 @@ function App() {
         <Route path="/calendar" element={<Calendar />} />
       </Route>
     </Routes>
-  )
+  );
 }
 
-export default App
+export default App;
