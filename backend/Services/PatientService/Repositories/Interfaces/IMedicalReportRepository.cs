@@ -8,7 +8,7 @@ namespace PatientService.Repositories.Interfaces
         Task<MedicalReport?> GetByIdAsync(int id);
         Task<IEnumerable<MedicalReport>> GetAllAsync();
         Task<IEnumerable<MedicalReport>> GetByPatientIdAsync(int patientId);
-        Task<IEnumerable<MedicalReport>> GetByDoctorIdAsync(int doctorId);
+        //Task<IEnumerable<MedicalReport>> GetByDoctorIdAsync(int doctorId);
         Task<IEnumerable<MedicalReport>> GetByAppointmentIdAsync(int appointmentId);
         Task UpdateAsync(MedicalReport report);
     }

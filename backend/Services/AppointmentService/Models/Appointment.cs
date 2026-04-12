@@ -1,5 +1,5 @@
-using AppointmentService.Enum;
 using AppointmentService.Models.Common;
+using AppointmentService.Models.Enums;
 using System.ComponentModel.DataAnnotations;
 
 namespace AppointmentService.Models;
@@ -14,19 +14,22 @@ public class Appointment : AuditableEntity
     [Required]
     public int DoctorId { get; set; }
 
+    public int DoctorAvailabilityId { get; set; }
+
+    public string PatientName { get; set; } = default!;
+    public int Age { get; set; }
+    public string Address { get; set; } = default!;
+    public string Phone { get; set; } = default!;
+
     [Required]
-    public DateTime AppointmentDate { get; set; }
+    public string AppointmentDate { get; set; } = default!;
 
     [Required]
     public string TimeSlot { get; set; } = default!;
 
-    [Required]
     public string AppointmentType { get; set; } = default!;
-
     public string? Reason { get; set; }
-
     public string? Notes { get; set; }
 
-    [Required]
-    public string AppointmentStatus { get; set; } = "Scheduled";
+    public AppointmentStatus AppointmentStatus { get; set; } = AppointmentStatus.Scheduled;
 }

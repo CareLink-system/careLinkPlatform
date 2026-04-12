@@ -4,14 +4,16 @@ namespace PatientService.DTOs
 {
     public class CreateMedicalReportDto
     {
-        [Required]
+        
         public int PatientId { get; set; }
 
-        [Required]
-        public int DoctorId { get; set; }
+        
+        //public int DoctorId { get; set; }
 
         
         public int AppointmentId { get; set; }
+        [Required]
+        public string PatientName { get; set; } = default!;
 
         public DateTime ReportDate { get; set; }
 

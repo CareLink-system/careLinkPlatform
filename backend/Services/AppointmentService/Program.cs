@@ -4,12 +4,15 @@ using DotNetEnv;
 using SharedConfiguration.Extensions;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
-using Swashbuckle.AspNetCore.SwaggerGen;
-using AppointmentService.Filters;
+using AppointmentService.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 Console.WriteLine("🚀 Starting AppointmentService...");
 
-// Load root .env file
+// =====================
+// LOAD .ENV
+// =====================
 var rootPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", ".."));
 var envPath = Path.Combine(rootPath, ".env");
 
@@ -25,11 +28,24 @@ else
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Apply shared environment-based configuration
+// =====================
+// SHARED CONFIG
+// =====================
 builder.AddSharedEnvironmentConfiguration();
 
+// =====================
+// 🔥 FIX: IHttpContextAccessor (IMPORTANT)
+// =====================
+builder.Services.AddHttpContextAccessor();
 
-// Add CORS
+// =====================
+// DEPENDENCY INJECTION
+// =====================
+builder.Services.AddAppointmentServices();
+
+// =====================
+// CORS
+// =====================
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -40,42 +56,24 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Add services
+// =====================
+// CONTROLLERS
+// =====================
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// ✅ ENHANCED: Add Swagger with complete documentation support
+// =====================
+// SWAGGER
+// =====================
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Appointment Service API",
         Version = "v1",
-        Description = @"
-            <h3>Appointment Service for CareLink Platform</h3>
-            <p>Handles all appointment-related operations including:</p>
-            <ul>
-                <li>Appointment scheduling and booking</li>
-                <li>Doctor availability management</li>
-                <li>Appointment rescheduling and cancellation</li>
-                <li>Appointment history tracking</li>
-            </ul>
-        ",
-        Contact = new OpenApiContact
-        {
-            Name = "CareLink Support",
-            Email = "support@carelink.com",
-            Url = new Uri("https://carelinkplatform.com")
-        },
-        License = new OpenApiLicense
-        {
-            Name = "MIT License",
-            Url = new Uri("https://opensource.org/licenses/MIT")
-        },
-        TermsOfService = new Uri("https://carelinkplatform.com/terms")
+        Description = "Appointment microservice for CareLink platform"
     });
 
-    // ✅ Add JWT Authentication with better description
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -83,21 +81,9 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = @"
-            **JWT Authorization header using the Bearer scheme.**
-            
-            **How to get token:**
-            1. Call POST /api/v1/Auth/login from AuthService
-            2. Use credentials: email & password
-            3. Copy the 'token' from response
-            
-            **Example:** Bearer eyJhbGciOiJIUzI1NiIs...
-            
-            **Token expires:** 24 hours after issue
-        "
+        Description = "Enter: Bearer {your JWT token}"
     });
 
-    // ✅ Add security requirement for all endpoints
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -109,72 +95,75 @@ builder.Services.AddSwaggerGen(c =>
                     Id = "Bearer"
                 }
             },
-            new[] { "read", "write" }
+            Array.Empty<string>()
         }
     });
 
-    // ✅ Include XML comments
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     if (File.Exists(xmlPath))
-    {
         c.IncludeXmlComments(xmlPath);
-    }
-
-    // ✅ Add operation filters
-    c.OperationFilter<AddRequiredHeaderParameter>();
-    c.OperationFilter<AddDefaultResponses>();
-    
 });
 
-// Add DbContext with Neon DB connection
+// =====================
+// DATABASE
+// =====================
 builder.Services.AddDbContext<AppointmentDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
+);
 
+// =====================
+// AUTH
+// =====================
+var jwtKey = builder.Configuration["Jwt:Key"];
+
+if (string.IsNullOrEmpty(jwtKey))
+{
+    throw new Exception("JWT Key is missing in configuration!");
+}
+
+builder.Services.AddAuthentication("Bearer")
+    .AddJwtBearer("Bearer", options =>
+    {
+        options.RequireHttpsMetadata = false; // dev only
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtKey))
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// Configure pipeline
+// =====================
+// PIPELINE
+// =====================
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// Apply migrations automatically (optional)
-//using (var scope = app.Services.CreateScope())
-//{
-//    var dbContext = scope.ServiceProvider.GetRequiredService<AppointmentDbContext>();
-//    dbContext.Database.Migrate();
-//}
-
 app.UseHttpsRedirection();
+
+app.UseCors("AllowAll");
+
+// 🔥 IMPORTANT ORDER (DO NOT CHANGE)
+app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
 
-// Optional: Keep the weather forecast endpoint if you want
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
-
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

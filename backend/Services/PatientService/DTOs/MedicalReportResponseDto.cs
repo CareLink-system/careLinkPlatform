@@ -6,8 +6,9 @@ namespace PatientService.DTOs
     {
         public int Id { get; set; }
         public int PatientId { get; set; }
-        public int DoctorId { get; set; }
+        //public int DoctorId { get; set; }
         public int AppointmentId { get; set; }
+        public string PatientName { get; set; } = default!;
         public DateTime ReportDate { get; set; }
         public string Diagnosis { get; set; } = default!;
         public string? Reports { get; set; }
