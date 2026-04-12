@@ -10,6 +10,8 @@ import TelemedicinePage from './pages/TelemedicinePage'
 import SymptomCheckerPage from './pages/SymptomCheckerPage'
 import DashboardShell from './components/dashboard/DashboardShell'
 import PatientProfilePage from './features/patient/pages/PatientProfilePage'
+import MedicalReportsPage from './features/medical-reports/pages/MedicalReportsPage'
+import GetAllMedicalReports from './features/medical-reports/pages/GetAllMedicalReports'
 
 import './App.css'
 
@@ -27,6 +29,8 @@ function App() {
         <Route path="/telemedicine/:appointmentId" element={<TelemedicinePage />} />
         <Route path="/symptom-checker" element={<SymptomCheckerPage />} />
         <Route path="/patient-profile" element={<PatientProfilePage />} />
+        <Route path="/medical-reports" element={<MedicalReportsPage />} />
+        <Route path="/all-medical-reports" element={<GetAllMedicalReports />} />
       </Route>
     </Routes>
   )

@@ -108,6 +108,7 @@ namespace PatientService.Services
                 PatientId = report.PatientId,
                 //DoctorId = report.DoctorId,
                 AppointmentId = report.AppointmentId,
+                PatientName = report.PatientName,
                 ReportDate = report.ReportDate,
                 Diagnosis = report.Diagnosis,
                 Reports = report.Reports,
