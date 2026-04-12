@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: carelink-config
+  namespace: carelink
+data:
+  ASPNETCORE_ENVIRONMENT: "Production"
+
+  # JWT Settings
+  Jwt__Issuer: "careLinkPlatform"
+  Jwt__Audience: "careLinkPlatformUsers"
+
+  # RabbitMQ Settings
+  RabbitMq__Host: "rabbitmq-service"
+  RabbitMq__Username: "guest"
+
+  # MongoDB Settings
+  MongoDb__Database: "carelink_db"
+  MongoDb__ConnectionString: "mongodb://mongodb-service:27017"
+
+  # Auth Service Database
+  AuthDb__ConnectionString: "Host=ep-snowy-feather-a14v529b-pooler.ap-southeast-1.aws.neon.tech;Database=authdb;Username=postgres;Password=npg_HBgxUG39Cufl"
+
+  # Patient Service Database
+  PatientDb__ConnectionString: "Host=ep-snowy-feather-a14v529b-pooler.ap-southeast-1.aws.neon.tech;Database=patientdb;Username=postgres;Password=npg_HBgxUG39Cufl"
+
+  # Doctor Service Database
+  DoctorDb__ConnectionString: "Host=ep-snowy-feather-a14v529b-pooler.ap-southeast-1.aws.neon.tech;Database=doctordb;Username=postgres;Password=npg_HBgxUG39Cufl"
+
+  # Appointment Service Database
+  AppointmentDb__ConnectionString: "Host=ep-snowy-feather-a14v529b-pooler.ap-southeast-1.aws.neon.tech;Database=appointmentdb;Username=postgres;Password=npg_HBgxUG39Cufl"
+
+  # Payment Service Database
+  PaymentDb__ConnectionString: "Host=ep-snowy-feather-a14v529b-pooler.ap-southeast-1.aws.neon.tech;Database=paymentdb;Username=postgres;Password=npg_HBgxUG39Cufl"
+
+  # Telemedicine Service Database
+  TelemedicineDb__ConnectionString: "mongodb://mongodb-service:27017/telemedicinedb"
+
+  # Notification Service Database
+  NotificationDb__ConnectionString: "mongodb://mongodb-service:27017/notificationdb"
