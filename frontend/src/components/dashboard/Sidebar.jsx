@@ -29,7 +29,7 @@ export default function Sidebar({ close }) {
     patient: {
       navItems: [
         { to: '/dashboard', icon: '⊞', label: 'Dashboard' },
-        { to: '/schedule', icon: '📅', label: 'Calendar' },
+        { to: '/calendar', icon: '📅', label: 'Calendar' },
         { to: '/patient-profile', icon: '👤', label: 'Patient Profile' },
         { to: '/find', icon: '🔍', label: 'Find Doctors' },
         { to: '/medical-reports', icon: '📈', label: 'Medical Reports'},
