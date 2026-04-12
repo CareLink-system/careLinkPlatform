@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: patient-service
+  namespace: carelink
+  labels:
+    app: patient-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: patient-service
+  template:
+    metadata:
+      labels:
+        app: patient-service
+    spec:
+      containers:
+        - name: patient-service
+          image: carelink/patient-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5002
+              name: http
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: ASPNETCORE_ENVIRONMENT
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: PatientDb__ConnectionString
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: patient-service
+  namespace: carelink
+spec:
+  selector:
+    app: patient-service
+  ports:
+    - port: 5002
+      targetPort: 5002
+  type: ClusterIP
