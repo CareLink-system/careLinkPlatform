@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: doctor-service
+  namespace: carelink
+  labels:
+    app: doctor-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: doctor-service
+  template:
+    metadata:
+      labels:
+        app: doctor-service
+    spec:
+      containers:
+        - name: doctor-service
+          image: carelink/doctor-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5003
+              name: http
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: ASPNETCORE_ENVIRONMENT
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: DoctorDb__ConnectionString
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: doctor-service
+  namespace: carelink
+spec:
+  selector:
+    app: doctor-service
+  ports:
+    - port: 5003
+      targetPort: 5003
+  type: ClusterIP

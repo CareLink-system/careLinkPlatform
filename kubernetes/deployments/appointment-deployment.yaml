@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: appointment-service
+  namespace: carelink
+  labels:
+    app: appointment-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: appointment-service
+  template:
+    metadata:
+      labels:
+        app: appointment-service
+    spec:
+      containers:
+        - name: appointment-service
+          image: carelink/appointment-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5004
+              name: http
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: ASPNETCORE_ENVIRONMENT
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: AppointmentDb__ConnectionString
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: appointment-service
+  namespace: carelink
+spec:
+  selector:
+    app: appointment-service
+  ports:
+    - port: 5004
+      targetPort: 5004
+  type: ClusterIP

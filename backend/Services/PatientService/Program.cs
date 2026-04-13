@@ -1,15 +1,19 @@
 using PatientService.Data;
+using PatientService.Filters;
+using PatientService;
 using Microsoft.EntityFrameworkCore;
 using DotNetEnv;
 using SharedConfiguration.Extensions;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
-using Swashbuckle.AspNetCore.SwaggerGen;
-using PatientService.Filters;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using System.Security.Claims;
 
 Console.WriteLine("🚀 Starting PatientService...");
 
-// Load root .env file
+// Load .env
 var rootPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", ".."));
 var envPath = Path.Combine(rootPath, ".env");
 
@@ -25,25 +29,54 @@ else
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Apply shared environment-based configuration
+// Shared environment-based configuration
 builder.AddSharedEnvironmentConfiguration();
+
+// ---------------- JWT Authentication Setup ----------------
+var jwtKey = builder.Configuration["Jwt:Key"];
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+var jwtAudience = builder.Configuration["Jwt:Audience"];
+
+if (string.IsNullOrWhiteSpace(jwtKey))
+    throw new InvalidOperationException("JWT Key is not configured.");
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata = false;
+        options.SaveToken = true;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            ClockSkew = TimeSpan.Zero,
+            RoleClaimType = ClaimTypes.Role,
+            NameClaimType = ClaimTypes.Name
+        };
+    });
+
+builder.Services.AddAuthorization();
+// ---------------------------------------------------------
 
 // Add CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
-    {
         policy.AllowAnyOrigin()
               .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
+              .AllowAnyHeader());
 });
 
-// Add services
+// Add controllers
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// ✅ ENHANCED: Add Swagger with complete documentation support
+// Add Swagger
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
@@ -58,8 +91,7 @@ builder.Services.AddSwaggerGen(c =>
                 <li>Medical history tracking</li>
                 <li>Patient demographics</li>
                 <li>Health records management</li>
-            </ul>
-        ",
+            </ul>",
         Contact = new OpenApiContact
         {
             Name = "CareLink Support",
@@ -74,7 +106,6 @@ builder.Services.AddSwaggerGen(c =>
         TermsOfService = new Uri("https://carelinkplatform.com/terms")
     });
 
-    // ✅ Add JWT Authentication with better description
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -82,21 +113,9 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = @"
-            **JWT Authorization header using the Bearer scheme.**
-            
-            **How to get token:**
-            1. Call POST /api/v1/Auth/login from AuthService
-            2. Use credentials: email & password
-            3. Copy the 'token' from response
-            
-            **Example:** Bearer eyJhbGciOiJIUzI1NiIs...
-            
-            **Token expires:** 24 hours after issue
-        "
+        Description = "JWT Authorization header using Bearer scheme"
     });
 
-    // ✅ Add security requirement for all endpoints
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -108,11 +127,11 @@ builder.Services.AddSwaggerGen(c =>
                     Id = "Bearer"
                 }
             },
-            new[] { "read", "write" }
+            new string[]{}
         }
     });
 
-    // ✅ Include XML comments
+    // Include XML comments
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     if (File.Exists(xmlPath))
@@ -120,15 +139,17 @@ builder.Services.AddSwaggerGen(c =>
         c.IncludeXmlComments(xmlPath);
     }
 
-    // ✅ Add operation filters
+    // Add filters
     c.OperationFilter<AddRequiredHeaderParameter>();
     c.OperationFilter<AddDefaultResponses>();
 });
 
-// Add DbContext with Neon DB connection
+// Add DbContext
 builder.Services.AddDbContext<PatientDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Add Patient dependencies (Repository + Service)
+builder.Services.AddPatientDependencies();
 
 var app = builder.Build();
 
@@ -139,41 +160,22 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// Apply migrations automatically (optional)
-//using (var scope = app.Services.CreateScope())
-//{
-//    var dbContext = scope.ServiceProvider.GetRequiredService<PatientDbContext>();
-//    dbContext.Database.Migrate();
-//}
-
 app.UseHttpsRedirection();
+app.UseCors("AllowAll");
+
+// ---------------- Authentication + Authorization ----------------
+app.UseAuthentication(); // MUST come BEFORE UseAuthorization
 app.UseAuthorization();
+// -----------------------------------------------------------------
 
 app.MapControllers();
 
-// Optional: Keep the weather forecast endpoint if you want
-var summaries = new[]
+// Optional Health Check
+app.MapGet("/health", () => Results.Ok(new
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+    service = "PatientService",
+    status = "Running",
+    timestamp = DateTime.UtcNow
+}));
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

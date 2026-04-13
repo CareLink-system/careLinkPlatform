@@ -5,10 +5,18 @@ namespace PatientService.Data;
 
 public class PatientDbContext : DbContext
 {
-    public PatientDbContext(DbContextOptions<PatientDbContext> options) : base(options)
-    {
-    }
+    public PatientDbContext(DbContextOptions<PatientDbContext> options) : base(options) { }
 
-    public DbSet<Patient> Patients { get; set; }
-    public DbSet<MedicalReport> MedicalReports { get; set; }
+    public DbSet<Patient> Patients { get; set; } = default!;
+
+    public DbSet<MedicalReport> MedicalReports { get; set; } = default!;
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Patient>()
+            .HasIndex(p => p.UserId)
+            .IsUnique();
+    }
 }

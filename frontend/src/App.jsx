@@ -10,6 +10,12 @@ import TelemedicinePage from './pages/TelemedicinePage'
 import SymptomCheckerPage from './pages/SymptomCheckerPage'
 import DashboardShell from './components/dashboard/DashboardShell'
 import ProtectedRoute from './components/dashboard/ProtectedRoute'
+import PatientProfilePage from './features/patient/pages/PatientProfilePage'
+import MedicalReportsPage from './features/medical-reports/pages/MedicalReportsPage'
+import GetAllMedicalReports from './features/medical-reports/pages/GetAllMedicalReports'
+import Calendar from './features/calendar/PatientCalendar'
+import UserManagementPage from './features/userManagement/pages/userManagementPage'
+import BasicFinancialTransactionMonitoringPage from './features/paymentTransaction/pages/basicFinancialTransactionMonitoringPage'
 import './App.css'
 
 function App() {
@@ -30,11 +36,20 @@ function App() {
               <TelemedicinePage />
             </ProtectedRoute>
           )}
+        <Route path="/admin/users" element={<UserManagementPage />} />
+        <Route
+          path="/payments"
+          element={<BasicFinancialTransactionMonitoringPage />}
+        />
         />
         <Route path="/symptom-checker" element={<SymptomCheckerPage />} />
+        <Route path="/patient-profile" element={<PatientProfilePage />} />
+        <Route path="/medical-reports" element={<MedicalReportsPage />} />
+        <Route path="/all-medical-reports" element={<GetAllMedicalReports />} />
+        <Route path="/calendar" element={<Calendar />} />
       </Route>
     </Routes>
-  )
+  );
 }
 
-export default App
+export default App;

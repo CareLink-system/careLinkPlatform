@@ -8,14 +8,16 @@ public class MedicalReport : AuditableEntity
 {
     public int Id { get; set; }
 
-    [Required]
+    
     public int PatientId { get; set; }
 
-    [Required]
-    public int DoctorId { get; set; }
+    
+    //public int DoctorId { get; set; }
 
-    [Required]
+  
     public int AppointmentId { get; set; }
+    [Required]
+    public string PatientName { get; set; } = default!;
 
     [Required]
     public DateTime ReportDate { get; set; }
@@ -23,11 +25,10 @@ public class MedicalReport : AuditableEntity
     [Required]
     public string Diagnosis { get; set; } = default!;
 
-    public string? Prescription { get; set; }
+    // Store multiple file paths as comma-separated string
+    public string? Reports { get; set; }
 
     public string? Notes { get; set; }
-
-    public string? FileUrl { get; set; }
 
     [Required]
     public string ReportType { get; set; } = default!;

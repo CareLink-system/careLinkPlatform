@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+  namespace: carelink
+  labels:
+    app: payment-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+    spec:
+      containers:
+        - name: payment-service
+          image: carelink/payment-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5010
+              name: http
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: ASPNETCORE_ENVIRONMENT
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: PaymentDb__ConnectionString
+            - name: PayHere__Secret
+              valueFrom:
+                secretKeyRef:
+                  name: carelink-secrets
+                  key: PayHere__Secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service
+  namespace: carelink
+spec:
+  selector:
+    app: payment-service
+  ports:
+    - port: 5010
+      targetPort: 5010
+  type: ClusterIP

@@ -5,7 +5,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
-
+   <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="AgoraDynamicKey" Version="1.0.0" />
     <PackageReference Include="AspNetCore.HealthChecks.NpgSql" Version="9.0.0" />
