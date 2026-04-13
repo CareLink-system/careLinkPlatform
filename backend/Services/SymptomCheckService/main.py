@@ -36,8 +36,9 @@ async def analyze(req: SymptomRequest):
 
     try:
         await db["analyses"].insert_one(doc)
-    except Exception:
-        raise HTTPException(status_code=500, detail="Failed to save analysis to database")
+    except Exception as e:
+        # Do not fail user-facing analysis when persistence is temporarily unavailable.
+        print(f"WARNING: Failed to save analysis to database: {e}")
 
     return SymptomResponse(
         predicted_condition=predicted, 
@@ -61,4 +62,6 @@ async def get_history(user_id: str):
             
         return history
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch history: {str(e)}")
+        # Return empty history instead of propagating backend storage issues to UI.
+        print(f"WARNING: Failed to fetch history: {e}")
+        return []
