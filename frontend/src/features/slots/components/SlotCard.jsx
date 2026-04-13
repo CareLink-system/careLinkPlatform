@@ -2,7 +2,7 @@ import React from 'react'
 
 export default function SlotCard({
   slot,
-  mode = 'patient',   // 'doctor' shows Edit/Delete  |  'patient' shows Book
+  mode = 'patient',
   onBook,
   onEdit,
   onDelete,
@@ -11,51 +11,76 @@ export default function SlotCard({
     ? new Date(slot.slotDate).toDateString()
     : 'No Date'
 
+  const isBooked = slot.isBooked
+
   return (
-    <div className="border rounded-xl p-4 bg-white shadow-sm hover:shadow-md transition">
+    <div className="group bg-white/90 backdrop-blur border rounded-3xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between">
 
-      <p className="font-semibold text-blue-600">
-        {formattedDate}
-      </p>
+      {/* ===== TOP ===== */}
+      <div className="space-y-3">
 
-      <p className="text-sm text-gray-600 mt-1">
-        {slot.startTime} – {slot.endTime}
-      </p>
+        {/* Date */}
+        <div>
+          <p className="text-sm text-gray-400">📅 Date</p>
+          <p className="font-semibold text-blue-600 text-lg">
+            {formattedDate}
+          </p>
+        </div>
 
-      <p className="text-xs text-gray-400">
-        {slot.dayOfWeek}
-      </p>
+        {/* Time */}
+        <div>
+          <p className="text-sm text-gray-400">⏰ Time</p>
+          <p className="text-gray-700 font-medium">
+            {slot.startTime} – {slot.endTime}
+          </p>
+        </div>
 
-      <p className={`text-sm mt-2 font-medium ${
-        slot.isBooked ? 'text-red-500' : 'text-green-600'
-      }`}>
-        {slot.isBooked ? 'Booked' : 'Available'}
-      </p>
+        {/* Day */}
+        <div className="text-xs text-gray-400">
+          {slot.dayOfWeek}
+        </div>
 
-      {/* ===== PATIENT ACTIONS ===== */}
+        {/* Status Badge */}
+        <div>
+          <span
+            className={`inline-block text-xs px-3 py-1 rounded-full font-medium ${
+              isBooked
+                ? 'bg-red-100 text-red-600'
+                : 'bg-green-100 text-green-600'
+            }`}
+          >
+            {isBooked ? 'Booked' : 'Available'}
+          </span>
+        </div>
+      </div>
+
+      {/* ===== ACTIONS ===== */}
       {mode === 'patient' && (
         <button
           onClick={() => onBook?.(slot)}
-          disabled={slot.isBooked}
-          className="mt-3 w-full bg-blue-600 text-white py-2 rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-blue-700 transition"
+          disabled={isBooked}
+          className={`mt-5 w-full py-2.5 rounded-xl font-semibold transition-all duration-200 ${
+            isBooked
+              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              : 'bg-gradient-to-r from-[#1649FF] to-[#06b6d4] text-white hover:scale-[1.03] active:scale-[0.97] shadow-md hover:shadow-lg'
+          }`}
         >
-          {slot.isBooked ? 'Already Booked' : 'Book Appointment'}
+          {isBooked ? 'Already Booked' : 'Book Appointment'}
         </button>
       )}
 
-      {/* ===== DOCTOR ACTIONS ===== */}
       {mode === 'doctor' && (
-        <div className="flex gap-2 mt-3">
+        <div className="flex gap-2 mt-5">
           <button
             onClick={() => onEdit?.(slot)}
-            className="flex-1 bg-yellow-500 text-white py-2 rounded-lg hover:bg-yellow-600 transition"
+            className="flex-1 bg-yellow-500 text-white py-2 rounded-xl hover:bg-yellow-600 transition"
           >
             Edit
           </button>
 
           <button
             onClick={() => onDelete?.(slot)}
-            className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition"
+            className="flex-1 bg-red-600 text-white py-2 rounded-xl hover:bg-red-700 transition"
           >
             Delete
           </button>

@@ -64,12 +64,12 @@ public class AppointmentService : IAppointmentService
             TimeSlot = dto.TimeSlot,
             AppointmentType = dto.AppointmentType,
             Reason = dto.Reason,
-
+            
             PatientName = dto.PatientName,
             Age = dto.Age,
             Address = dto.Address,
             Phone = dto.Phone,
-
+            Notes = dto.Notes,
             AppointmentStatus = AppointmentStatus.Scheduled,
 
             CreatedAt = DateTime.UtcNow,
@@ -103,8 +103,9 @@ public class AppointmentService : IAppointmentService
         if (appt == null || appt.IsDeleted)
             return false;
 
-        appt.AppointmentDate = dto.AppointmentDate;
-        appt.TimeSlot = dto.TimeSlot;
+        //appt.AppointmentDate = dto.AppointmentDate;
+        //appt.TimeSlot = dto.TimeSlot;
+        appt.AppointmentType = dto.AppointmentType;
         appt.Reason = dto.Reason;
         appt.Notes = dto.Notes;
 
