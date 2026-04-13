@@ -123,6 +123,7 @@ export default function ChatbotPage() {
       setConversations((prev) => [conversation, ...prev]);
       setActiveConversationId(conversation.id);
       setMessages([]);
+      return conversation;
     } catch (err) {
       setError(err.message || 'Failed to create conversation.');
     }
@@ -130,19 +131,28 @@ export default function ChatbotPage() {
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!messageText.trim() || !activeConversationId) return;
+    if (!messageText.trim()) return;
 
     setSending(true);
     setError(null);
     try {
-      const data = await sendChatMessage(activeConversationId, {
+      let convId = activeConversationId;
+      if (!convId) {
+        const created = await createNewConversation();
+        convId = created?.id;
+        if (!convId) {
+          throw new Error('Unable to create conversation');
+        }
+      }
+
+      const data = await sendChatMessage(convId, {
         user_id: userId,
         content: messageText.trim()
       });
       setMessages((prev) => [...prev, data.user_message, data.assistant_message]);
       setMessageText('');
       setConversations((prev) => prev.map((item) => (
-        item.id === activeConversationId ? { ...item, updated_at: new Date().toISOString() } : item
+        item.id === convId ? { ...item, updated_at: new Date().toISOString() } : item
       )));
     } catch (err) {
       setError(err.message || 'Failed to send message.');
@@ -379,12 +389,12 @@ export default function ChatbotPage() {
                   placeholder="Ask CareLink something about your diagnosis, symptoms, or next steps..."
                   rows={3}
                   className="flex-1 resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#4B9AA8] focus:ring-4 focus:ring-[#4B9AA8]/10"
-                  disabled={!activeConversationId || sending}
+                  disabled={sending}
                 />
                 <button
                   type="submit"
-                  disabled={!activeConversationId || sending || !messageText.trim()}
-                  className={`rounded-2xl px-5 py-3 text-sm font-bold text-white ${sending || !activeConversationId || !messageText.trim() ? 'bg-slate-300 cursor-not-allowed' : 'bg-[#4B9AA8] hover:bg-[#397a86]'}`}
+                  disabled={sending || !messageText.trim()}
+                  className={`rounded-2xl px-5 py-3 text-sm font-bold text-white ${sending || !messageText.trim() ? 'bg-slate-300 cursor-not-allowed' : 'bg-[#4B9AA8] hover:bg-[#397a86]'}`}
                 >
                   {sending ? 'Sending...' : 'Send'}
                 </button>
