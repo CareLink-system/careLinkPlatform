@@ -11,6 +11,13 @@ import {
 } from '../api/chatbot';
 
 export default function ChatbotPage() {
+  const getErrorMessage = (err, fallback) => (
+    err?.response?.data?.detail
+    || err?.response?.data?.message
+    || err?.message
+    || fallback
+  );
+
   const getUserId = () => {
     try {
       const storedAuth = JSON.parse(localStorage.getItem('carelink.auth'));
@@ -70,7 +77,7 @@ export default function ChatbotPage() {
         await createNewConversation(latestDiagnosis);
       }
     } catch (err) {
-      setError(err.message || 'Failed to load conversations.');
+      setError(getErrorMessage(err, 'Failed to load conversations.'));
     } finally {
       setLoadingConversations(false);
     }
@@ -85,7 +92,7 @@ export default function ChatbotPage() {
       const active = conversations.find((item) => item.id === conversationId);
       setDiagnosisContext(active?.diagnosis_context || diagnosisContext);
     } catch (err) {
-      setError(err.message || 'Failed to load messages.');
+      setError(getErrorMessage(err, 'Failed to load messages.'));
     } finally {
       setLoadingMessages(false);
     }
@@ -125,7 +132,7 @@ export default function ChatbotPage() {
       setMessages([]);
       return conversation;
     } catch (err) {
-      setError(err.message || 'Failed to create conversation.');
+      setError(getErrorMessage(err, 'Failed to create conversation.'));
     }
   };
 
@@ -155,7 +162,7 @@ export default function ChatbotPage() {
         item.id === convId ? { ...item, updated_at: new Date().toISOString() } : item
       )));
     } catch (err) {
-      setError(err.message || 'Failed to send message.');
+      setError(getErrorMessage(err, 'Failed to send message.'));
     } finally {
       setSending(false);
     }
@@ -168,7 +175,7 @@ export default function ChatbotPage() {
       const updated = await updateChatConversation(conversation.id, { title: nextTitle.trim() });
       setConversations((prev) => prev.map((item) => (item.id === conversation.id ? updated : item)));
     } catch (err) {
-      setError(err.message || 'Failed to rename conversation.');
+      setError(getErrorMessage(err, 'Failed to rename conversation.'));
     }
   };
 
@@ -180,7 +187,7 @@ export default function ChatbotPage() {
       const nextConversation = conversations.find((item) => item.id !== conversationId);
       setActiveConversationId(nextConversation?.id || '');
     } catch (err) {
-      setError(err.message || 'Failed to delete conversation.');
+      setError(getErrorMessage(err, 'Failed to delete conversation.'));
     }
   };
 
@@ -194,7 +201,7 @@ export default function ChatbotPage() {
       setError(null);
       return updated;
     } catch (err) {
-      setError(err.message || 'Failed to update message.');
+      setError(getErrorMessage(err, 'Failed to update message.'));
     }
   };
 
@@ -204,7 +211,7 @@ export default function ChatbotPage() {
       const refreshed = await getChatMessages(activeConversationId);
       setMessages(refreshed);
     } catch (err) {
-      setError(err.message || 'Failed to delete message.');
+      setError(getErrorMessage(err, 'Failed to delete message.'));
     }
   };
 

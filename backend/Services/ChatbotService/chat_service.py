@@ -1,20 +1,42 @@
 import json
 import os
 from datetime import datetime
+from pathlib import Path
 
 import google.generativeai as genai
 from dotenv import load_dotenv
 
-load_dotenv()
-
-api_key = os.getenv("GEMINI_API_KEY")
-if api_key:
-    genai.configure(api_key=api_key)
+# Always load the service-local .env no matter where uvicorn is started from.
+_ENV_PATH = Path(__file__).resolve().parent / ".env"
+load_dotenv(dotenv_path=_ENV_PATH, override=False)
 
 
 class ChatbotService:
     def __init__(self):
-        self.model_name = "gemini-1.5-flash"
+        configured_model = (os.getenv("GEMINI_MODEL") or "").strip()
+        self.model_candidates = [
+            configured_model,
+            "gemini-2.0-flash",
+            "gemini-1.5-flash-latest",
+            "gemini-1.5-flash",
+        ]
+        # Keep order and remove blanks/duplicates.
+        seen = set()
+        self.model_candidates = [m for m in self.model_candidates if m and not (m in seen or seen.add(m))]
+        self.model_name = self.model_candidates[0]
+        self.api_key = (os.getenv("GEMINI_API_KEY") or "").strip()
+        if self.api_key:
+            genai.configure(api_key=self.api_key)
+        else:
+            print("WARNING: GEMINI_API_KEY not set; chatbot will use fallback responses.")
+
+    def _log_debug(self, message: str) -> None:
+        try:
+            log_path = Path(__file__).resolve().parent / "chatbot_gemini_debug.log"
+            with open(log_path, "a", encoding="utf-8") as file:
+                file.write(f"[{datetime.utcnow().isoformat()}Z] {message}\n")
+        except Exception:
+            pass
 
     def _format_context(self, diagnosis_context):
         if not diagnosis_context:
@@ -85,22 +107,65 @@ class ChatbotService:
                     if isinstance(first, dict) and "content" in first:
                         return str(first["content"])
                     if hasattr(first, "content"):
-                        return str(first.content)
+                        content = first.content
+                        parts = getattr(content, "parts", None)
+                        if isinstance(parts, (list, tuple)):
+                            texts = []
+                            for part in parts:
+                                text = getattr(part, "text", None)
+                                if isinstance(text, str) and text.strip():
+                                    texts.append(text.strip())
+                            if texts:
+                                return "\n".join(texts)
+                        text = getattr(content, "text", None)
+                        if isinstance(text, str) and text.strip():
+                            return text
+                        return str(content)
             return str(response)
         except Exception:
             return ""
 
     async def generate_reply(self, user_message: str, diagnosis_context, history: list[dict]) -> str:
         reply = self._fallback_reply(user_message, diagnosis_context)
+        last_error = ""
+        generated_by_model = False
 
-        if api_key:
+        if self.api_key:
             try:
-                model = genai.GenerativeModel(self.model_name)
-                response = model.generate_content(self._build_prompt(user_message, diagnosis_context, history))
-                text = self._extract_text(response).strip()
-                if text:
-                    reply = text
+                prompt = self._build_prompt(user_message, diagnosis_context, history)
+                for model_name in self.model_candidates:
+                    try:
+                        model = genai.GenerativeModel(model_name)
+                        response = model.generate_content(prompt)
+                        text = self._extract_text(response).strip()
+                        if text:
+                            reply = text
+                            generated_by_model = True
+                            self.model_name = model_name
+                            break
+
+                        self._log_debug(
+                            f"Model '{model_name}' returned empty extracted text. Raw response: "
+                            + str(getattr(response, "__dict__", response))
+                        )
+                    except Exception as model_ex:
+                        last_error = str(model_ex)
+                        self._log_debug(f"Model '{model_name}' failed: {model_ex}")
             except Exception as ex:
                 print(f"WARNING: Gemini chatbot reply generation failed: {ex}")
+                self._log_debug(f"Gemini generation failed: {ex}")
+                last_error = str(ex)
+        else:
+            print("WARNING: Gemini not configured; returning fallback reply.")
+            self._log_debug("Gemini not configured; using fallback response.")
+
+        if not generated_by_model and last_error:
+            error_lower = last_error.lower()
+            if "quota" in error_lower or "429" in error_lower or "billing" in error_lower:
+                reply = (
+                    "I can still guide you with safe next steps, but live AI generation is temporarily unavailable "
+                    "because the Gemini API quota/billing is not active for this key. "
+                    + reply
+                )
 
         return reply

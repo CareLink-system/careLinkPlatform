@@ -4,13 +4,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from bson import ObjectId
 
 from chat_service import ChatbotService
-from database import get_database
+from database import close_client, ensure_connection, get_database
 from schemas import (
     ChatConversationCreate,
     ChatConversationUpdate,
     ChatMessageCreate,
     ChatMessageUpdate,
 )
+from pathlib import Path
+import traceback
+from pymongo.errors import PyMongoError
 
 app = FastAPI()
 
@@ -24,6 +27,36 @@ app.add_middleware(
 
 chat_service = ChatbotService()
 db = get_database()
+
+_LOG_PATH = Path(__file__).resolve().parent / "chatbot_errors.log"
+
+def _log_error(msg: str) -> None:
+    try:
+        with open(_LOG_PATH, "a", encoding="utf-8") as f:
+            f.write(msg + "\n")
+    except Exception:
+        pass
+
+
+def _db_unavailable(ex: Exception) -> HTTPException:
+    _log_error(f"database unavailable: {ex}\n{traceback.format_exc()}")
+    return HTTPException(status_code=503, detail="Chatbot database unavailable. Check MONGO_URI/TLS and network.")
+
+
+@app.on_event("startup")
+async def startup_event():
+    global db
+    ok, uri, error = await ensure_connection()
+    db = get_database()
+    if ok:
+        print(f"INFO: MongoDB connected (database='{db.name}', uri='{uri}')")
+    else:
+        print(f"ERROR: MongoDB connection failed: {error}")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    close_client()
 
 
 def _parse_object_id(raw_id: str) -> ObjectId:
@@ -66,77 +99,100 @@ async def health():
 
 @app.post("/api/chatbot/conversations")
 async def create_conversation(payload: ChatConversationCreate):
-    title = payload.title
-    if not title:
-        if isinstance(payload.diagnosis_context, dict):
-            title = payload.diagnosis_context.get("predicted_condition") or payload.diagnosis_context.get("title")
-        title = title or "CareLink Chat"
+    try:
+        title = payload.title
+        if not title:
+            if isinstance(payload.diagnosis_context, dict):
+                title = payload.diagnosis_context.get("predicted_condition") or payload.diagnosis_context.get("title")
+            title = title or "CareLink Chat"
 
-    doc = {
-        "user_id": payload.user_id,
-        "title": title,
-        "diagnosis_context": payload.diagnosis_context,
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow(),
-    }
-    result = await db["conversations"].insert_one(doc)
-    doc["_id"] = result.inserted_id
-    doc["message_count"] = 0
-    return _serialize_conversation(doc)
+        doc = {
+            "user_id": payload.user_id,
+            "title": title,
+            "diagnosis_context": payload.diagnosis_context,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+        }
+
+        result = await db["conversations"].insert_one(doc)
+        doc["_id"] = result.inserted_id
+        doc["message_count"] = 0
+        return _serialize_conversation(doc)
+    except PyMongoError as ex:
+        raise _db_unavailable(ex)
+    except Exception as ex:
+        tb = traceback.format_exc()
+        _log_error(f"create_conversation failed: {ex}\n{tb}")
+        raise HTTPException(status_code=500, detail="Unable to create conversation")
 
 
 @app.get("/api/chatbot/conversations")
 async def list_conversations(user_id: str = Query(...)):
-    cursor = db["conversations"].find({"user_id": user_id}).sort("updated_at", -1)
-    conversations = await cursor.to_list(length=100)
-    for conversation in conversations:
-        conversation["message_count"] = await db["messages"].count_documents({"conversation_id": conversation["_id"]})
-        _serialize_conversation(conversation)
-    return conversations
+    try:
+        cursor = db["conversations"].find({"user_id": user_id}).sort("updated_at", -1)
+        conversations = await cursor.to_list(length=100)
+        for conversation in conversations:
+            conversation["message_count"] = await db["messages"].count_documents({"conversation_id": conversation["_id"]})
+            _serialize_conversation(conversation)
+        return conversations
+    except PyMongoError as ex:
+        raise _db_unavailable(ex)
 
 
 @app.get("/api/chatbot/conversations/{conversation_id}")
 async def get_conversation(conversation_id: str):
-    conversation = await _conversation_or_404(conversation_id)
-    conversation["message_count"] = await db["messages"].count_documents({"conversation_id": conversation["_id"]})
-    return _serialize_conversation(conversation)
+    try:
+        conversation = await _conversation_or_404(conversation_id)
+        conversation["message_count"] = await db["messages"].count_documents({"conversation_id": conversation["_id"]})
+        return _serialize_conversation(conversation)
+    except PyMongoError as ex:
+        raise _db_unavailable(ex)
 
 
 @app.put("/api/chatbot/conversations/{conversation_id}")
 async def update_conversation(conversation_id: str, payload: ChatConversationUpdate):
-    object_id = _parse_object_id(conversation_id)
-    update_doc = {"updated_at": datetime.utcnow()}
-    if payload.title is not None:
-        update_doc["title"] = payload.title
-    if payload.diagnosis_context is not None:
-        update_doc["diagnosis_context"] = payload.diagnosis_context
+    try:
+        object_id = _parse_object_id(conversation_id)
+        update_doc = {"updated_at": datetime.utcnow()}
+        if payload.title is not None:
+            update_doc["title"] = payload.title
+        if payload.diagnosis_context is not None:
+            update_doc["diagnosis_context"] = payload.diagnosis_context
 
-    result = await db["conversations"].update_one({"_id": object_id}, {"$set": update_doc})
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+        result = await db["conversations"].update_one({"_id": object_id}, {"$set": update_doc})
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Conversation not found")
 
-    conversation = await db["conversations"].find_one({"_id": object_id})
-    conversation["message_count"] = await db["messages"].count_documents({"conversation_id": object_id})
-    return _serialize_conversation(conversation)
+        conversation = await db["conversations"].find_one({"_id": object_id})
+        conversation["message_count"] = await db["messages"].count_documents({"conversation_id": object_id})
+        return _serialize_conversation(conversation)
+    except PyMongoError as ex:
+        raise _db_unavailable(ex)
 
 
 @app.delete("/api/chatbot/conversations/{conversation_id}")
 async def delete_conversation(conversation_id: str):
-    object_id = _parse_object_id(conversation_id)
-    conversation_result = await db["conversations"].delete_one({"_id": object_id})
-    if conversation_result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+    try:
+        object_id = _parse_object_id(conversation_id)
+        conversation_result = await db["conversations"].delete_one({"_id": object_id})
+        if conversation_result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Conversation not found")
 
-    message_result = await db["messages"].delete_many({"conversation_id": object_id})
-    return {"deleted": True, "conversation_id": conversation_id, "deleted_messages": message_result.deleted_count}
+        message_result = await db["messages"].delete_many({"conversation_id": object_id})
+        return {"deleted": True, "conversation_id": conversation_id, "deleted_messages": message_result.deleted_count}
+    except PyMongoError as ex:
+        raise _db_unavailable(ex)
 
 
 @app.get("/api/chatbot/conversations/{conversation_id}/messages")
 async def list_messages(conversation_id: str):
-    object_id = _parse_object_id(conversation_id)
-    cursor = db["messages"].find({"conversation_id": object_id}).sort("created_at", 1)
-    messages = await cursor.to_list(length=200)
-    return [_serialize_message(message) for message in messages]
+    try:
+        object_id = _parse_object_id(conversation_id)
+        cursor = db["messages"].find({"conversation_id": object_id}).sort("created_at", 1)
+        messages = await cursor.to_list(length=200)
+        return [_serialize_message(message) for message in messages]
+    except PyMongoError as ex:
+        raise _db_unavailable(ex)
 
 
 @app.post("/api/chatbot/conversations/{conversation_id}/messages")
