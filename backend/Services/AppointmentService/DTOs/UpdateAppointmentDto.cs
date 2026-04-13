@@ -4,8 +4,10 @@ namespace AppointmentService.DTOs;
 
 public class UpdateAppointmentDto
 {
-    public string AppointmentDate { get; set; } = default!;
-    public string TimeSlot { get; set; } = default!;
+    //public string AppointmentDate { get; set; } = default!;
+    //public string TimeSlot { get; set; } = default!;
+
+    public string AppointmentType { get; set; } = default!;
     public string? Reason { get; set; }
     public string? Notes { get; set; }
 

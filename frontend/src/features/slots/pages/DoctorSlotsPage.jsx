@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { getSlotsByDoctorId } from '../api/slotApi'
 import { toast } from 'sonner'
+import SlotCard from '../components/SlotCard'
 
 export default function DoctorSlotsPage() {
   const { doctorId } = useParams()
+  const navigate = useNavigate()
 
   const [slots, setSlots] = useState([])
   const [loading, setLoading] = useState(true)
@@ -25,56 +27,62 @@ export default function DoctorSlotsPage() {
     fetchSlots()
   }, [doctorId])
 
+  // ================= LOADING =================
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="w-10 h-10 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+        <div className="w-14 h-14 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-gray-500 text-sm">Loading availability slots...</p>
       </div>
     )
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
+    <div className="max-w-6xl mx-auto p-6 space-y-8">
 
-      <h1 className="text-2xl font-bold text-gray-800">
-        Doctor Availability Slots
-      </h1>
+      {/* ================= HEADER ================= */}
+      <div className="bg-gradient-to-r from-[#1649FF] to-[#06b6d4] text-white p-7 rounded-3xl shadow-xl flex flex-col md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Availability Slots
+          </h1>
+          <p className="text-sm opacity-80 mt-1">
+            Choose a time slot and book your appointment
+          </p>
+        </div>
 
+        <div className="mt-4 md:mt-0 text-sm opacity-80">
+          {slots.length} slots available
+        </div>
+      </div>
+
+      {/* ================= EMPTY ================= */}
       {slots.length === 0 ? (
-        <p className="text-gray-500">No slots available</p>
+        <div className="text-center py-20">
+          <p className="text-gray-400 text-lg">😕 No slots available</p>
+          <p className="text-sm text-gray-300 mt-1">
+            Please check back later
+          </p>
+        </div>
       ) : (
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
           {slots.map((slot) => (
-            <div
+            <SlotCard
               key={slot.id}
-              className="border rounded-xl p-4 shadow-sm bg-white"
-            >
-              <p className="font-semibold text-blue-600">
-                {new Date(slot.slotDate).toDateString()}
-              </p>
-
-              <p className="text-sm text-gray-600">
-                {slot.startTime} - {slot.endTime}
-              </p>
-
-              <p className="text-xs text-gray-400">
-                {slot.dayOfWeek}
-              </p>
-
-              <p className={`text-sm mt-2 font-medium ${
-                slot.isBooked ? 'text-red-500' : 'text-green-600'
-              }`}>
-                {slot.isBooked ? 'Booked' : 'Available'}
-              </p>
-
-              <button
-                disabled={slot.isBooked}
-                className="mt-3 w-full bg-blue-600 text-white py-2 rounded-lg disabled:bg-gray-300"
-              >
-                Book Appointment
-              </button>
-            </div>
+              slot={slot}
+              mode="patient"
+              onBook={(selectedSlot) =>
+                navigate('/appointments/book', {
+                  state: {
+                    doctorId,
+                    slot: selectedSlot,
+                  },
+                })
+              }
+            />
           ))}
+
         </div>
       )}
     </div>
