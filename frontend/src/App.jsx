@@ -8,6 +8,7 @@ import DoctorDashboardPage from "./pages/DoctorDashboardPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import TelemedicinePage from "./pages/TelemedicinePage";
 import SymptomCheckerPage from "./pages/SymptomCheckerPage";
+import ChatbotPage from "./pages/ChatbotPage";
 import DashboardShell from "./components/dashboard/DashboardShell";
 import PatientProfilePage from "./features/patient/pages/PatientProfilePage";
 import MedicalReportsPage from "./features/medical-reports/pages/MedicalReportsPage";
@@ -42,6 +43,7 @@ function App() {
           element={<TelemedicinePage />}
         />
         <Route path="/symptom-checker" element={<SymptomCheckerPage />} />
+         <Route path="/chatbot" element={<ChatbotPage />} />
         <Route path="/patient-profile" element={<PatientProfilePage />} />
         <Route path="/medical-reports" element={<MedicalReportsPage />} />
         <Route path="/all-medical-reports" element={<GetAllMedicalReports />} />

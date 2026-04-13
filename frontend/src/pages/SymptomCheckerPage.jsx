@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
+import { useNavigate } from 'react-router-dom';
 import {
   analyzeSymptoms,
   getSymptomHistory,
@@ -35,6 +36,7 @@ export default function SymptomCheckerPage() {
   };
   
   const userId = getUserId();
+  const navigate = useNavigate();
   const userRole = (() => {
     try {
       const storedAuth = JSON.parse(localStorage.getItem('carelink.auth'));
@@ -103,6 +105,30 @@ export default function SymptomCheckerPage() {
       console.warn('Failed to load stats:', err);
       setStats(null);
     }
+  };
+
+  const persistDiagnosisContext = (analysis, symptomsArray = []) => {
+    try {
+      const context = {
+        analysis_id: analysis?.analysis_id || analysis?._id || null,
+        predicted_condition: analysis?.predicted_condition || analysis?.predicted_disease || null,
+        confidence: analysis?.confidence ?? null,
+        recommended_specialty: analysis?.recommended_specialty || null,
+        ai_feedback: analysis?.ai_feedback || null,
+        symptoms_reported: symptomsArray.length > 0 ? symptomsArray : analysis?.symptoms_reported || [],
+        created_at: new Date().toISOString()
+      };
+      localStorage.setItem('carelink.lastDiagnosis', JSON.stringify(context));
+    } catch {
+      // ignore localStorage failures
+    }
+  };
+
+  const openChatbot = (analysis, symptomsArray = []) => {
+    if (analysis) {
+      persistDiagnosisContext(analysis, symptomsArray.length > 0 ? symptomsArray : analysis?.symptoms_reported || []);
+    }
+    navigate('/chatbot');
   };
 
   const symptomValueToOption = (value) => {
@@ -196,6 +222,7 @@ export default function SymptomCheckerPage() {
     try {
       const data = await analyzeSymptoms({ user_id: userId, symptoms: symptomsArray });
       setResult(data);
+      persistDiagnosisContext(data, symptomsArray);
       
       // Optimistically add to history UI
       setHistory(prev => [{
@@ -442,9 +469,18 @@ export default function SymptomCheckerPage() {
                   <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Recommended Specialist</p>
                   <p className="text-xl font-bold">{result.recommended_specialty || 'General Practitioner'}</p>
                 </div>
-                <button className="px-6 py-3 bg-white text-slate-900 text-sm font-bold rounded-xl hover:bg-teal-50 transition-colors shadow-lg">
-                  Find a Doctor
-                </button>
+                <div className="flex flex-wrap gap-3">
+                  <button className="px-6 py-3 bg-white text-slate-900 text-sm font-bold rounded-xl hover:bg-teal-50 transition-colors shadow-lg">
+                    Find a Doctor
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openChatbot(result, selectedSymptoms.map((item) => item.value))}
+                    className="px-6 py-3 bg-[#4B9AA8] text-white text-sm font-bold rounded-xl hover:bg-[#397a86] transition-colors shadow-lg"
+                  >
+                    Chat with CareLink
+                  </button>
+                </div>
               </div>
 
             </div>
@@ -602,6 +638,15 @@ export default function SymptomCheckerPage() {
                       {!!item._id && (
                         <button
                           type="button"
+                          onClick={() => openChatbot(item, item.symptoms_reported || [])}
+                          className="px-3 py-1 text-xs font-semibold rounded-lg bg-[#4B9AA8]/10 text-[#4B9AA8] hover:bg-[#4B9AA8]/20"
+                        >
+                          Chat
+                        </button>
+                      )}
+                      {!!item._id && (
+                        <button
+                          type="button"
                           onClick={() => handleEditClick(item)}
                           className="px-3 py-1 text-xs font-semibold rounded-lg bg-sky-50 text-sky-700 hover:bg-sky-100"
                         >
@@ -656,7 +701,14 @@ export default function SymptomCheckerPage() {
                 <p className="text-sm text-slate-700"><span className="font-semibold">Specialty:</span> {selectedAnalysis.recommended_specialty}</p>
                 <p className="text-sm text-slate-700 mt-1"><span className="font-semibold">Guidance:</span> {getGuidanceText(selectedAnalysis)}</p>
                 {!!selectedAnalysis?._id && (
-                  <div className="mt-4 flex justify-end">
+                  <div className="mt-4 flex flex-wrap justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => openChatbot(selectedAnalysis, selectedAnalysis.symptoms_reported || [])}
+                      className="rounded-xl bg-[#4B9AA8] px-4 py-2 text-sm font-semibold text-white hover:bg-[#397a86]"
+                    >
+                      Chat About This Result
+                    </button>
                     <button
                       type="button"
                       onClick={() => handleEditClick(selectedAnalysis)}
