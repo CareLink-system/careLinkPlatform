@@ -13,7 +13,12 @@ class SymptomRequest(BaseModel):
         return self
 
 class SymptomResponse(BaseModel):
+    analysis_id: Optional[str] = None
     predicted_condition: str
     confidence: float = Field(..., ge=0, le=1, description="Confidence between 0 and 1")
     recommended_specialty: str
     ai_feedback: str
+
+
+class AnalysisFeedbackRequest(BaseModel):
+    was_accurate: bool

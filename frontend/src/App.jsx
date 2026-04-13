@@ -36,11 +36,11 @@ function App() {
               <TelemedicinePage />
             </ProtectedRoute>
           )}
+        />
         <Route path="/admin/users" element={<UserManagementPage />} />
         <Route
           path="/payments"
           element={<BasicFinancialTransactionMonitoringPage />}
-        />
         />
         <Route path="/symptom-checker" element={<SymptomCheckerPage />} />
         <Route path="/patient-profile" element={<PatientProfilePage />} />
