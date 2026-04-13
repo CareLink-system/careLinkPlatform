@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 from bson import ObjectId
+from pymongo.errors import PyMongoError
 
 from schemas import SymptomRequest, SymptomResponse, AnalysisFeedbackRequest, SymptomUpdateRequest
 from ml_service import MLService
@@ -152,19 +153,17 @@ async def get_analysis(analysis_id: str):
 @app.get("/api/symptom-checker/history/{user_id}")
 async def get_history(user_id: str):
     try:
-        # Fetch user's history from MongoDB, sorted by newest first (-1)
         cursor = db["analyses"].find({"user_id": user_id}).sort("created_at", -1).limit(10)
         history = await cursor.to_list(length=10)
-        
-        # Convert MongoDB _id (ObjectId) to string for JSON serialization
         for doc in history:
             _serialize_doc(doc)
-            
         return history
-    except Exception as e:
-        # Return empty history instead of propagating backend storage issues to UI.
+    except PyMongoError as e:
         print(f"WARNING: Failed to fetch history: {e}")
-        return []
+        raise HTTPException(status_code=503, detail="Symptom checker database unavailable")
+    except Exception as e:
+        print(f"WARNING: Failed to fetch history: {e}")
+        raise HTTPException(status_code=503, detail="Symptom checker database unavailable")
 
 
 @app.delete("/api/symptom-checker/analyze/{analysis_id}")
@@ -243,10 +242,9 @@ async def get_stats(x_role: str | None = Header(default=None)):
                 {"condition": row["_id"], "count": row["count"]} for row in common
             ],
         }
+    except PyMongoError as e:
+        print(f"WARNING: Failed to fetch stats: {e}")
+        raise HTTPException(status_code=503, detail="Symptom checker database unavailable")
     except Exception as e:
         print(f"WARNING: Failed to fetch stats: {e}")
-        return {
-            "total_analyses": 0,
-            "average_ai_confidence": 0,
-            "most_common_predicted_conditions": [],
-        }
+        raise HTTPException(status_code=503, detail="Symptom checker database unavailable")
