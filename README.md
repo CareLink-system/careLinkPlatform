@@ -646,8 +646,18 @@ docker-compose up -d
 docker-compose logs -f
 text
 
-userName - dinildulneth@gmail.com
-Password - dinildulnet123!@#
+Doctor
+userName - dinildulnethNew@gmail.com
+Password - Dinildulnet123!@#
+
+Patient
+userName - dinildulneth123@gmail.com
+Password - Dinildulnet123!@#
+
+Admin
+userName - dinildulnethl@gmail.com
+Password - Dinildulnet123!@#
+
 ---
 
 **Now you have a complete README for your backend!** 📚🚀
