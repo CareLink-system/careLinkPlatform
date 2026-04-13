@@ -12,6 +12,18 @@ class SymptomRequest(BaseModel):
             raise ValueError("Either 'symptoms' or 'description' must be provided")
         return self
 
+
+class SymptomUpdateRequest(BaseModel):
+    user_id: Optional[str] = None
+    symptoms: Optional[List[str]] = None
+    description: Optional[str] = None
+
+    @model_validator(mode="after")
+    def require_symptoms_or_description(self):
+        if not self.symptoms and not self.description:
+            raise ValueError("Either 'symptoms' or 'description' must be provided")
+        return self
+
 class SymptomResponse(BaseModel):
     analysis_id: Optional[str] = None
     predicted_condition: str

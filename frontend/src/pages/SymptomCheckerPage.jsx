@@ -5,6 +5,7 @@ import {
   getSymptomHistory,
   getSymptoms,
   getAnalysisById,
+  updateAnalysisById,
   deleteAnalysisById,
   clearSymptomHistory,
   submitAnalysisFeedback,
@@ -52,6 +53,10 @@ export default function SymptomCheckerPage() {
   const [selectedAnalysis, setSelectedAnalysis] = useState(null);
   const [stats, setStats] = useState(null);
   const [feedbackSavingId, setFeedbackSavingId] = useState(null);
+  const [editAnalysis, setEditAnalysis] = useState(null);
+  const [editSymptoms, setEditSymptoms] = useState([]);
+  const [editDescription, setEditDescription] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
   
   // History State
   const [history, setHistory] = useState([]);
@@ -97,6 +102,66 @@ export default function SymptomCheckerPage() {
     } catch (err) {
       console.warn('Failed to load stats:', err);
       setStats(null);
+    }
+  };
+
+  const symptomValueToOption = (value) => {
+    const existing = symptomOptions.find((option) => option.value === value);
+    return existing || {
+      value,
+      label: value.replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+    };
+  };
+
+  const openEditModal = (analysis) => {
+    const symptoms = (analysis?.symptoms_reported || analysis?.symptoms || []).map(symptomValueToOption);
+    setEditAnalysis(analysis);
+    setEditSymptoms(symptoms);
+    setEditDescription(analysis?.description || '');
+  };
+
+  const closeEditModal = () => {
+    setEditAnalysis(null);
+    setEditSymptoms([]);
+    setEditDescription('');
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!editAnalysis?._id) return;
+
+    const symptomsArray = editSymptoms.map((item) => item.value);
+    if (symptomsArray.length === 0 && !editDescription.trim()) {
+      setError('Please select at least one symptom or enter a description.');
+      return;
+    }
+
+    setEditSaving(true);
+    setError(null);
+
+    try {
+      const updated = await updateAnalysisById(editAnalysis._id, {
+        user_id: editAnalysis.user_id || userId,
+        symptoms: symptomsArray,
+        description: editDescription.trim() || null
+      });
+
+      const merged = {
+        ...editAnalysis,
+        ...updated,
+        _id: editAnalysis._id,
+        symptoms_reported: symptomsArray,
+        description: editDescription.trim() || editAnalysis.description || '',
+      };
+
+      setHistory((prev) => prev.map((item) => (item._id === editAnalysis._id ? merged : item)));
+      setSelectedAnalysis((prev) => (prev?._id === editAnalysis._id ? merged : prev));
+      setResult((prev) => (prev?.analysis_id === editAnalysis._id ? { ...prev, ...updated } : prev));
+      closeEditModal();
+    } catch (err) {
+      setError(err.message || 'Failed to update analysis.');
+    } finally {
+      setEditSaving(false);
     }
   };
 
@@ -154,6 +219,20 @@ export default function SymptomCheckerPage() {
     } catch (err) {
       setError(err.message || 'Failed to fetch analysis details.');
     }
+  }
+
+  async function handleEditClick(analysis) {
+    if (analysis?.analysis_id && !analysis?._id) {
+      try {
+        const detail = await getAnalysisById(analysis.analysis_id);
+        openEditModal(detail);
+        return;
+      } catch {
+        // fall through and edit with available summary data
+      }
+    }
+
+    openEditModal(analysis);
   }
 
   async function handleDeleteAnalysis(analysisId) {
@@ -399,6 +478,76 @@ export default function SymptomCheckerPage() {
               </div>
             )}
 
+            {editAnalysis && (
+              <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-900/40 px-4 py-6">
+                <div className="w-full max-w-2xl rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wider text-[#4B9AA8]">Edit Analysis</p>
+                      <h3 className="text-lg font-bold text-slate-900">Update symptoms and regenerate result</h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={closeEditModal}
+                      className="rounded-full bg-slate-100 px-3 py-2 text-slate-600 hover:bg-slate-200"
+                    >
+                      Close
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleSaveEdit} className="space-y-5 px-6 py-6">
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Symptoms</label>
+                      <Select
+                        isMulti
+                        name="editSymptoms"
+                        options={symptomOptions}
+                        className="basic-multi-select text-base"
+                        classNamePrefix="select"
+                        placeholder="Update symptoms..."
+                        onChange={setEditSymptoms}
+                        value={editSymptoms}
+                        styles={customStyles}
+                        menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                        menuPosition="fixed"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Description</label>
+                      <textarea
+                        value={editDescription}
+                        onChange={(e) => setEditDescription(e.target.value)}
+                        rows={4}
+                        placeholder="Optional. Add or refine the symptom description..."
+                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#4B9AA8] focus:ring-4 focus:ring-[#4B9AA8]/10"
+                      />
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+                      <p className="text-xs text-slate-500">This will rerun the prediction and refresh the medical guidance.</p>
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={closeEditModal}
+                          className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={editSaving}
+                          className={`rounded-xl px-4 py-2 text-sm font-semibold text-white ${editSaving ? 'bg-slate-300 cursor-not-allowed' : 'bg-[#4B9AA8] hover:bg-[#397a86]'}`}
+                        >
+                          {editSaving ? 'Saving...' : 'Save Changes'}
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
             {loadingHistory ? (
               <div className="flex flex-col items-center justify-center h-48 space-y-4">
                 <div className="w-8 h-8 border-4 border-[#4B9AA8]/30 border-t-[#4B9AA8] rounded-full animate-spin"></div>
@@ -453,6 +602,15 @@ export default function SymptomCheckerPage() {
                       {!!item._id && (
                         <button
                           type="button"
+                          onClick={() => handleEditClick(item)}
+                          className="px-3 py-1 text-xs font-semibold rounded-lg bg-sky-50 text-sky-700 hover:bg-sky-100"
+                        >
+                          Edit
+                        </button>
+                      )}
+                      {!!item._id && (
+                        <button
+                          type="button"
                           onClick={() => handleDeleteAnalysis(item._id)}
                           className="px-3 py-1 text-xs font-semibold rounded-lg bg-red-50 text-red-600 hover:bg-red-100"
                         >
@@ -497,6 +655,17 @@ export default function SymptomCheckerPage() {
                 <p className="text-sm text-slate-700"><span className="font-semibold">Confidence:</span> {Math.round((selectedAnalysis.confidence || 0) * 100)}%</p>
                 <p className="text-sm text-slate-700"><span className="font-semibold">Specialty:</span> {selectedAnalysis.recommended_specialty}</p>
                 <p className="text-sm text-slate-700 mt-1"><span className="font-semibold">Guidance:</span> {getGuidanceText(selectedAnalysis)}</p>
+                {!!selectedAnalysis?._id && (
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => handleEditClick(selectedAnalysis)}
+                      className="rounded-xl bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-100"
+                    >
+                      Edit Analysis
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

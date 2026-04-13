@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 from bson import ObjectId
 
-from schemas import SymptomRequest, SymptomResponse, AnalysisFeedbackRequest
+from schemas import SymptomRequest, SymptomResponse, AnalysisFeedbackRequest, SymptomUpdateRequest
 from ml_service import MLService
 from database import get_database
 
@@ -74,6 +74,58 @@ async def analyze(req: SymptomRequest):
         recommended_specialty=specialty,
         ai_feedback=feedback
     )
+
+
+@app.put("/api/symptom-checker/analyze/{analysis_id}", response_model=SymptomResponse)
+async def update_analysis(analysis_id: str, req: SymptomUpdateRequest):
+    object_id = _parse_object_id(analysis_id)
+
+    try:
+        existing = await db["analyses"].find_one({"_id": object_id})
+        if not existing:
+            raise HTTPException(status_code=404, detail="Analysis not found")
+
+        updated_user_id = req.user_id or existing.get("user_id")
+        updated_symptoms = req.symptoms if req.symptoms is not None else existing.get("symptoms") or existing.get("symptoms_reported") or []
+        updated_description = req.description if req.description is not None else existing.get("description")
+
+        payload = updated_symptoms if updated_symptoms else updated_description
+        predicted, confidence, specialty, feedback = await ml_service.predict(payload)
+        if not feedback or not str(feedback).strip():
+            try:
+                feedback = ml_service._fallback_guidance(predicted, specialty)
+            except Exception:
+                feedback = (
+                    f"Based on your symptoms, {predicted} is a possible condition. "
+                    f"Please consult a {specialty} for a proper diagnosis."
+                )
+
+        update_doc = {
+            "user_id": updated_user_id,
+            "symptoms": updated_symptoms,
+            "description": updated_description,
+            "symptoms_reported": updated_symptoms or [],
+            "predicted_condition": predicted,
+            "confidence": confidence,
+            "recommended_specialty": specialty,
+            "ai_feedback": feedback,
+            "updated_at": datetime.utcnow(),
+        }
+
+        await db["analyses"].update_one({"_id": object_id}, {"$set": update_doc})
+
+        return SymptomResponse(
+            analysis_id=analysis_id,
+            predicted_condition=predicted,
+            confidence=confidence,
+            recommended_specialty=specialty,
+            ai_feedback=feedback,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"WARNING: Failed to update analysis: {e}")
+        raise HTTPException(status_code=503, detail="Analysis service unavailable")
 
 
 @app.get("/api/symptom-checker/symptoms")

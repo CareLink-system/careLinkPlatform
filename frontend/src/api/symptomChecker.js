@@ -40,6 +40,22 @@ export async function getAnalysisById(analysisId) {
   return res.data
 }
 
+export async function updateAnalysisById(analysisId, payload) {
+  try {
+    const res = await axios.put(`${SYMPTOM_BASE}/analyze/${analysisId}`, payload)
+    return res.data
+  } catch (err) {
+    let errorMessage = 'Failed to update analysis'
+    const data = err?.response?.data
+    if (data) {
+      errorMessage = data.detail?.[0]?.msg || data.detail || JSON.stringify(data)
+    } else {
+      errorMessage = err.message || errorMessage
+    }
+    throw new Error(errorMessage)
+  }
+}
+
 export async function deleteAnalysisById(analysisId) {
   const res = await axios.delete(`${SYMPTOM_BASE}/analyze/${analysisId}`)
   return res.data
