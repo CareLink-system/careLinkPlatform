@@ -3,8 +3,10 @@
 public class DoctorResponseDto
 {
     public int Id { get; set; }
-    public int UserId { get; set; }
+    public string UserId { get; set; }
     public string SpecializationId { get; set; } = default!;
+
+    public string DoctorName { get; set; } 
     public string LicenseNumber { get; set; } = default!;
     public string? Qualifications { get; set; }
     public string? Experience { get; set; }

@@ -7,6 +7,9 @@ public class UpdateDoctorDto
     [Required]
     public string SpecializationId { get; set; } = default!;
 
+     
+    public string DoctorName { get; set; }
+
     [Required]
     public string LicenseNumber { get; set; } = default!;
 
