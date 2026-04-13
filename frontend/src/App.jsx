@@ -33,11 +33,11 @@ function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/doctor-dashboard" element={<DoctorDashboardPage />} />
         <Route path="/admin-dashboard" element={<AdminDashboardPage />} />
-        {/* <Route path="/admin/users" element={<UserManagementPage />} /> */}
-        {/* <Route
+        <Route path="/admin/users" element={<UserManagementPage />} />
+        <Route
           path="/payments"
           element={<BasicFinancialTransactionMonitoringPage />}
-        /> */}
+        />
         <Route
           path="/telemedicine/:appointmentId"
           element={<TelemedicinePage />}
