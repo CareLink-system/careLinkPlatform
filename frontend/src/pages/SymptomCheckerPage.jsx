@@ -241,8 +241,11 @@ export default function SymptomCheckerPage() {
       borderRadius: '1rem',
       boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
       overflow: 'hidden',
-      border: '1px solid #f1f5f9'
+      border: '1px solid #f1f5f9',
+      zIndex: 9999
     })
+    ,
+    menuPortal: (base) => ({ ...base, zIndex: 9999 })
   };
 
   return (
@@ -282,6 +285,8 @@ export default function SymptomCheckerPage() {
                 onChange={setSelectedSymptoms}
                 value={selectedSymptoms}
                 styles={customStyles}
+                menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                menuPosition="fixed"
               />
 
               {error && (
@@ -346,10 +351,7 @@ export default function SymptomCheckerPage() {
                 </div>
               </div>
 
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 mb-6 relative">
-                <div className="absolute top-6 left-6 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm text-[#4B9AA8]">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                </div>
+              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 mb-6">
                 <h4 className="text-xs font-bold text-[#4B9AA8] uppercase tracking-wider mb-2">Medical Guidance</h4>
                 <div className="mt-3 p-3 bg-slate-50 rounded-md border border-slate-100">
                   <p className="text-sm text-slate-700 whitespace-pre-wrap">{getGuidanceText(result)}</p>
