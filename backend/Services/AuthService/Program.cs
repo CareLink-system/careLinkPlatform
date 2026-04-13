@@ -95,7 +95,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.RegisterServices(builder.Configuration);
 
 // Add JWT Authentication
-builder.Services.AddJwtAuthentication(builder.Configuration);
+//builder.Services.AddJwtAuthentication(builder.Configuration);
 
 // Add Health Checks
 builder.Services.AddHealthChecks()
@@ -176,7 +176,7 @@ if (app.Environment.IsDevelopment())
     });
 
     // Apply migrations in development only
-    app.ApplyMigrations();
+    //app.ApplyMigrations();
 }
 
 // Enable middleware
