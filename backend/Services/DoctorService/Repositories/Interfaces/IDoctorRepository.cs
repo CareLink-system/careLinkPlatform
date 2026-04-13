@@ -6,7 +6,7 @@ public interface IDoctorRepository
 {
     Task<Doctor> AddAsync(Doctor doctor);
     Task<Doctor?> GetByIdAsync(int id);
-    Task<Doctor?> GetByUserIdAsync(int userId);
+    Task<Doctor?> GetByUserIdAsync(string userId);
     Task<IEnumerable<Doctor>> GetAllAsync();
     Task<IEnumerable<Doctor>> GetVerifiedAsync();
     Task<IEnumerable<Doctor>> GetBySpecializationAsync(string specializationId);
