@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from bson import ObjectId
 
 from chat_service import ChatbotService
-from database import close_client, ensure_connection, get_database
+from database import close_client, get_database
 from schemas import (
     ChatConversationCreate,
     ChatConversationUpdate,
@@ -45,13 +45,11 @@ def _db_unavailable(ex: Exception) -> HTTPException:
 
 @app.on_event("startup")
 async def startup_event():
-    global db
-    ok, uri, error = await ensure_connection()
-    db = get_database()
-    if ok:
-        print(f"INFO: MongoDB connected (database='{db.name}', uri='{uri}')")
-    else:
-        print(f"ERROR: MongoDB connection failed: {error}")
+    try:
+        await db.command("ping")
+        print(f"INFO: MongoDB connected (database='{db.name}')")
+    except Exception as ex:
+        print(f"ERROR: MongoDB connection failed: {ex}")
 
 
 @app.on_event("shutdown")

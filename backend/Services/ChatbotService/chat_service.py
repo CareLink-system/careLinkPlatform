@@ -16,9 +16,8 @@ class ChatbotService:
         configured_model = (os.getenv("GEMINI_MODEL") or "").strip()
         self.model_candidates = [
             configured_model,
+            "gemini-2.5-flash",
             "gemini-2.0-flash",
-            "gemini-1.5-flash-latest",
-            "gemini-1.5-flash",
         ]
         # Keep order and remove blanks/duplicates.
         seen = set()

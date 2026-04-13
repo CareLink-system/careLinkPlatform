@@ -15,6 +15,8 @@ if not api_key:
 else:
     genai.configure(api_key=api_key)
 
+gemini_model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+
 class MLService:
     def __init__(self):
         base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -81,7 +83,7 @@ class MLService:
         feedback = self._fallback_guidance(disease, specialty)
         if api_key:
             try:
-                model = genai.GenerativeModel("gemini-1.5-flash")
+                model = genai.GenerativeModel(gemini_model_name)
                 response = model.generate_content(prompt)
 
                 # Robustly extract text from the SDK response using multiple fallbacks
