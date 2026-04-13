@@ -28,6 +28,7 @@ public class DoctorService : IDoctorService
             UserId = dto.UserId,
             SpecializationId = dto.SpecializationId,
             LicenseNumber = dto.LicenseNumber,
+            DoctorName = dto.DoctorName,
             Qualifications = dto.Qualifications,
             Experience = dto.Experience,
             Bio = dto.Bio,
@@ -78,6 +79,7 @@ public class DoctorService : IDoctorService
 
         doctor.SpecializationId = dto.SpecializationId;
         doctor.LicenseNumber = dto.LicenseNumber;
+        doctor.DoctorName = dto.DoctorName;
         doctor.Qualifications = dto.Qualifications;
         doctor.Experience = dto.Experience;
         doctor.Bio = dto.Bio;
@@ -133,6 +135,7 @@ public class DoctorService : IDoctorService
             UserId = doctor.UserId,
             SpecializationId = doctor.SpecializationId,
             LicenseNumber = doctor.LicenseNumber,
+            DoctorName = doctor.DoctorName,
             Qualifications = doctor.Qualifications,
             Experience = doctor.Experience,
             Bio = doctor.Bio,
