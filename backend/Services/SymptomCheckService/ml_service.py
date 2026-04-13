@@ -1,25 +1,25 @@
 import joblib
 import numpy as np
 import os
-from google import genai
+import google.generativeai as genai
 from dotenv import load_dotenv
 
 # 1. FORCE LOAD THE .ENV FILE FIRST
 load_dotenv()
 
-# 2. Configure the NEW Gemini Client
+# 2. Configure Gemini client
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
     print("WARNING: GEMINI_API_KEY is missing! Check your .env file.")
-
-# Initialize the new SDK client
-gemini_client = genai.Client(api_key=api_key)
+else:
+    genai.configure(api_key=api_key)
 
 class MLService:
     def __init__(self):
-        self.model = joblib.load('xgboost_symptom_model.joblib')
-        self.label_encoder = joblib.load('label_encoder.joblib')
-        self.features = joblib.load('feature_names.joblib')
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.model = joblib.load(os.path.join(base_dir, 'xgboost_symptom_model.joblib'))
+        self.label_encoder = joblib.load(os.path.join(base_dir, 'label_encoder.joblib'))
+        self.features = joblib.load(os.path.join(base_dir, 'feature_names.joblib'))
         self.specialty_map = {
             'Fungal infection': 'Dermatologist',
             'Allergy': 'Allergist',
@@ -46,12 +46,17 @@ class MLService:
         disease = self.label_encoder.inverse_transform([prediction_encoded])[0]
         specialty = self.specialty_map.get(disease, 'General Physician')
 
-        # Generate Gemini Feedback using the NEW SDK format
+        # Generate Gemini feedback and gracefully degrade on API failures.
         prompt = f"A patient has symptoms: {', '.join(symptoms_list)}. ML suspects {disease}. Give a brief, empathetic health suggestion and firmly advise consulting a {specialty}. Do not use markdown formatting."
-        
-        response = gemini_client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt
-        )
 
-        return disease, confidence, specialty, response.text
+        feedback = f"Based on your symptoms, {disease} is a possible condition. Please consult a {specialty} for a proper diagnosis."
+        if api_key:
+            try:
+                model = genai.GenerativeModel("gemini-1.5-flash")
+                response = model.generate_content(prompt)
+                if getattr(response, "text", None):
+                    feedback = response.text
+            except Exception as ex:
+                print(f"WARNING: Gemini feedback generation failed: {ex}")
+
+        return disease, confidence, specialty, feedback

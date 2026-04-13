@@ -1,8 +1,11 @@
 import axios from 'axios'
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:5000'
+const SYMPTOM_BASE = `${API_BASE_URL.replace(/\/$/, '')}/api/symptom-checker`
+
 export async function analyzeSymptoms(payload) {
   try {
-    const res = await axios.post('http://localhost:8000/api/symptom-checker/analyze', payload)
+    const res = await axios.post(`${SYMPTOM_BASE}/analyze`, payload)
     return res.data
   } catch (err) {
     let errorMessage = 'Failed to analyze symptoms'
@@ -18,12 +21,11 @@ export async function analyzeSymptoms(payload) {
 
 // NEW: Fetch history for a user
 export async function getSymptomHistory(userId) {
-  // If you don't have this endpoint yet, this will safely return an empty array
   try {
-    const res = await axios.get(`http://localhost:8000/api/symptom-checker/history/${userId}`)
+    const res = await axios.get(`${SYMPTOM_BASE}/history/${userId}`)
     return res.data
   } catch (err) {
-    console.warn('History endpoint not ready yet.', err)
+    console.warn('History endpoint not reachable.', err)
     return []
   }
 }
