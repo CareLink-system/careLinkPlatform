@@ -72,7 +72,7 @@ public class DoctorsController : ControllerBase
         return Ok(updatedDoctor);
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin , Doctor")]
     [HttpPut("{id:int}/verify")]
     public async Task<IActionResult> VerifyDoctor(int id)
     {

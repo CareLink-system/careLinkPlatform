@@ -13,7 +13,10 @@ import PatientProfilePage from './features/patient/pages/PatientProfilePage'
 import MedicalReportsPage from './features/medical-reports/pages/MedicalReportsPage'
 import GetAllMedicalReports from './features/medical-reports/pages/GetAllMedicalReports'
 import Calendar from './features/calendar/PatientCalendar'
-
+import DoctorProfilePage from './features/doctor/pages/DoctorProfilePage'
+import GetAllDoctorList from './features/doctor/pages/getAllDoctorList'
+import DoctorSlotsPage from './features/slots/pages/DoctorSlotsPage'
+ 
 import './App.css'
 
 function App() {
@@ -27,11 +30,11 @@ function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/doctor-dashboard" element={<DoctorDashboardPage />} />
         <Route path="/admin-dashboard" element={<AdminDashboardPage />} />
-        <Route path="/admin/users" element={<UserManagementPage />} />
-        <Route
+        {/* <Route path="/admin/users" element={<UserManagementPage />} /> */}
+        {/* <Route
           path="/payments"
           element={<BasicFinancialTransactionMonitoringPage />}
-        />
+        /> */}
         <Route
           path="/telemedicine/:appointmentId"
           element={<TelemedicinePage />}
@@ -42,6 +45,11 @@ function App() {
         <Route path="/all-medical-reports" element={<GetAllMedicalReports />} />
         <Route path="/calendar" element={<Calendar />} />
       </Route>
+
+      <Route path="/doctor-profile" element={<DoctorProfilePage />} />
+      <Route path="/find" element={<GetAllDoctorList />} />
+      <Route path="/doctor/:doctorId/availability" element={<DoctorSlotsPage />} />
+ 
     </Routes>
   );
 }
