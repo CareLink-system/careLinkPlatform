@@ -2,6 +2,8 @@ import joblib
 import numpy as np
 import os
 import json
+import re
+from datetime import datetime
 import google.generativeai as genai
 from dotenv import load_dotenv
 
@@ -59,6 +61,20 @@ class MLService:
             "Summary: If symptoms worsen or any red flags occur, seek emergency care immediately."
         )
 
+    def _extract_json_block(self, text: str) -> str:
+        if not text:
+            return ""
+        cleaned = text.strip()
+        fence_match = re.search(r"```(?:json)?\s*(.*?)```", cleaned, flags=re.IGNORECASE | re.DOTALL)
+        if fence_match:
+            cleaned = fence_match.group(1).strip()
+
+        start = cleaned.find("{")
+        end = cleaned.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            return cleaned[start:end + 1]
+        return cleaned
+
     async def predict(self, payload):
         # Convert description to list if necessary, assuming CSV format for simple text
         symptoms_list = payload if isinstance(payload, list) else [s.strip() for s in payload.split(',')]
@@ -113,6 +129,7 @@ class MLService:
                         return ''
 
                 raw_text = (_extract_text(response) or '').strip()
+                json_text = self._extract_json_block(raw_text)
 
                 # Persist raw Gemini response for debugging (temporary log)
                 try:
@@ -131,7 +148,7 @@ class MLService:
                 if raw_text:
                     # Attempt to parse strict JSON response from Gemini
                     try:
-                        parsed = json.loads(raw_text)
+                        parsed = json.loads(json_text)
                         # Validate keys exist
                         keys = ["possible_meaning", "what_to_do", "red_flags", "who_to_consult", "concise_summary"]
                         if all(k in parsed for k in keys):
@@ -151,11 +168,11 @@ class MLService:
                             feedback = "\n".join(parts)
                         else:
                             # If JSON doesn't have required keys, use the raw text
-                            feedback = raw_text
+                            feedback = json_text
                     except Exception:
                         # Not JSON — use raw text output if it's descriptive enough
-                        if len(raw_text) > 20:
-                            feedback = raw_text
+                        if len(json_text) > 20:
+                            feedback = json_text
             except Exception as ex:
                 print(f"WARNING: Gemini feedback generation failed: {ex}")
 
