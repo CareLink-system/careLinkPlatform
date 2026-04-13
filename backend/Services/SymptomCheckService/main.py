@@ -36,11 +36,17 @@ async def analyze(req: SymptomRequest):
     payload = req.symptoms if req.symptoms else req.description
     
     predicted, confidence, specialty, feedback = await ml_service.predict(payload)
+    # Ensure we always return non-empty medical guidance. Prefer ML service output
+    # (Gemini when available) and fall back to the ML service's deterministic guidance.
     if not feedback or not str(feedback).strip():
-        feedback = (
-            f"Based on your symptoms, {predicted} is a possible condition. "
-            f"Please consult a {specialty} for a proper diagnosis."
-        )
+        try:
+            # Use the MLService fallback guidance generator to keep messaging consistent
+            feedback = ml_service._fallback_guidance(predicted, specialty)
+        except Exception:
+            feedback = (
+                f"Based on your symptoms, {predicted} is a possible condition. "
+                f"Please consult a {specialty} for a proper diagnosis."
+            )
 
     doc = req.dict()
     doc.update({

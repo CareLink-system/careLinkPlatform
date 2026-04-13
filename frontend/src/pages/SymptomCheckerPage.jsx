@@ -350,9 +350,10 @@ export default function SymptomCheckerPage() {
                 <div className="absolute top-6 left-6 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm text-[#4B9AA8]">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 </div>
-                <p className="pl-12 text-slate-600 leading-relaxed">
-                  {getGuidanceText(result)}
-                </p>
+                <h4 className="text-xs font-bold text-[#4B9AA8] uppercase tracking-wider mb-2">Medical Guidance</h4>
+                <div className="mt-3 p-3 bg-slate-50 rounded-md border border-slate-100">
+                  <p className="text-sm text-slate-700 whitespace-pre-wrap">{getGuidanceText(result)}</p>
+                </div>
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between p-6 bg-slate-900 rounded-2xl text-white">
@@ -430,6 +431,12 @@ export default function SymptomCheckerPage() {
                         </span>
                       )}
                     </div>
+
+                    {(item.ai_feedback || item.aiFeedback) && (
+                      <p className="mt-3 text-sm text-slate-500 line-clamp-2">
+                        {(item.ai_feedback || item.aiFeedback).slice(0, 140)}{(item.ai_feedback || item.aiFeedback).length > 140 ? '...' : ''}
+                      </p>
+                    )}
 
                     <div className="mt-4 flex flex-wrap gap-2">
                       {!!item._id && (
