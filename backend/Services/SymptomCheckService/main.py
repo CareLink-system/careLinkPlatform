@@ -36,6 +36,11 @@ async def analyze(req: SymptomRequest):
     payload = req.symptoms if req.symptoms else req.description
     
     predicted, confidence, specialty, feedback = await ml_service.predict(payload)
+    if not feedback or not str(feedback).strip():
+        feedback = (
+            f"Based on your symptoms, {predicted} is a possible condition. "
+            f"Please consult a {specialty} for a proper diagnosis."
+        )
 
     doc = req.dict()
     doc.update({

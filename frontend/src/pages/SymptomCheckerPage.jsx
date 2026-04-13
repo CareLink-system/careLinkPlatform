@@ -51,6 +51,7 @@ export default function SymptomCheckerPage() {
   const [error, setError] = useState(null);
   const [selectedAnalysis, setSelectedAnalysis] = useState(null);
   const [stats, setStats] = useState(null);
+  const [feedbackSavingId, setFeedbackSavingId] = useState(null);
   
   // History State
   const [history, setHistory] = useState([]);
@@ -178,6 +179,7 @@ export default function SymptomCheckerPage() {
   }
 
   async function handleFeedback(analysisId, wasAccurate) {
+    setFeedbackSavingId(analysisId);
     try {
       await submitAnalysisFeedback(analysisId, wasAccurate);
       setHistory((prev) => prev.map((item) => (
@@ -188,8 +190,21 @@ export default function SymptomCheckerPage() {
       }
     } catch (err) {
       setError(err.message || 'Failed to submit feedback.');
+    } finally {
+      setFeedbackSavingId(null);
     }
   }
+
+  const getGuidanceText = (analysis) => {
+    const text = analysis?.ai_feedback;
+    if (typeof text === 'string' && text.trim().length > 0) {
+      return text;
+    }
+
+    const condition = analysis?.predicted_condition || analysis?.predicted_disease || 'your condition';
+    const specialty = analysis?.recommended_specialty || 'General Physician';
+    return `Based on your symptoms, ${condition} is a possible condition. Please consult a ${specialty} for a proper diagnosis.`;
+  };
 
   // Premium UI styling for react-select
   const customStyles = {
@@ -336,7 +351,7 @@ export default function SymptomCheckerPage() {
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 </div>
                 <p className="pl-12 text-slate-600 leading-relaxed">
-                  {result.ai_feedback}
+                  {getGuidanceText(result)}
                 </p>
               </div>
 
@@ -440,18 +455,25 @@ export default function SymptomCheckerPage() {
                           <button
                             type="button"
                             onClick={() => handleFeedback(item._id, true)}
-                            className="px-3 py-1 text-xs font-semibold rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                            disabled={feedbackSavingId === item._id}
+                            className={`px-3 py-1 text-xs font-semibold rounded-lg transition-colors ${item.feedback?.was_accurate === true ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'} ${feedbackSavingId === item._id ? 'opacity-70 cursor-not-allowed' : ''}`}
                           >
                             Accurate
                           </button>
                           <button
                             type="button"
                             onClick={() => handleFeedback(item._id, false)}
-                            className="px-3 py-1 text-xs font-semibold rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100"
+                            disabled={feedbackSavingId === item._id}
+                            className={`px-3 py-1 text-xs font-semibold rounded-lg transition-colors ${item.feedback?.was_accurate === false ? 'bg-amber-600 text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'} ${feedbackSavingId === item._id ? 'opacity-70 cursor-not-allowed' : ''}`}
                           >
                             Not Accurate
                           </button>
                         </>
+                      )}
+                      {item.feedback && (
+                        <span className="px-2 py-1 text-xs rounded-md bg-slate-100 text-slate-600">
+                          Saved: {item.feedback.was_accurate ? 'Accurate' : 'Not Accurate'}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -465,9 +487,7 @@ export default function SymptomCheckerPage() {
                 <p className="text-sm text-slate-700"><span className="font-semibold">Condition:</span> {selectedAnalysis.predicted_condition}</p>
                 <p className="text-sm text-slate-700"><span className="font-semibold">Confidence:</span> {Math.round((selectedAnalysis.confidence || 0) * 100)}%</p>
                 <p className="text-sm text-slate-700"><span className="font-semibold">Specialty:</span> {selectedAnalysis.recommended_specialty}</p>
-                {!!selectedAnalysis.ai_feedback && (
-                  <p className="text-sm text-slate-700 mt-1"><span className="font-semibold">Guidance:</span> {selectedAnalysis.ai_feedback}</p>
-                )}
+                <p className="text-sm text-slate-700 mt-1"><span className="font-semibold">Guidance:</span> {getGuidanceText(selectedAnalysis)}</p>
               </div>
             )}
           </div>
