@@ -29,3 +29,37 @@ export async function getSymptomHistory(userId) {
     return []
   }
 }
+
+export async function getSymptoms() {
+  const res = await axios.get(`${SYMPTOM_BASE}/symptoms`)
+  return res.data?.symptoms || []
+}
+
+export async function getAnalysisById(analysisId) {
+  const res = await axios.get(`${SYMPTOM_BASE}/analyze/${analysisId}`)
+  return res.data
+}
+
+export async function deleteAnalysisById(analysisId) {
+  const res = await axios.delete(`${SYMPTOM_BASE}/analyze/${analysisId}`)
+  return res.data
+}
+
+export async function clearSymptomHistory(userId) {
+  const res = await axios.delete(`${SYMPTOM_BASE}/history/${userId}`)
+  return res.data
+}
+
+export async function submitAnalysisFeedback(analysisId, wasAccurate) {
+  const res = await axios.patch(`${SYMPTOM_BASE}/analyze/${analysisId}/feedback`, {
+    was_accurate: wasAccurate
+  })
+  return res.data
+}
+
+export async function getSymptomStats() {
+  const res = await axios.get(`${SYMPTOM_BASE}/stats`, {
+    headers: { 'X-Role': 'Admin' }
+  })
+  return res.data
+}

@@ -1,29 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
-import { analyzeSymptoms, getSymptomHistory } from '../api/symptomChecker';
-
-const SYMPTOM_OPTIONS = [
-  { value: 'itching', label: 'Itching' },
-  { value: 'skin_rash', label: 'Skin Rash' },
-  { value: 'continuous_sneezing', label: 'Continuous Sneezing' },
-  { value: 'shivering', label: 'Shivering' },
-  { value: 'chills', label: 'Chills' },
-  { value: 'joint_pain', label: 'Joint Pain' },
-  { value: 'stomach_pain', label: 'Stomach Pain' },
-  { value: 'acidity', label: 'Acidity' },
-  { value: 'vomiting', label: 'Vomiting' },
-  { value: 'fatigue', label: 'Fatigue' },
-  { value: 'weight_loss', label: 'Weight Loss' },
-  { value: 'lethargy', label: 'Lethargy' },
-  { value: 'cough', label: 'Cough' },
-  { value: 'high_fever', label: 'High Fever' },
-  { value: 'headache', label: 'Headache' },
-  { value: 'yellowish_skin', label: 'Yellowish Skin' },
-  { value: 'dark_urine', label: 'Dark Urine' },
-  { value: 'nausea', label: 'Nausea' },
-  { value: 'loss_of_appetite', label: 'Loss of Appetite' },
-  { value: 'chest_pain', label: 'Chest Pain' }
-];
+import {
+  analyzeSymptoms,
+  getSymptomHistory,
+  getSymptoms,
+  getAnalysisById,
+  deleteAnalysisById,
+  clearSymptomHistory,
+  submitAnalysisFeedback,
+  getSymptomStats
+} from '../api/symptomChecker';
 
 export default function SymptomCheckerPage() {
   // Robust User ID extraction for .NET / JWT setups
@@ -48,15 +34,52 @@ export default function SymptomCheckerPage() {
   };
   
   const userId = getUserId();
+  const userRole = (() => {
+    try {
+      const storedAuth = JSON.parse(localStorage.getItem('carelink.auth'));
+      return storedAuth?.user?.role || '';
+    } catch {
+      return '';
+    }
+  })();
+  const isAdmin = String(userRole).toLowerCase() === 'admin';
 
   const [selectedSymptoms, setSelectedSymptoms] = useState([]);
+  const [symptomOptions, setSymptomOptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [selectedAnalysis, setSelectedAnalysis] = useState(null);
+  const [stats, setStats] = useState(null);
   
   // History State
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
+
+  const loadSymptoms = async () => {
+    try {
+      const symptoms = await getSymptoms();
+      const options = symptoms.map((sym) => ({
+        value: sym,
+        label: sym.replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+      }));
+      setSymptomOptions(options);
+    } catch (err) {
+      console.warn('Unable to load dynamic symptoms, falling back to default list.', err);
+      const fallback = [
+        'itching', 'skin_rash', 'continuous_sneezing', 'shivering', 'chills',
+        'joint_pain', 'stomach_pain', 'acidity', 'vomiting', 'fatigue',
+        'weight_loss', 'lethargy', 'cough', 'high_fever', 'headache',
+        'yellowish_skin', 'dark_urine', 'nausea', 'loss_of_appetite', 'chest_pain'
+      ];
+      setSymptomOptions(
+        fallback.map((sym) => ({
+          value: sym,
+          label: sym.replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+        }))
+      );
+    }
+  };
 
   const loadHistory = async () => {
     setLoadingHistory(true);
@@ -65,7 +88,20 @@ export default function SymptomCheckerPage() {
     setLoadingHistory(false);
   };
 
+  const loadStats = async () => {
+    if (!isAdmin) return;
+    try {
+      const data = await getSymptomStats();
+      setStats(data);
+    } catch (err) {
+      console.warn('Failed to load stats:', err);
+      setStats(null);
+    }
+  };
+
   useEffect(() => {
+    loadSymptoms();
+    loadStats();
     if (userId !== 'unknown_user') {
       loadHistory();
     } else {
@@ -97,6 +133,7 @@ export default function SymptomCheckerPage() {
       
       // Optimistically add to history UI
       setHistory(prev => [{
+        _id: data.analysis_id,
         ...data,
         symptoms_reported: symptomsArray,
         created_at: new Date().toISOString()
@@ -106,6 +143,51 @@ export default function SymptomCheckerPage() {
       setError(err.message || 'Failed to analyze symptoms. Please try again.');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleViewAnalysis(analysisId) {
+    try {
+      const detail = await getAnalysisById(analysisId);
+      setSelectedAnalysis(detail);
+    } catch (err) {
+      setError(err.message || 'Failed to fetch analysis details.');
+    }
+  }
+
+  async function handleDeleteAnalysis(analysisId) {
+    try {
+      await deleteAnalysisById(analysisId);
+      setHistory((prev) => prev.filter((row) => row._id !== analysisId));
+      if (selectedAnalysis?._id === analysisId) {
+        setSelectedAnalysis(null);
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to delete analysis.');
+    }
+  }
+
+  async function handleClearHistory() {
+    try {
+      await clearSymptomHistory(userId);
+      setHistory([]);
+      setSelectedAnalysis(null);
+    } catch (err) {
+      setError(err.message || 'Failed to clear history.');
+    }
+  }
+
+  async function handleFeedback(analysisId, wasAccurate) {
+    try {
+      await submitAnalysisFeedback(analysisId, wasAccurate);
+      setHistory((prev) => prev.map((item) => (
+        item._id === analysisId ? { ...item, feedback: { was_accurate: wasAccurate } } : item
+      )));
+      if (selectedAnalysis?._id === analysisId) {
+        setSelectedAnalysis({ ...selectedAnalysis, feedback: { was_accurate: wasAccurate } });
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to submit feedback.');
     }
   }
 
@@ -178,7 +260,7 @@ export default function SymptomCheckerPage() {
               <Select
                 isMulti
                 name="symptoms"
-                options={SYMPTOM_OPTIONS}
+                options={symptomOptions}
                 className="basic-multi-select text-base"
                 classNamePrefix="select"
                 placeholder="Type to search symptoms (e.g., Headache)..."
@@ -277,8 +359,27 @@ export default function SymptomCheckerPage() {
           <div className="bg-white/60 backdrop-blur-xl border border-slate-200/60 rounded-3xl p-6 lg:p-8 h-full min-h-[500px]">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold text-slate-900">Patient History</h3>
-              <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-xs font-bold">{history.length} Records</span>
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-xs font-bold">{history.length} Records</span>
+                {history.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearHistory}
+                    className="px-3 py-1 rounded-full text-xs font-bold bg-red-50 text-red-600 hover:bg-red-100"
+                  >
+                    Clear All
+                  </button>
+                )}
+              </div>
             </div>
+
+            {isAdmin && stats && (
+              <div className="mb-5 rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Global Stats (Admin)</p>
+                <p className="text-sm text-slate-700">Total Analyses: <span className="font-bold">{stats.total_analyses}</span></p>
+                <p className="text-sm text-slate-700">Average Confidence: <span className="font-bold">{Math.round((stats.average_ai_confidence || 0) * 100)}%</span></p>
+              </div>
+            )}
 
             {loadingHistory ? (
               <div className="flex flex-col items-center justify-center h-48 space-y-4">
@@ -294,7 +395,7 @@ export default function SymptomCheckerPage() {
             ) : (
               <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                 {history.map((item, idx) => (
-                  <div key={idx} className="group p-5 bg-white border border-slate-100 rounded-2xl hover:border-[#4B9AA8]/30 hover:shadow-md transition-all cursor-pointer">
+                  <div key={item._id || idx} className="group p-5 bg-white border border-slate-100 rounded-2xl hover:border-[#4B9AA8]/30 hover:shadow-md transition-all">
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="font-bold text-slate-800">{item.predicted_condition || item.predicted_disease}</h4>
                       <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-md">
@@ -314,8 +415,59 @@ export default function SymptomCheckerPage() {
                         </span>
                       )}
                     </div>
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {!!item._id && (
+                        <button
+                          type="button"
+                          onClick={() => handleViewAnalysis(item._id)}
+                          className="px-3 py-1 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        >
+                          View
+                        </button>
+                      )}
+                      {!!item._id && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteAnalysis(item._id)}
+                          className="px-3 py-1 text-xs font-semibold rounded-lg bg-red-50 text-red-600 hover:bg-red-100"
+                        >
+                          Delete
+                        </button>
+                      )}
+                      {!!item._id && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleFeedback(item._id, true)}
+                            className="px-3 py-1 text-xs font-semibold rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                          >
+                            Accurate
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleFeedback(item._id, false)}
+                            className="px-3 py-1 text-xs font-semibold rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100"
+                          >
+                            Not Accurate
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {selectedAnalysis && (
+              <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Selected Analysis</p>
+                <p className="text-sm text-slate-700"><span className="font-semibold">Condition:</span> {selectedAnalysis.predicted_condition}</p>
+                <p className="text-sm text-slate-700"><span className="font-semibold">Confidence:</span> {Math.round((selectedAnalysis.confidence || 0) * 100)}%</p>
+                <p className="text-sm text-slate-700"><span className="font-semibold">Specialty:</span> {selectedAnalysis.recommended_specialty}</p>
+                {!!selectedAnalysis.ai_feedback && (
+                  <p className="text-sm text-slate-700 mt-1"><span className="font-semibold">Guidance:</span> {selectedAnalysis.ai_feedback}</p>
+                )}
               </div>
             )}
           </div>
