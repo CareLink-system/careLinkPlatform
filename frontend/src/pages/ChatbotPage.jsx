@@ -9,6 +9,7 @@ import {
   updateChatMessage,
   deleteChatMessage
 } from '../api/chatbot';
+import { normalizeGuidanceText } from '../lib/utils';
 
 export default function ChatbotPage() {
   const getErrorMessage = (err, fallback) => (
@@ -267,6 +268,7 @@ export default function ChatbotPage() {
 
   const activeConversation = conversations.find((item) => item.id === activeConversationId);
   const insight = activeConversation?.diagnosis_context || diagnosisContext;
+  const insightGuidance = normalizeGuidanceText(insight?.ai_feedback, 'Ask CareLink for next-step guidance.');
   const promptSuggestions = insight?.predicted_condition
     ? [
         `How can I manage ${insight.predicted_condition} at home?`,
@@ -299,7 +301,7 @@ export default function ChatbotPage() {
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={createNewConversation}
+              onClick={() => createNewConversation()}
               className="rounded-2xl bg-[#4B9AA8] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-[#4B9AA8]/20 transition hover:-translate-y-0.5 hover:bg-[#397a86]"
             >
               New Chat
@@ -317,7 +319,7 @@ export default function ChatbotPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={createNewConversation}
+                  onClick={() => createNewConversation()}
                   className="rounded-full border border-[#4B9AA8]/20 bg-[#4B9AA8]/8 px-3 py-2 text-xs font-bold text-[#317885] transition hover:border-[#4B9AA8]/40 hover:bg-[#4B9AA8]/12"
                 >
                   + New
@@ -400,7 +402,7 @@ export default function ChatbotPage() {
                   <div className="rounded-3xl bg-slate-50 p-4 md:col-span-2">
                     <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">Guidance</p>
                     <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-slate-700">
-                      {insight.ai_feedback || 'Ask CareLink for next-step guidance.'}
+                      {insightGuidance}
                     </p>
                   </div>
                 </div>

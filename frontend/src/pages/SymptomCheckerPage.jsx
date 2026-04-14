@@ -12,6 +12,7 @@ import {
   submitAnalysisFeedback,
   getSymptomStats
 } from '../api/symptomChecker';
+import { normalizeGuidanceText } from '../lib/utils';
 
 export default function SymptomCheckerPage() {
   // Robust User ID extraction for .NET / JWT setups
@@ -114,7 +115,7 @@ export default function SymptomCheckerPage() {
         predicted_condition: analysis?.predicted_condition || analysis?.predicted_disease || null,
         confidence: analysis?.confidence ?? null,
         recommended_specialty: analysis?.recommended_specialty || null,
-        ai_feedback: analysis?.ai_feedback || null,
+        ai_feedback: normalizeGuidanceText(analysis?.ai_feedback || null, null),
         symptoms_reported: symptomsArray.length > 0 ? symptomsArray : analysis?.symptoms_reported || [],
         created_at: new Date().toISOString()
       };
@@ -302,14 +303,12 @@ export default function SymptomCheckerPage() {
   }
 
   const getGuidanceText = (analysis) => {
-    const text = analysis?.ai_feedback;
-    if (typeof text === 'string' && text.trim().length > 0) {
-      return text;
-    }
-
     const condition = analysis?.predicted_condition || analysis?.predicted_disease || 'your condition';
     const specialty = analysis?.recommended_specialty || 'General Physician';
-    return `Based on your symptoms, ${condition} is a possible condition. Please consult a ${specialty} for a proper diagnosis.`;
+    return normalizeGuidanceText(
+      analysis?.ai_feedback || analysis?.aiFeedback,
+      `Based on your symptoms, ${condition} is a possible condition. Please consult a ${specialty} for a proper diagnosis.`
+    );
   };
 
   // Premium UI styling for react-select
@@ -597,99 +596,102 @@ export default function SymptomCheckerPage() {
               </div>
             ) : (
               <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-                {history.map((item, idx) => (
-                  <div key={item._id || idx} className="group p-5 bg-white border border-slate-100 rounded-2xl hover:border-[#4B9AA8]/30 hover:shadow-md transition-all">
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-bold text-slate-800">{item.predicted_condition || item.predicted_disease}</h4>
-                      <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-md">
-                        {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Just now'}
-                      </span>
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-1.5 mt-3">
-                      {(item.symptoms_reported || []).slice(0, 3).map((sym, i) => (
-                        <span key={i} className="px-2 py-1 bg-[#4B9AA8]/10 text-[#4B9AA8] text-xs font-medium rounded-md">
-                          {sym.replace('_', ' ')}
+                {history.map((item, idx) => {
+                  const guidancePreview = getGuidanceText(item);
+                  return (
+                    <div key={item._id || idx} className="group p-5 bg-white border border-slate-100 rounded-2xl hover:border-[#4B9AA8]/30 hover:shadow-md transition-all">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-bold text-slate-800">{item.predicted_condition || item.predicted_disease}</h4>
+                        <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-md">
+                          {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Just now'}
                         </span>
-                      ))}
-                      {(item.symptoms_reported?.length > 3) && (
-                        <span className="px-2 py-1 bg-slate-100 text-slate-500 text-xs font-medium rounded-md">
-                          +{item.symptoms_reported.length - 3} more
-                        </span>
-                      )}
-                    </div>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-1.5 mt-3">
+                        {(item.symptoms_reported || []).slice(0, 3).map((sym, i) => (
+                          <span key={i} className="px-2 py-1 bg-[#4B9AA8]/10 text-[#4B9AA8] text-xs font-medium rounded-md">
+                            {sym.replace('_', ' ')}
+                          </span>
+                        ))}
+                        {(item.symptoms_reported?.length > 3) && (
+                          <span className="px-2 py-1 bg-slate-100 text-slate-500 text-xs font-medium rounded-md">
+                            +{item.symptoms_reported.length - 3} more
+                          </span>
+                        )}
+                      </div>
 
-                    {(item.ai_feedback || item.aiFeedback) && (
-                      <p className="mt-3 text-sm text-slate-500 line-clamp-2">
-                        {(item.ai_feedback || item.aiFeedback).slice(0, 140)}{(item.ai_feedback || item.aiFeedback).length > 140 ? '...' : ''}
-                      </p>
-                    )}
+                      {(item.ai_feedback || item.aiFeedback) && (
+                        <p className="mt-3 text-sm text-slate-500 line-clamp-2">
+                          {guidancePreview.slice(0, 140)}{guidancePreview.length > 140 ? '...' : ''}
+                        </p>
+                      )}
 
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {!!item._id && (
-                        <button
-                          type="button"
-                          onClick={() => handleViewAnalysis(item._id)}
-                          className="px-3 py-1 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200"
-                        >
-                          View
-                        </button>
-                      )}
-                      {!!item._id && (
-                        <button
-                          type="button"
-                          onClick={() => openChatbot(item, item.symptoms_reported || [])}
-                          className="px-3 py-1 text-xs font-semibold rounded-lg bg-[#4B9AA8]/10 text-[#4B9AA8] hover:bg-[#4B9AA8]/20"
-                        >
-                          Chat
-                        </button>
-                      )}
-                      {!!item._id && (
-                        <button
-                          type="button"
-                          onClick={() => handleEditClick(item)}
-                          className="px-3 py-1 text-xs font-semibold rounded-lg bg-sky-50 text-sky-700 hover:bg-sky-100"
-                        >
-                          Edit
-                        </button>
-                      )}
-                      {!!item._id && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteAnalysis(item._id)}
-                          className="px-3 py-1 text-xs font-semibold rounded-lg bg-red-50 text-red-600 hover:bg-red-100"
-                        >
-                          Delete
-                        </button>
-                      )}
-                      {!!item._id && (
-                        <>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {!!item._id && (
                           <button
                             type="button"
-                            onClick={() => handleFeedback(item._id, true)}
-                            disabled={feedbackSavingId === item._id}
-                            className={`px-3 py-1 text-xs font-semibold rounded-lg transition-colors ${item.feedback?.was_accurate === true ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'} ${feedbackSavingId === item._id ? 'opacity-70 cursor-not-allowed' : ''}`}
+                            onClick={() => handleViewAnalysis(item._id)}
+                            className="px-3 py-1 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200"
                           >
-                            Accurate
+                            View
                           </button>
+                        )}
+                        {!!item._id && (
                           <button
                             type="button"
-                            onClick={() => handleFeedback(item._id, false)}
-                            disabled={feedbackSavingId === item._id}
-                            className={`px-3 py-1 text-xs font-semibold rounded-lg transition-colors ${item.feedback?.was_accurate === false ? 'bg-amber-600 text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'} ${feedbackSavingId === item._id ? 'opacity-70 cursor-not-allowed' : ''}`}
+                            onClick={() => openChatbot(item, item.symptoms_reported || [])}
+                            className="px-3 py-1 text-xs font-semibold rounded-lg bg-[#4B9AA8]/10 text-[#4B9AA8] hover:bg-[#4B9AA8]/20"
                           >
-                            Not Accurate
+                            Chat
                           </button>
-                        </>
-                      )}
-                      {item.feedback && (
-                        <span className="px-2 py-1 text-xs rounded-md bg-slate-100 text-slate-600">
-                          Saved: {item.feedback.was_accurate ? 'Accurate' : 'Not Accurate'}
-                        </span>
-                      )}
+                        )}
+                        {!!item._id && (
+                          <button
+                            type="button"
+                            onClick={() => handleEditClick(item)}
+                            className="px-3 py-1 text-xs font-semibold rounded-lg bg-sky-50 text-sky-700 hover:bg-sky-100"
+                          >
+                            Edit
+                          </button>
+                        )}
+                        {!!item._id && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteAnalysis(item._id)}
+                            className="px-3 py-1 text-xs font-semibold rounded-lg bg-red-50 text-red-600 hover:bg-red-100"
+                          >
+                            Delete
+                          </button>
+                        )}
+                        {!!item._id && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleFeedback(item._id, true)}
+                              disabled={feedbackSavingId === item._id}
+                              className={`px-3 py-1 text-xs font-semibold rounded-lg transition-colors ${item.feedback?.was_accurate === true ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'} ${feedbackSavingId === item._id ? 'opacity-70 cursor-not-allowed' : ''}`}
+                            >
+                              Accurate
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleFeedback(item._id, false)}
+                              disabled={feedbackSavingId === item._id}
+                              className={`px-3 py-1 text-xs font-semibold rounded-lg transition-colors ${item.feedback?.was_accurate === false ? 'bg-amber-600 text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'} ${feedbackSavingId === item._id ? 'opacity-70 cursor-not-allowed' : ''}`}
+                            >
+                              Not Accurate
+                            </button>
+                          </>
+                        )}
+                        {item.feedback && (
+                          <span className="px-2 py-1 text-xs rounded-md bg-slate-100 text-slate-600">
+                            Saved: {item.feedback.was_accurate ? 'Accurate' : 'Not Accurate'}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
