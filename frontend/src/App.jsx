@@ -17,6 +17,9 @@ import Calendar from "./features/calendar/PatientCalendar";
 import DoctorProfilePage from "./features/doctor/pages/DoctorProfilePage";
 import GetAllDoctorList from "./features/doctor/pages/getAllDoctorList";
 import DoctorSlotsPage from "./features/slots/pages/DoctorSlotsPage";
+import AppointmentFormPage from './features/appointment/pages/AppointmentFormPage'
+import PatientAppointmentsPage from './features/appointment/pages/PatientAppointmentsPage'
+import DoctorAppointmentsPage from './features/appointment/pages/DoctorAppointmentsPage'
 import UserManagementPage from "./features/userManagement/pages/userManagementPage";
 import BasicFinancialTransactionMonitoringPage from "./features/paymentTransaction/pages/basicFinancialTransactionMonitoringPage";
 
@@ -47,15 +50,16 @@ function App() {
         <Route path="/patient-profile" element={<PatientProfilePage />} />
         <Route path="/medical-reports" element={<MedicalReportsPage />} />
         <Route path="/all-medical-reports" element={<GetAllMedicalReports />} />
-        <Route path="/calendar" element={<Calendar />} />
-      </Route>
+        <Route path="/calendar" element={<Calendar />} /> 
 
-      <Route path="/doctor-profile" element={<DoctorProfilePage />} />
-      <Route path="/find" element={<GetAllDoctorList />} />
-      <Route
-        path="/doctor/:doctorId/availability"
-        element={<DoctorSlotsPage />}
-      />
+        <Route path="/doctor-profile" element={<DoctorProfilePage />} />
+        <Route path="/find" element={<GetAllDoctorList />} />
+        <Route path="/doctor/:doctorId/availability" element={<DoctorSlotsPage />} />
+        <Route path="/appointments/book" element={<AppointmentFormPage />} />
+        <Route path="/appointments" element={<PatientAppointmentsPage />} />
+        <Route path="/doctor/appointments" element={<DoctorAppointmentsPage />} />
+        
+        </Route>
     </Routes>
   );
 }
