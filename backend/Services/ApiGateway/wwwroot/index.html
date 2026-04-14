@@ -1080,19 +1080,19 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
             svc.icon +
             "</div>" +
             '<div class="card-name">' +
+            esc(svc.name) +
+            "</div>" +
             '<div class="card-port">' +
             esc(svc.routePrefix) +
-            '<div class="card-port">/api/v1/' +
-            svc.path +
             "</div>" +
             '<div class="card-desc">' +
             esc(svc.desc) +
             "</div>" +
             footHtml +
+            '<a class="card-sw" href="' +
+            window.location.origin +
             (svc.docsPath || svc.routePrefix + "/swagger") +
             '" target="_blank">&#128214; Swagger UI</a>';
-            svc.path +
-            '/swagger" target="_blank">&#128214; Swagger UI</a>';
 
           div.addEventListener("click", function () {
             selectService(svc);
