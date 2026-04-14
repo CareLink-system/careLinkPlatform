@@ -34,8 +34,9 @@ def _log_error(msg: str) -> None:
     try:
         with open(_LOG_PATH, "a", encoding="utf-8") as f:
             f.write(msg + "\n")
-    except Exception:
-        pass
+    except Exception as ex:
+        # Best-effort logging only: never raise from logging path.
+        print(f"WARNING: failed to write chatbot error log: {ex}")
 
 
 def _db_unavailable(ex: Exception) -> HTTPException:
