@@ -142,8 +142,8 @@ class MLService:
                             f.write(str(response))
                         f.write("\nEXTRACTED_TEXT:\n")
                         f.write(raw_text + "\n")
-                except Exception:
-                    pass
+                except Exception as log_ex:
+                    print(f"WARNING: Failed to write Gemini debug log: {log_ex}")
 
                 if raw_text:
                     # Attempt to parse strict JSON response from Gemini
