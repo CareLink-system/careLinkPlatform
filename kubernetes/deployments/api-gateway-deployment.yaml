@@ -49,6 +49,8 @@ spec:
               value: "http://payment-service:5010"
             - name: ReverseProxy__Clusters__symptom-check-cluster__Destinations__symptom-check__Address
               value: "http://symptom-check-service:8000/"
+            - name: ReverseProxy__Clusters__chatbot-cluster__Destinations__chatbot__Address
+              value: "http://chatbot-service:8001/"
           resources:
             requests:
               memory: "256Mi"

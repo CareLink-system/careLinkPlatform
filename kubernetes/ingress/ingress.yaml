@@ -73,6 +73,13 @@ spec:
                 name: symptom-check-service
                 port:
                   number: 8000
+          - path: /api/chatbot
+            pathType: Prefix
+            backend:
+              service:
+                name: chatbot-service
+                port:
+                  number: 8001
           - path: /swagger
             pathType: Prefix
             backend:
