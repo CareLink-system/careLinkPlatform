@@ -691,7 +691,7 @@
       <div class="sec-head">
         <h3>Microservices</h3>
         <div class="sec-line"></div>
-        <span class="count-badge">7 services</span>
+        <span class="count-badge">9 services</span>
       </div>
 
       <div class="svc-grid" id="svcGrid">
@@ -755,7 +755,7 @@
         <div class="fi">
           <div class="fi-ico">&#128230;</div>
           <h5>All Services</h5>
-          <p>7 microservices + 1 gateway = 8 containers</p>
+          <p>9 microservices + 1 gateway = 10 containers</p>
         </div>
       </div>
     </div>
@@ -812,6 +812,10 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
           {
             name: "Auth Service",
             path: "auth",
+            routePrefix: "/api/v1/auth",
+            swaggerPath: "/api/v1/auth/swagger/v1/swagger.json",
+            docsPath: "/api/v1/auth/swagger",
+            healthPath: "/api/v1/auth/health",
             icon: "&#128274;",
             color: "#4f8ef7",
             bg: "rgba(79,142,247,0.15)",
@@ -820,6 +824,10 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
           {
             name: "Patient Service",
             path: "patients",
+            routePrefix: "/api/v1/patients",
+            swaggerPath: "/api/v1/patients/swagger/v1/swagger.json",
+            docsPath: "/api/v1/patients/swagger",
+            healthPath: "/api/v1/patients/health",
             icon: "&#127973;",
             color: "#34d399",
             bg: "rgba(52,211,153,0.15)",
@@ -828,6 +836,10 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
           {
             name: "Doctor Service",
             path: "doctors",
+            routePrefix: "/api/v1/doctors",
+            swaggerPath: "/api/v1/doctors/swagger/v1/swagger.json",
+            docsPath: "/api/v1/doctors/swagger",
+            healthPath: "/api/v1/doctors/health",
             icon: "&#128104;",
             color: "#fbbf24",
             bg: "rgba(251,191,36,0.15)",
@@ -836,6 +848,10 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
           {
             name: "Appointment Service",
             path: "appointments",
+            routePrefix: "/api/v1/appointments",
+            swaggerPath: "/api/v1/appointments/swagger/v1/swagger.json",
+            docsPath: "/api/v1/appointments/swagger",
+            healthPath: "/api/v1/appointments/health",
             icon: "&#128197;",
             color: "#a78bfa",
             bg: "rgba(167,139,250,0.15)",
@@ -844,6 +860,10 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
           {
             name: "Telemedicine Service",
             path: "telemedicine",
+            routePrefix: "/api/v1/telemedicine",
+            swaggerPath: "/api/v1/telemedicine/swagger/v1/swagger.json",
+            docsPath: "/api/v1/telemedicine/swagger",
+            healthPath: "/api/v1/telemedicine/health",
             icon: "&#128249;",
             color: "#f472b6",
             bg: "rgba(244,114,182,0.15)",
@@ -852,6 +872,10 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
           {
             name: "Notification Service",
             path: "notifications",
+            routePrefix: "/api/v1/notifications",
+            swaggerPath: "/api/v1/notifications/swagger/v1/swagger.json",
+            docsPath: "/api/v1/notifications/swagger",
+            healthPath: "/api/v1/notifications/health",
             icon: "&#128276;",
             color: "#fb923c",
             bg: "rgba(251,146,60,0.15)",
@@ -860,10 +884,38 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
           {
             name: "Payment Service",
             path: "payments",
+            routePrefix: "/api/v1/payments",
+            swaggerPath: "/api/v1/payments/swagger/v1/swagger.json",
+            docsPath: "/api/v1/payments/swagger",
+            healthPath: "/api/v1/payments/health",
             icon: "&#128179;",
             color: "#22d3ee",
             bg: "rgba(34,211,238,0.15)",
             desc: "Payment processing, invoices, PayHere/Stripe"
+          },
+          {
+            name: "Symptom Checker Service",
+            path: "symptom-checker",
+            routePrefix: "/api/symptom-checker",
+            swaggerPath: "/api/symptom-checker/openapi.json",
+            docsPath: "/api/symptom-checker/docs",
+            healthPath: "/api/symptom-checker/health",
+            icon: "&#129658;",
+            color: "#14b8a6",
+            bg: "rgba(20,184,166,0.15)",
+            desc: "AI symptom analysis, guidance, and prediction history"
+          },
+          {
+            name: "Chatbot Service",
+            path: "chatbot",
+            routePrefix: "/api/chatbot",
+            swaggerPath: "/api/chatbot/openapi.json",
+            docsPath: "/api/chatbot/docs",
+            healthPath: "/api/chatbot/health",
+            icon: "&#129302;",
+            color: "#60a5fa",
+            bg: "rgba(96,165,250,0.15)",
+            desc: "Conversational assistant with diagnosis-aware responses"
           }
         ];
 
@@ -941,12 +993,10 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
 
         // ── Network helpers ──────────────────────────────────────────────────
         function checkHealth(service) {
-          return fetch(
-            window.location.origin + "/api/v1/" + service + "/health",
-            {
-              signal: AbortSignal.timeout(2500)
-            }
-          )
+          var healthPath = service.healthPath || service.routePrefix + "/health";
+          return fetch(window.location.origin + healthPath, {
+            signal: AbortSignal.timeout(2500)
+          })
             .then(function (r) {
               return r.ok;
             })
@@ -956,15 +1006,10 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
         }
 
         function fetchSwagger(service) {
-          return fetch(
-            window.location.origin +
-              "/api/v1/" +
-              service +
-              "/swagger/v1/swagger.json",
-            {
-              signal: AbortSignal.timeout(3000)
-            }
-          )
+          var swaggerPath = service.swaggerPath || service.routePrefix + "/swagger/v1/swagger.json";
+          return fetch(window.location.origin + swaggerPath, {
+            signal: AbortSignal.timeout(3000)
+          })
             .then(function (r) {
               return r.ok ? r.json() : null;
             })
@@ -1019,7 +1064,7 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
         function buildCard(svc) {
           var div = document.createElement("div");
           div.className = "svc-card";
-          div.setAttribute("data-port", String(svc.port));
+          div.setAttribute("data-service", String(svc.path));
           div.style.cssText = "--cc:" + svc.color;
 
           var footHtml =
@@ -1037,8 +1082,8 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
             '<div class="card-name">' +
             esc(svc.name) +
             "</div>" +
-            '<div class="card-port">/api/v1/' +
-            svc.path +
+            '<div class="card-port">' +
+            esc(svc.routePrefix) +
             "</div>" +
             '<div class="card-desc">' +
             esc(svc.desc) +
@@ -1046,9 +1091,8 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
             footHtml +
             '<a class="card-sw" href="' +
             window.location.origin +
-            "/api/v1/" +
-            svc.path +
-            '/swagger" target="_blank">&#128214; Swagger UI</a>';
+            (svc.docsPath || svc.routePrefix + "/swagger") +
+            '" target="_blank">&#128214; Swagger UI</a>';
 
           div.addEventListener("click", function () {
             selectService(svc);
@@ -1081,7 +1125,7 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
             var card = buildCard(svc);
             grid.appendChild(card);
 
-            Promise.all([checkHealth(svc.path), fetchSwagger(svc.path)])
+            Promise.all([checkHealth(svc), fetchSwagger(svc)])
               .then(function (res) {
                 setCardStatus(card, res[0], countEndpoints(res[1]));
               })
@@ -1096,7 +1140,7 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
           document.querySelectorAll(".svc-card").forEach(function (c) {
             c.classList.remove("active");
           });
-          var card = document.querySelector('[data-port="' + svc.port + '"]');
+          var card = document.querySelector('[data-service="' + svc.path + '"]');
           if (card) {
             card.classList.add("active");
           }
@@ -1113,11 +1157,11 @@ Authorization: Bearer YOUR_TOKEN_HERE</pre
           tbody.innerHTML =
             '<tr class="loading-row"><td colspan="3"><span class="spin"></span>&nbsp;Loading&hellip;</td></tr>';
 
-          fetchSwagger(svc.port).then(function (spec) {
+          fetchSwagger(svc).then(function (spec) {
             if (!spec) {
               tbody.innerHTML =
-                '<tr class="loading-row"><td colspan="3">Service offline or unreachable on port ' +
-                svc.port +
+                '<tr class="loading-row"><td colspan="3">Service offline or unreachable: ' +
+                esc(svc.routePrefix) +
                 "</td></tr>";
               return;
             }

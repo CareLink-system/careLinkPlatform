@@ -20,7 +20,7 @@ spec:
           image: carelink/symptom-check-service:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 8080
+            - containerPort: 8000
               name: http
           env:
             - name: MONGO_URI
@@ -35,6 +35,6 @@ spec:
   selector:
     app: symptom-check-service
   ports:
-    - port: 8080
-      targetPort: 8080
+    - port: 8000
+      targetPort: 8000
   type: ClusterIP
