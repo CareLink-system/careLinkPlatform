@@ -35,6 +35,7 @@ class ChatbotService:
             with open(log_path, "a", encoding="utf-8") as file:
                 file.write(f"[{datetime.utcnow().isoformat()}Z] {message}\n")
         except Exception:
+            # Best-effort debug logging: never break chatbot flow on log write failure.
             pass
 
     def _format_context(self, diagnosis_context):
