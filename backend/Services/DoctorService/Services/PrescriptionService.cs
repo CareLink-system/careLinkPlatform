@@ -45,6 +45,48 @@ public class PrescriptionService : IPrescriptionService
         return MapToResponseDto(createdPrescription);
     }
 
+    public async Task<PrescriptionResponseDto?> UpdatePrescriptionAsync(
+        int id,
+        UpdatePrescriptionDto dto,
+        string? updatedBy = null,
+        string? currentUserId = null,
+        bool isAdmin = false)
+    {
+        var prescription = await _prescriptionRepository.GetByIdAsync(id);
+        if (prescription == null)
+        {
+            return null;
+        }
+
+        if (!isAdmin && !string.IsNullOrWhiteSpace(currentUserId))
+        {
+            var doctor = await _doctorRepository.GetByUserIdAsync(currentUserId);
+            if (doctor == null || doctor.Id != prescription.DoctorId)
+            {
+                throw new UnauthorizedAccessException("You can only edit your own prescriptions.");
+            }
+        }
+
+        var doctorProfile = await _doctorRepository.GetByIdAsync(dto.DoctorId);
+        if (doctorProfile == null)
+        {
+            return null;
+        }
+
+        prescription.DoctorId = dto.DoctorId;
+        prescription.PatientId = dto.PatientId;
+        prescription.AppointmentId = dto.AppointmentId;
+        prescription.Diagnosis = dto.Diagnosis;
+        prescription.Medicines = dto.Medicines;
+        prescription.Notes = dto.Notes;
+        prescription.UpdatedAt = DateTime.UtcNow;
+        prescription.UpdatedBy = updatedBy;
+        prescription.Status = CommonStatus.Active;
+
+        await _prescriptionRepository.UpdateAsync(prescription);
+        return MapToResponseDto(prescription);
+    }
+
     public async Task<IEnumerable<PrescriptionResponseDto>> GetAllPrescriptionsAsync()
     {
         var prescriptions = await _prescriptionRepository.GetAllAsync();
@@ -69,12 +111,21 @@ public class PrescriptionService : IPrescriptionService
         return prescriptions.Select(MapToResponseDto);
     }
 
-    public async Task<bool> SoftDeletePrescriptionAsync(int id, string? deletedBy = null)
+    public async Task<bool> SoftDeletePrescriptionAsync(int id, string? deletedBy = null, string? currentUserId = null, bool isAdmin = false)
     {
         var prescription = await _prescriptionRepository.GetByIdAsync(id);
         if (prescription == null)
         {
             return false;
+        }
+
+        if (!isAdmin && !string.IsNullOrWhiteSpace(currentUserId))
+        {
+            var doctor = await _doctorRepository.GetByUserIdAsync(currentUserId);
+            if (doctor == null || doctor.Id != prescription.DoctorId)
+            {
+                throw new UnauthorizedAccessException("You can only delete your own prescriptions.");
+            }
         }
 
         prescription.IsDeleted = true;

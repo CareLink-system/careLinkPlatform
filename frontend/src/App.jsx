@@ -25,6 +25,8 @@ import BasicFinancialTransactionMonitoringPage from "./features/paymentTransacti
 import PaymentPage from "./features/payment/pages/PaymentPage";
 import PaymentSuccessPage from "./features/payment/pages/PaymentSuccessPage";
 import PaymentCancelPage from "./features/payment/pages/PaymentCancelPage";
+import PrescriptionsPage from "./features/prescription/pages/PrescriptionsPage";
+
 import "./App.css";
 
 function App() {
@@ -69,7 +71,11 @@ function App() {
         <Route path="/payment" element={<PaymentPage />} />
         <Route path="/payment/success" element={<PaymentSuccessPage />} />
         <Route path="/payment/cancel" element={<PaymentCancelPage />} />
-      </Route>
+     
+        <Route path="/doctor/appointments" element={<DoctorAppointmentsPage />} />
+        <Route path="/prescriptions" element={<PrescriptionsPage />} />
+        
+        </Route>
     </Routes>
   );
 }

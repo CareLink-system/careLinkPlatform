@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getStatusLabel } from '../utils/statusUtils'
 import { updateAppointment } from '../api/appointmentApi'
 import { toast } from 'sonner'
@@ -364,6 +365,7 @@ function EditDrawer({ appointment, onClose, onSaved }) {
 export default function AppointmentTable({ data, onCancel, onDelete, onRefresh }) {
   const [viewing, setViewing] = useState(null)
   const [editing, setEditing] = useState(null)
+  const navigate = useNavigate()
 
   if (!data.length) return (
     <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-gray-100">
@@ -482,6 +484,20 @@ export default function AppointmentTable({ data, onCancel, onDelete, onRefresh }
                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                           </svg>
                           Cancel
+                        </button>
+                      )}
+
+                      {/* Join Call — allow for Scheduled/Confirmed */}
+                      {(a.appointmentStatus === 0 || a.appointmentStatus === 1) && (
+                        <button
+                          onClick={() => navigate(`/telemedicine/${a.id}`)}
+                          title="Join video call"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 hover:border-teal-300 transition-all"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                          Join Call
                         </button>
                       )}
 
