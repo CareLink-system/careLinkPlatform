@@ -17,7 +17,7 @@ public class TelemedicineDbContext : DbContext
 
         modelBuilder.Entity<TelemedicineSession>(entity =>
         {
-            entity.ToTable("telemedicine_sessions");
+            entity.ToTable("telemedicine_sessions", "public");
             entity.HasKey(x => x.Id);
             entity.HasIndex(x => x.AppointmentId).IsUnique();
 
