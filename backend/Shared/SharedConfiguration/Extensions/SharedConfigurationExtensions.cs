@@ -1,3 +1,4 @@
+// Backend/Shared/SharedConfiguration/Extensions/SharedConfigurationExtensions.cs
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Builder;

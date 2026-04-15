@@ -9,8 +9,10 @@ using DotNetEnv;
 using SharedConfiguration.Extensions;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
+using Stripe;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using PaymentService.Filters;
+
 
 Console.WriteLine("🚀 Starting PaymentService...");
 
@@ -29,6 +31,8 @@ else
 }
 
 var builder = WebApplication.CreateBuilder(args);
+
+StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
 // Apply shared environment-based configuration
 builder.AddSharedEnvironmentConfiguration();

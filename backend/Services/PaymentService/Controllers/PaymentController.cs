@@ -2,13 +2,14 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using PaymentService.DTOs;
+using PaymentService.Extensions;
 using PaymentService.Services;
+using Stripe.Checkout;
+using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using System.Text.Json;
-using Microsoft.Extensions.Caching.Memory;
-using System.ComponentModel.DataAnnotations;
-using PaymentService.Extensions;
 
 namespace PaymentService.Controllers;
 
@@ -544,5 +545,38 @@ public class PaymentController : ControllerBase
                 RequestId = requestId
             });
         }
+    }
+
+
+    [HttpPost("create-session")]
+    public async Task<IActionResult> CreateSession([FromBody] CreateCheckoutSessionRequest request)
+    {
+        var options = new SessionCreateOptions
+        {
+            //Mode = "payment",
+            //SuccessUrl = "http://localhost:5173/success",
+            //CancelUrl = "http://localhost:5173/cancel",
+            LineItems = new List<SessionLineItemOptions>
+            {
+                new SessionLineItemOptions
+                {
+                    //Quantity = 1,
+                    PriceData = new SessionLineItemPriceDataOptions
+                    {
+                        Currency = request.Currency,
+                        UnitAmount = request.Amount, // $50
+                        ProductData = new SessionLineItemPriceDataProductDataOptions
+                        {
+                            Name = "Test Payment"
+                        }
+                    }
+                }
+            }
+        };
+
+        var service = new SessionService();
+        var session = await service.CreateAsync(options);
+
+        return Ok(new { url = session.Url });
     }
 }
