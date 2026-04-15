@@ -1,107 +1,119 @@
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json;
 
 namespace TelemedicineService.Models;
 
 public class TelemedicineSession
 {
-    [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string? Id { get; set; }
+    public int Id { get; set; }
 
-    [BsonElement("appointmentId")]
+    [Required]
+    [MaxLength(32)]
     public string AppointmentId { get; set; } = string.Empty;
 
-    [BsonElement("appointmentNumericId")]
     public int AppointmentNumericId { get; set; }
 
-    [BsonElement("doctorId")]
     public int DoctorId { get; set; }
 
-    [BsonElement("patientId")]
     public int PatientId { get; set; }
 
-    [BsonElement("agoraChannelName")]
+    [Required]
+    [MaxLength(128)]
     public string AgoraChannelName { get; set; } = string.Empty;
 
-    [BsonElement("status")]
+    [Required]
+    [MaxLength(32)]
     public string Status { get; set; } = "Pending";
 
-    [BsonElement("startedAtUtc")]
     public DateTime? StartedAtUtc { get; set; }
 
-    [BsonElement("endedAtUtc")]
     public DateTime? EndedAtUtc { get; set; }
 
-    [BsonElement("durationSeconds")]
     public long DurationSeconds { get; set; }
 
-    [BsonElement("participants")]
+    [Required]
+    public string ParticipantsJson { get; set; } = "[]";
+
+    [Required]
+    public string MessagesJson { get; set; } = "[]";
+
+    [Required]
+    public string DoctorNotesJson { get; set; } = "[]";
+
+    [NotMapped]
     public List<SessionParticipant> Participants { get; set; } = new();
 
-    [BsonElement("messages")]
+    [NotMapped]
     public List<SessionMessage> Messages { get; set; } = new();
 
-    [BsonElement("doctorNotes")]
+    [NotMapped]
     public List<DoctorSessionNote> DoctorNotes { get; set; } = new();
 
-    [BsonElement("createdAtUtc")]
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
-    [BsonElement("updatedAtUtc")]
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public void HydrateCollections()
+    {
+        Participants = Deserialize<List<SessionParticipant>>(ParticipantsJson);
+        Messages = Deserialize<List<SessionMessage>>(MessagesJson);
+        DoctorNotes = Deserialize<List<DoctorSessionNote>>(DoctorNotesJson);
+    }
+
+    public void PersistCollections()
+    {
+        ParticipantsJson = JsonSerializer.Serialize(Participants ?? new List<SessionParticipant>());
+        MessagesJson = JsonSerializer.Serialize(Messages ?? new List<SessionMessage>());
+        DoctorNotesJson = JsonSerializer.Serialize(DoctorNotes ?? new List<DoctorSessionNote>());
+    }
+
+    private static T Deserialize<T>(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return Activator.CreateInstance<T>()!;
+        }
+
+        return JsonSerializer.Deserialize<T>(json) ?? Activator.CreateInstance<T>()!;
+    }
 }
 
 public class SessionParticipant
 {
-    [BsonElement("userId")]
     public string UserId { get; set; } = string.Empty;
 
-    [BsonElement("role")]
     public string Role { get; set; } = string.Empty;
 
-    [BsonElement("displayName")]
     public string DisplayName { get; set; } = string.Empty;
 
-    [BsonElement("firstJoinedAtUtc")]
     public DateTime? FirstJoinedAtUtc { get; set; }
 
-    [BsonElement("lastJoinedAtUtc")]
     public DateTime? LastJoinedAtUtc { get; set; }
 
-    [BsonElement("leftAtUtc")]
     public DateTime? LeftAtUtc { get; set; }
 
-    [BsonElement("joinEventsUtc")]
     public List<DateTime> JoinEventsUtc { get; set; } = new();
 }
 
 public class SessionMessage
 {
-    [BsonElement("senderUserId")]
     public string SenderUserId { get; set; } = string.Empty;
 
-    [BsonElement("senderRole")]
     public string SenderRole { get; set; } = string.Empty;
 
-    [BsonElement("senderDisplayName")]
     public string SenderDisplayName { get; set; } = string.Empty;
 
-    [BsonElement("message")]
     public string Message { get; set; } = string.Empty;
 
-    [BsonElement("sentAtUtc")]
     public DateTime SentAtUtc { get; set; } = DateTime.UtcNow;
 }
 
 public class DoctorSessionNote
 {
-    [BsonElement("doctorUserId")]
     public string DoctorUserId { get; set; } = string.Empty;
 
-    [BsonElement("note")]
     public string Note { get; set; } = string.Empty;
 
-    [BsonElement("createdAtUtc")]
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 }
