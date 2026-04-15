@@ -7,7 +7,7 @@ public class TelemedicineSession
 {
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; } = string.Empty;
+    public string? Id { get; set; }
 
     [BsonElement("appointmentId")]
     public string AppointmentId { get; set; } = string.Empty;

@@ -106,7 +106,8 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
         setJoined(true);
       } catch (err) {
         console.error('Agora init error', err);
-        setStatus('Connection failed.');
+        const apiError = err?.response?.data?.error || err?.response?.data?.detail || err?.message;
+        setStatus(apiError ? `Connection failed: ${apiError}` : 'Connection failed.');
       }
     }
 

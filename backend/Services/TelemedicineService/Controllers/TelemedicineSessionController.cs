@@ -89,5 +89,12 @@ public class TelemedicineSessionController : ControllerBase
         {
             return new ConflictObjectResult(new { error = ex.Message });
         }
+        catch (Exception ex)
+        {
+            return new ObjectResult(new { error = "Unexpected server error", detail = ex.Message })
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
+        }
     }
 }

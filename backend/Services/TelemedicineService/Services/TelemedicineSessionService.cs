@@ -9,13 +9,16 @@ public class TelemedicineSessionService : ITelemedicineSessionService
 {
     private readonly ITelemedicineSessionRepository _repository;
     private readonly IAppointmentLookupClient _appointmentLookup;
+    private readonly IUserProfileLookupClient _userProfileLookup;
 
     public TelemedicineSessionService(
         ITelemedicineSessionRepository repository,
-        IAppointmentLookupClient appointmentLookup)
+        IAppointmentLookupClient appointmentLookup,
+        IUserProfileLookupClient userProfileLookup)
     {
         _repository = repository;
         _appointmentLookup = appointmentLookup;
+        _userProfileLookup = userProfileLookup;
     }
 
     public async Task<SessionMetadataResponse> StartSessionAsync(string appointmentId, SessionUserContext user, CancellationToken cancellationToken)
@@ -177,6 +180,8 @@ public class TelemedicineSessionService : ITelemedicineSessionService
         var appointment = await _appointmentLookup.GetAppointmentAsync(appointmentNumericId, cancellationToken)
             ?? throw new KeyNotFoundException("Appointment not found.");
 
+        user = await EnsureMappedIdentityAsync(user, cancellationToken);
+
         if (!IsAllowedRole(user.Role))
         {
             throw new UnauthorizedAccessException("Only doctor, patient, or admin users can access telemedicine sessions.");
@@ -186,7 +191,7 @@ public class TelemedicineSessionService : ITelemedicineSessionService
         {
             if (user.DoctorId is null || user.DoctorId.Value != appointment.DoctorId)
             {
-                throw new UnauthorizedAccessException("Doctor is not assigned to this appointment.");
+                throw new UnauthorizedAccessException($"Doctor is not assigned to this appointment. ResolvedDoctorId={user.DoctorId?.ToString() ?? "null"}, AppointmentDoctorId={appointment.DoctorId}, UserId={user.UserId}");
             }
         }
 
@@ -194,7 +199,7 @@ public class TelemedicineSessionService : ITelemedicineSessionService
         {
             if (user.PatientId is null || user.PatientId.Value != appointment.PatientId)
             {
-                throw new UnauthorizedAccessException("Patient is not assigned to this appointment.");
+                throw new UnauthorizedAccessException($"Patient is not assigned to this appointment. ResolvedPatientId={user.PatientId?.ToString() ?? "null"}, AppointmentPatientId={appointment.PatientId}, UserId={user.UserId}");
             }
         }
 
@@ -204,6 +209,26 @@ public class TelemedicineSessionService : ITelemedicineSessionService
         }
 
         return appointment;
+    }
+
+    private async Task<SessionUserContext> EnsureMappedIdentityAsync(SessionUserContext user, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(user.UserId))
+        {
+            return user;
+        }
+
+        if (user.Role.Equals("Patient", StringComparison.OrdinalIgnoreCase) && user.PatientId is null)
+        {
+            user.PatientId = await _userProfileLookup.GetPatientIdByUserIdAsync(user.UserId, cancellationToken);
+        }
+
+        if (user.Role.Equals("Doctor", StringComparison.OrdinalIgnoreCase) && user.DoctorId is null)
+        {
+            user.DoctorId = await _userProfileLookup.GetDoctorIdByUserIdAsync(user.UserId, cancellationToken);
+        }
+
+        return user;
     }
 
     private static bool IsAllowedRole(string role)

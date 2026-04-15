@@ -36,7 +36,42 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.Configure<AppointmentServiceOptions>(
     builder.Configuration.GetSection("Dependencies:AppointmentService"));
 
-builder.Services.AddHttpClient<IAppointmentLookupClient, AppointmentLookupClient>();
+builder.Services.AddHttpClient<IAppointmentLookupClient, AppointmentLookupClient>()
+    .ConfigurePrimaryHttpMessageHandler(() =>
+    {
+        // Development-only certificate bypass for local HTTPS service-to-service calls.
+        if (builder.Environment.IsDevelopment())
+        {
+            return new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = (request, certificate, chain, errors) =>
+                {
+                    var host = request?.RequestUri?.Host;
+                    return string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase);
+                }
+            };
+        }
+
+        return new HttpClientHandler();
+    });
+
+builder.Services.AddHttpClient<IUserProfileLookupClient, UserProfileLookupClient>()
+    .ConfigurePrimaryHttpMessageHandler(() =>
+    {
+        if (builder.Environment.IsDevelopment())
+        {
+            return new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = (request, certificate, chain, errors) =>
+                {
+                    var host = request?.RequestUri?.Host;
+                    return string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase);
+                }
+            };
+        }
+
+        return new HttpClientHandler();
+    });
 
 var mongoConnectionString =
     Environment.GetEnvironmentVariable("MONGO_URI") ??
