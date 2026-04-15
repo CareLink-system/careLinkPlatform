@@ -11,4 +11,6 @@ public interface IPaymentService
     Task<bool> DeleteAsync(int id);
     Task<PaginatedResponse<PaymentResponseDto>> GetPaginatedAsync(int page, int pageSize, string? status, DateTime? fromDate, DateTime? toDate, string userId, string userRole);
     Task<PaymentSummaryDto> GetSummaryAsync(string userId, string userRole);
+    Task<PaymentResponseDto?> GetByConsultationIdAsync(int? consultationId);
+    Task<PaymentResponseDto> CreatePendingAsync(PaymentRequestDto request);
 }
