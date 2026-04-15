@@ -30,6 +30,13 @@ public static class SharedConfigurationExtensions
         var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE")
                           ?? builder.Configuration["Jwt:Audience"];
 
+        var stripeKey = Environment.GetEnvironmentVariable("STRIPE_SECRET_KEY");
+
+        if (string.IsNullOrWhiteSpace(stripeKey))
+        {
+            throw new InvalidOperationException("STRIPE_SECRET_KEY is missing in .env");
+        }
+
         if (string.IsNullOrWhiteSpace(dbHost) ||
             string.IsNullOrWhiteSpace(dbUsername) ||
             string.IsNullOrWhiteSpace(dbPassword))
@@ -60,7 +67,8 @@ public static class SharedConfigurationExtensions
         builder.Configuration["Jwt:Key"] = jwtKey;
         builder.Configuration["Jwt:Issuer"] = jwtIssuer;
         builder.Configuration["Jwt:Audience"] = jwtAudience;
-
+        builder.Configuration["Stripe:SecretKey"] = stripeKey;
+        
         return builder;
     }
 }

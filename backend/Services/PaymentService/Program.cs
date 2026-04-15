@@ -20,7 +20,7 @@ Console.WriteLine("🚀 Starting PaymentService...");
 var rootPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", ".."));
 var envPath = Path.Combine(rootPath, ".env");
 
-if (File.Exists(envPath))
+if (System.IO.File.Exists(envPath))
 {
     Env.Load(envPath);
     Console.WriteLine($"✅ Loaded .env from: {envPath}");
@@ -32,10 +32,14 @@ else
 
 var builder = WebApplication.CreateBuilder(args);
 
-StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
 // Apply shared environment-based configuration
 builder.AddSharedEnvironmentConfiguration();
+
+StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
+var stripeKey = builder.Configuration["Stripe:SecretKey"];
+
+Console.WriteLine($"Stripe Key loaded: {(string.IsNullOrEmpty(stripeKey) ? "❌ MISSING" : "✅ Loaded")}");
 
 // RabbitMQ + MassTransit
 builder.Services.AddMassTransit(x =>
@@ -70,7 +74,7 @@ builder.Services.AddEndpointsApiExplorer();
 // Add persistence and domain services
 builder.Services.AddDbContext<PaymentDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+var ConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 // ✅ ENHANCED: Add Swagger with complete documentation support
 builder.Services.AddSwaggerGen(c =>
@@ -144,7 +148,7 @@ builder.Services.AddSwaggerGen(c =>
     // ✅ Include XML comments
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    if (File.Exists(xmlPath))
+    if (System.IO.File.Exists(xmlPath))
     {
         c.IncludeXmlComments(xmlPath);
     }
