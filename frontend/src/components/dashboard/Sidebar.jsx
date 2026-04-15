@@ -38,7 +38,6 @@ export default function Sidebar({ close }) {
         { to: '/appointments', icon: '📋', label: 'Booked Appointments' },
         { to: '/medical-reports', icon: '📈', label: 'Medical Reports'},
         { to: '/prescriptions', icon: '📋', label: 'Prescriptions' },
-        { to: '/appointments', icon: '🎥', label: 'Video Call' },
         { to: '/symptom-checker', label: 'Symptom Checker', icon: <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8a5 5 0 00-10 0v3"></path><path d="M7 11v2a5 5 0 005 5h0a5 5 0 005-5v-2"></path><path d="M19 18v3"></path><circle cx="19" cy="21" r="2"/></svg> },
         { to: '/chatbot', label: 'CareLink Chat', icon: <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a4 4 0 01-4 4H8l-5 3V7a4 4 0 014-4h10a4 4 0 014 4z"></path><path d="M8 10h8"></path><path d="M8 14h5"></path></svg> },
         { to: '/help', icon: '❓', label: 'Help' },
@@ -51,7 +50,6 @@ export default function Sidebar({ close }) {
       navItems: [
         { to: '/doctor-dashboard', icon: '⊞', label: 'Dashboard' },
         { to: '/doctor-dashboard', icon: '📅', label: 'Schedule' },
-        { to: '/doctor/appointments', icon: '🎥', label: 'Consultations' },
         { to: '/patients', icon: '👥', label: 'Patients' },
         { to: '/doctor/appointments', icon: '📋', label: 'Appointments' },
         { to: '/all-medical-reports', icon: '📈', label: 'Medical Reports'},
