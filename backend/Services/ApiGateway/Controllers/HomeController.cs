@@ -66,7 +66,9 @@ public class HomeController(
                 new { name = "AppointmentService", port = 5004, description = "Appointment scheduling and management" },
                 new { name = "TelemedicineService", port = 5007, description = "Virtual consultations and telemedicine" },
                 new { name = "NotificationService", port = 5008, description = "Notifications and messaging" },
-                new { name = "PaymentService", port = 5010, description = "Payment processing and billing" }
+                new { name = "PaymentService", port = 5010, description = "Payment processing and billing" },
+                new { name = "SymptomCheckService", port = 8000, description = "AI symptom analysis and triage guidance" },
+                new { name = "ChatbotService", port = 8001, description = "Conversation assistant for diagnosis follow-up" }
             },
             links = new[]
             {
@@ -142,7 +144,9 @@ public class HomeController(
                         new { name = "AppointmentService", port = 5004, status = "Configured" },
                         new { name = "TelemedicineService", port = 5007, status = "Configured" },
                         new { name = "NotificationService", port = 5008, status = "Configured" },
-                        new { name = "PaymentService", port = 5010, status = "Configured" }
+                        new { name = "PaymentService", port = 5010, status = "Configured" },
+                        new { name = "SymptomCheckService", port = 8000, status = "Configured" },
+                        new { name = "ChatbotService", port = 8001, status = "Configured" }
                     }
                 }
             };
@@ -206,7 +210,9 @@ public class HomeController(
                 new { name = "Appointment System", description = "Booking, scheduling, appointment management", port = 5004 },
                 new { name = "Telemedicine", description = "Virtual consultations, video calls, remote care", port = 5007 },
                 new { name = "Notifications", description = "Email, SMS, push notifications for appointments", port = 5008 },
-                new { name = "Payment Processing", description = "Secure payment processing, billing, invoices", port = 5010 }
+                new { name = "Payment Processing", description = "Secure payment processing, billing, invoices", port = 5010 },
+                new { name = "Symptom Checker", description = "AI symptom assessment and recommendation engine", port = 8000 },
+                new { name = "Chatbot", description = "Follow-up Q&A and diagnosis-aware chat guidance", port = 8001 }
             },
             filteringAndPagination = new
             {
@@ -249,7 +255,9 @@ public class HomeController(
                     "/api/appointments/book",
                     "/api/telemedicine/sessions",
                     "/api/notifications/send",
-                    "/api/payments/process"
+                    "/api/payments/process",
+                    "/api/symptom-checker/analyze",
+                    "/api/chatbot/conversations"
                 }
             }
         };
@@ -316,6 +324,8 @@ public class HomeController(
         sb.Append("<div class=\"service-card\"><h4>📹 Telemedicine</h4><p>Virtual consultations, video calls</p><span class=\"port\">Port: 5007</span></div>");
         sb.Append("<div class=\"service-card\"><h4>🔔 Notifications</h4><p>Email, SMS, push notifications</p><span class=\"port\">Port: 5008</span></div>");
         sb.Append("<div class=\"service-card\"><h4>💳 Payments</h4><p>Secure payment processing, billing</p><span class=\"port\">Port: 5010</span></div>");
+        sb.Append("<div class=\"service-card\"><h4>🩺 Symptom Checker</h4><p>AI symptom analysis and triage guidance</p><span class=\"port\">Port: 8000</span></div>");
+        sb.Append("<div class=\"service-card\"><h4>🤖 Chatbot</h4><p>Conversation assistant for diagnosis follow-up</p><span class=\"port\">Port: 8001</span></div>");
         sb.Append("</div></div>");
 
         // Quick links grid

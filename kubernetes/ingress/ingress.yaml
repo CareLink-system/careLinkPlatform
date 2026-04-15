@@ -66,6 +66,20 @@ spec:
                 name: notification-service
                 port:
                   number: 5008
+          - path: /api/symptom-checker
+            pathType: Prefix
+            backend:
+              service:
+                name: symptom-check-service
+                port:
+                  number: 8000
+          - path: /api/chatbot
+            pathType: Prefix
+            backend:
+              service:
+                name: chatbot-service
+                port:
+                  number: 8001
           - path: /swagger
             pathType: Prefix
             backend:

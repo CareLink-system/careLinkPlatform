@@ -182,7 +182,7 @@ app.MapGet("/api/Health", () => Results.Ok(new
     status = "Running",
     timestamp = DateTime.UtcNow,
     routes = new[] { "auth", "patients", "doctors", "appointments",
-                     "telemedicine", "payments", "notifications" }
+                     "telemedicine", "payments", "notifications", "symptom-checker", "chatbot" }
 }));
 
 // ── YARP (must be LAST) ────────────────────────────────────────────────────────
