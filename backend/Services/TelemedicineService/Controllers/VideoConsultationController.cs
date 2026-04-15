@@ -1,22 +1,32 @@
 using System;
 using System.Security.Cryptography;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using AgoraIO.Media;
+using TelemedicineService.Clients;
+using TelemedicineService.Models;
 
 namespace TelemedicineService.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/telemedicine/video")]
+    [Route("api/v1/telemedicine/video")]
     public class VideoConsultationController : ControllerBase
     {
         private readonly IConfiguration _configuration;
+        private readonly IAppointmentLookupClient _appointmentLookupClient;
         private readonly ILogger<VideoConsultationController> _logger;
 
-        public VideoConsultationController(IConfiguration configuration, ILogger<VideoConsultationController> logger)
+        public VideoConsultationController(
+            IConfiguration configuration,
+            IAppointmentLookupClient appointmentLookupClient,
+            ILogger<VideoConsultationController> logger)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _appointmentLookupClient = appointmentLookupClient;
             _logger = logger;
         }
 
@@ -25,10 +35,36 @@ namespace TelemedicineService.Controllers
         /// GET /api/telemedicine/video/token/{appointmentId}
         /// </summary>
         [HttpGet("token/{appointmentId}")]
-        public IActionResult GetToken(string appointmentId)
+        public async Task<IActionResult> GetToken(string appointmentId, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(appointmentId))
                 return BadRequest(new { error = "appointmentId is required" });
+
+            if (!int.TryParse(appointmentId, out var numericAppointmentId))
+                return BadRequest(new { error = "appointmentId must be a valid numeric appointment id" });
+
+            var appointment = await _appointmentLookupClient.GetAppointmentAsync(numericAppointmentId, cancellationToken);
+            if (appointment is null)
+            {
+                return NotFound(new { error = "Appointment not found" });
+            }
+
+            var caller = SessionUserContext.FromClaims(User);
+            if (string.IsNullOrWhiteSpace(caller.UserId))
+            {
+                return StatusCode(403, new { error = "Authenticated user identity is required" });
+            }
+
+            var isDoctor = caller.Role.Equals("Doctor", StringComparison.OrdinalIgnoreCase)
+                           && caller.DoctorId == appointment.DoctorId;
+            var isPatient = caller.Role.Equals("Patient", StringComparison.OrdinalIgnoreCase)
+                            && caller.PatientId == appointment.PatientId;
+            var isAdmin = caller.Role.Equals("Admin", StringComparison.OrdinalIgnoreCase);
+
+            if (!isDoctor && !isPatient && !isAdmin)
+            {
+                return StatusCode(403, new { error = "User is not assigned to this appointment" });
+            }
 
             var appId = _configuration["Agora:AppId"];
             var appCertificate = _configuration["Agora:AppCertificate"];
@@ -71,7 +107,8 @@ namespace TelemedicineService.Controllers
             {
                 token,
                 channelName = appointmentId,
-                uid
+                uid,
+                expiresAtUtc = DateTimeOffset.FromUnixTimeSeconds(privilegeExpiredTs).UtcDateTime
             });
         }
 

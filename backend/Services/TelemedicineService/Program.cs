@@ -1,8 +1,16 @@
 using DotNetEnv;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using MongoDB.Driver;
 using System.Reflection;
+using System.Text;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using TelemedicineService.Clients;
 using TelemedicineService.Filters;
+using TelemedicineService.Models;
+using TelemedicineService.Repositories;
+using TelemedicineService.Services;
 
 // Load .env into environment variables (install DotNetEnv NuGet)
 Env.Load();
@@ -23,6 +31,53 @@ builder.Services.AddCors(options =>
 // Add services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddHttpContextAccessor();
+
+builder.Services.Configure<AppointmentServiceOptions>(
+    builder.Configuration.GetSection("Dependencies:AppointmentService"));
+
+builder.Services.AddHttpClient<IAppointmentLookupClient, AppointmentLookupClient>();
+
+var mongoConnectionString =
+    Environment.GetEnvironmentVariable("MONGO_URI") ??
+    builder.Configuration["Mongo:ConnectionString"] ??
+    "mongodb://localhost:27017";
+
+var mongoDatabaseName =
+    Environment.GetEnvironmentVariable("MONGO_DB") ??
+    builder.Configuration["ServiceSettings:DatabaseName"] ??
+    "carelink_telemedicine";
+
+builder.Services.AddSingleton<IMongoClient>(_ => new MongoClient(mongoConnectionString));
+builder.Services.AddSingleton(sp =>
+    sp.GetRequiredService<IMongoClient>().GetDatabase(mongoDatabaseName));
+
+builder.Services.AddScoped<ITelemedicineSessionService, TelemedicineSessionService>();
+builder.Services.AddSingleton<ITelemedicineSessionRepository, TelemedicineSessionRepository>();
+
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey))
+{
+    throw new InvalidOperationException("JWT Key is missing in configuration.");
+}
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata = false;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 // ✅ ENHANCED: Add Swagger with complete documentation support
 builder.Services.AddSwaggerGen(c =>
@@ -114,32 +169,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("LocalFrontend");
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// Optional: Keep the weather forecast endpoint if you want
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
-
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

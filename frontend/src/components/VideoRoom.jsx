@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
-import { getAgoraToken } from '../api/telemedicine';
+import { endSession, getAgoraToken, postDoctorSessionNote, postSessionMessage, startSession } from '../api/telemedicine';
 
 export default function VideoRoom({ appointmentId, appId: propAppId }) {
   const appId = propAppId || import.meta.env.VITE_AGORA_APP_ID;
@@ -10,6 +10,9 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
   const [mutedVideo, setMutedVideo] = useState(false);
   
   const [chatMessage, setChatMessage] = useState('');
+  const [doctorNote, setDoctorNote] = useState('');
+  const [doctorNoteSaving, setDoctorNoteSaving] = useState(false);
+  const [doctorNoteStatus, setDoctorNoteStatus] = useState('');
   const [messages, setMessages] = useState([{ sender: 'System', text: 'Chat started.', time: new Date().toLocaleTimeString() }]);
 
   const clientRef = useRef(null);
@@ -18,6 +21,16 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
   const remotePlayerHostRef = useRef(null);
   const [hasRemoteVideo, setHasRemoteVideo] = useState(false);
 
+  const auth = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('carelink.auth') || 'null');
+    } catch {
+      return null;
+    }
+  })();
+  const currentRole = auth?.user?.role || 'Patient';
+  const isDoctor = String(currentRole).toLowerCase() === 'doctor';
+
   useEffect(() => {
     if (!appointmentId || !appId) return;
     let mounted = true;
@@ -25,6 +38,7 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
 
     async function init() {
       try {
+        await startSession(appointmentId);
         const { token, channelName, uid } = await getAgoraToken(appointmentId);
         const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
         clientRef.current = client;
@@ -133,14 +147,43 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
     }
     setHasRemoteVideo(false);
     await clientRef.current?.leave();
+    try {
+      await endSession(appointmentId);
+    } catch (error) {
+      console.warn('Unable to mark telemedicine session ended', error);
+    }
     setJoined(false); setStatus('Call Ended.');
   };
 
-  const sendChat = (e) => {
+  const sendChat = async (e) => {
     e.preventDefault();
     if (!chatMessage.trim()) return;
-    setMessages([...messages, { sender: 'You', text: chatMessage, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }]);
+    const msg = chatMessage.trim();
+    try {
+      await postSessionMessage(appointmentId, msg);
+    } catch (error) {
+      console.warn('Failed to persist session message', error);
+    }
+    setMessages((prev) => [
+      ...prev,
+      { sender: 'You', text: msg, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }
+    ]);
     setChatMessage('');
+  };
+
+  const saveDoctorNote = async () => {
+    if (!doctorNote.trim()) return;
+    setDoctorNoteSaving(true);
+    setDoctorNoteStatus('');
+    try {
+      await postDoctorSessionNote(appointmentId, doctorNote.trim());
+      setDoctorNote('');
+      setDoctorNoteStatus('Consultation note saved');
+    } catch (error) {
+      setDoctorNoteStatus('Could not save note');
+    } finally {
+      setDoctorNoteSaving(false);
+    }
   };
 
   return (
@@ -210,6 +253,29 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
           </button>
         </form>
+
+        {isDoctor && (
+          <div className="p-3 border-t border-slate-100 bg-slate-50">
+            <div className="text-xs font-semibold text-slate-700 mb-2">Private consultation note</div>
+            <textarea
+              value={doctorNote}
+              onChange={(e) => setDoctorNote(e.target.value)}
+              placeholder="Add doctor-only consultation notes"
+              className="w-full min-h-[72px] rounded-lg border border-slate-200 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4B9AA8]/30"
+            />
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={saveDoctorNote}
+                disabled={doctorNoteSaving || !doctorNote.trim()}
+                className="px-3 py-1.5 text-xs rounded-md bg-[#4B9AA8] text-white disabled:opacity-60"
+              >
+                {doctorNoteSaving ? 'Saving...' : 'Save note'}
+              </button>
+              {doctorNoteStatus && <span className="text-xs text-slate-500">{doctorNoteStatus}</span>}
+            </div>
+          </div>
+        )}
       </div>
 
     </div>
