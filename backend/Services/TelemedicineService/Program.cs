@@ -1,21 +1,34 @@
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using MongoDB.Driver;
 using System.Reflection;
 using System.Text;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using SharedConfiguration.Extensions;
+using TelemedicineService.Data;
 using TelemedicineService.Clients;
 using TelemedicineService.Filters;
 using TelemedicineService.Models;
 using TelemedicineService.Repositories;
 using TelemedicineService.Services;
 
-// Load .env into environment variables (install DotNetEnv NuGet)
-Env.Load();
+// Load the backend .env so shared DB/JWT config can resolve local development values.
+var rootPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", ".."));
+var envPath = Path.Combine(rootPath, ".env");
+
+if (File.Exists(envPath))
+{
+    Env.Load(envPath);
+}
 
 var builder = WebApplication.CreateBuilder(args);
+
+if (string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("DefaultConnection")))
+{
+    builder.AddSharedEnvironmentConfiguration();
+}
 
 // Add CORS (allow the frontend at http://localhost:5173)
 builder.Services.AddCors(options =>
@@ -73,22 +86,11 @@ builder.Services.AddHttpClient<IUserProfileLookupClient, UserProfileLookupClient
         return new HttpClientHandler();
     });
 
-var mongoConnectionString =
-    Environment.GetEnvironmentVariable("MONGO_URI") ??
-    builder.Configuration["Mongo:ConnectionString"] ??
-    "mongodb://localhost:27017";
-
-var mongoDatabaseName =
-    Environment.GetEnvironmentVariable("MONGO_DB") ??
-    builder.Configuration["ServiceSettings:DatabaseName"] ??
-    "carelink_telemedicine";
-
-builder.Services.AddSingleton<IMongoClient>(_ => new MongoClient(mongoConnectionString));
-builder.Services.AddSingleton(sp =>
-    sp.GetRequiredService<IMongoClient>().GetDatabase(mongoDatabaseName));
+builder.Services.AddDbContext<TelemedicineDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<ITelemedicineSessionService, TelemedicineSessionService>();
-builder.Services.AddSingleton<ITelemedicineSessionRepository, TelemedicineSessionRepository>();
+builder.Services.AddScoped<ITelemedicineSessionRepository, TelemedicineSessionRepository>();
 
 var jwtKey = builder.Configuration["Jwt:Key"];
 if (string.IsNullOrWhiteSpace(jwtKey))
@@ -194,6 +196,12 @@ builder.Services.AddSwaggerGen(c =>
 
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<TelemedicineDbContext>();
+    dbContext.Database.EnsureCreated();
+}
 
 // Configure pipeline
 if (app.Environment.IsDevelopment())
