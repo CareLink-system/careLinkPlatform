@@ -26,6 +26,24 @@ export const createPrescription = async (payload) => {
   }
 }
 
+export const updatePrescription = async (id, payload) => {
+  try {
+    const res = await API.put(`/${id}`, payload)
+    return { data: res.data, error: null }
+  } catch (err) {
+    return { data: null, error: mapError(err) }
+  }
+}
+
+export const deletePrescription = async (id) => {
+  try {
+    const res = await API.delete(`/${id}`)
+    return { data: res.data, error: null }
+  } catch (err) {
+    return { data: null, error: mapError(err) }
+  }
+}
+
 export const getPrescriptionsByDoctorId = async (doctorId) => {
   try {
     const res = await API.get(`/doctor/${doctorId}`)
