@@ -22,6 +22,7 @@ import PatientAppointmentsPage from './features/appointment/pages/PatientAppoint
 import DoctorAppointmentsPage from './features/appointment/pages/DoctorAppointmentsPage'
 import UserManagementPage from "./features/userManagement/pages/userManagementPage";
 import BasicFinancialTransactionMonitoringPage from "./features/paymentTransaction/pages/basicFinancialTransactionMonitoringPage";
+import PrescriptionsPage from "./features/prescription/pages/PrescriptionsPage";
 
 import "./App.css";
 
@@ -58,6 +59,7 @@ function App() {
         <Route path="/appointments/book" element={<AppointmentFormPage />} />
         <Route path="/appointments" element={<PatientAppointmentsPage />} />
         <Route path="/doctor/appointments" element={<DoctorAppointmentsPage />} />
+        <Route path="/prescriptions" element={<PrescriptionsPage />} />
         
         </Route>
     </Routes>

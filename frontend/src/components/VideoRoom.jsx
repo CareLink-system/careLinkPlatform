@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 import { endSession, getAgoraToken, postDoctorSessionNote, postSessionMessage, startSession } from '../api/telemedicine';
+import { getAppointmentById } from '../features/appointment/api/appointmentApi';
+import { getDoctorByUserId } from '../features/doctor/api/doctorApi';
+import { createPrescription } from '../features/prescription/api/prescriptionApi';
 
 export default function VideoRoom({ appointmentId, appId: propAppId }) {
   const appId = propAppId || import.meta.env.VITE_AGORA_APP_ID;
@@ -13,6 +16,11 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
   const [doctorNote, setDoctorNote] = useState('');
   const [doctorNoteSaving, setDoctorNoteSaving] = useState(false);
   const [doctorNoteStatus, setDoctorNoteStatus] = useState('');
+  const [doctorProfileId, setDoctorProfileId] = useState(null);
+  const [appointmentDetails, setAppointmentDetails] = useState(null);
+  const [prescriptionSaving, setPrescriptionSaving] = useState(false);
+  const [prescriptionStatus, setPrescriptionStatus] = useState('');
+  const [prescriptionForm, setPrescriptionForm] = useState({ diagnosis: '', medicines: '', notes: '' });
   const [messages, setMessages] = useState([{ sender: 'System', text: 'Chat started.', time: new Date().toLocaleTimeString() }]);
 
   const clientRef = useRef(null);
@@ -30,6 +38,48 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
   })();
   const currentRole = auth?.user?.role || 'Patient';
   const isDoctor = String(currentRole).toLowerCase() === 'doctor';
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadDoctorProfile() {
+      if (!isDoctor || !auth?.user?.id) return;
+      const doctorRes = await getDoctorByUserId(auth.user.id);
+      if (!active) return;
+
+      if (doctorRes.data?.id) {
+        setDoctorProfileId(doctorRes.data.id);
+      } else {
+        setPrescriptionStatus('Doctor profile not found. Unable to issue prescription.');
+      }
+    }
+
+    loadDoctorProfile();
+    return () => {
+      active = false;
+    };
+  }, [auth?.user?.id, isDoctor]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadAppointment() {
+      if (!appointmentId) return;
+
+      const result = await getAppointmentById(appointmentId);
+      if (!active) return;
+
+      if (result.data) {
+        setAppointmentDetails(result.data);
+      }
+    }
+
+    loadAppointment();
+
+    return () => {
+      active = false;
+    };
+  }, [appointmentId]);
 
   useEffect(() => {
     if (!appointmentId || !appId) return;
@@ -187,6 +237,42 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
     }
   };
 
+  const submitPrescription = async () => {
+    if (!isDoctor) return;
+    if (!doctorProfileId || !appointmentDetails?.patientId) {
+      setPrescriptionStatus('Missing doctor/patient information for prescription.');
+      return;
+    }
+
+    if (!prescriptionForm.diagnosis.trim() || !prescriptionForm.medicines.trim()) {
+      setPrescriptionStatus('Diagnosis and medicines are required.');
+      return;
+    }
+
+    setPrescriptionSaving(true);
+    setPrescriptionStatus('');
+
+    const payload = {
+      doctorId: doctorProfileId,
+      patientId: appointmentDetails.patientId,
+      appointmentId: Number(appointmentId),
+      diagnosis: prescriptionForm.diagnosis.trim(),
+      medicines: prescriptionForm.medicines.trim(),
+      notes: prescriptionForm.notes.trim() || null,
+    };
+
+    const result = await createPrescription(payload);
+
+    if (result.data) {
+      setPrescriptionForm({ diagnosis: '', medicines: '', notes: '' });
+      setPrescriptionStatus('Prescription issued successfully. It will appear on the prescriptions page.');
+    } else {
+      setPrescriptionStatus(result.error || 'Failed to issue prescription.');
+    }
+
+    setPrescriptionSaving(false);
+  };
+
   return (
     // Changed: Height to 100% to fill parent, removed rigid fixed heights
     <div className="flex flex-col lg:flex-row h-full w-full gap-5">
@@ -274,6 +360,42 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
                 {doctorNoteSaving ? 'Saving...' : 'Save note'}
               </button>
               {doctorNoteStatus && <span className="text-xs text-slate-500">{doctorNoteStatus}</span>}
+            </div>
+          </div>
+        )}
+
+        {isDoctor && (
+          <div className="p-3 border-t border-slate-100 bg-white">
+            <div className="text-xs font-semibold text-slate-700 mb-2">Issue prescription</div>
+            <input
+              type="text"
+              value={prescriptionForm.diagnosis}
+              onChange={(e) => setPrescriptionForm((prev) => ({ ...prev, diagnosis: e.target.value }))}
+              placeholder="Diagnosis"
+              className="w-full mb-2 rounded-lg border border-slate-200 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4B9AA8]/30"
+            />
+            <textarea
+              value={prescriptionForm.medicines}
+              onChange={(e) => setPrescriptionForm((prev) => ({ ...prev, medicines: e.target.value }))}
+              placeholder="Medicines and dosage"
+              className="w-full min-h-[70px] mb-2 rounded-lg border border-slate-200 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4B9AA8]/30"
+            />
+            <textarea
+              value={prescriptionForm.notes}
+              onChange={(e) => setPrescriptionForm((prev) => ({ ...prev, notes: e.target.value }))}
+              placeholder="Additional notes (optional)"
+              className="w-full min-h-[60px] rounded-lg border border-slate-200 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4B9AA8]/30"
+            />
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={submitPrescription}
+                disabled={prescriptionSaving}
+                className="px-3 py-1.5 text-xs rounded-md bg-[#4B9AA8] text-white disabled:opacity-60"
+              >
+                {prescriptionSaving ? 'Issuing...' : 'Issue prescription'}
+              </button>
+              {prescriptionStatus && <span className="text-xs text-slate-500 text-right">{prescriptionStatus}</span>}
             </div>
           </div>
         )}
