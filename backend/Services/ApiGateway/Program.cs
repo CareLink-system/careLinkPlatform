@@ -113,11 +113,12 @@ var app = builder.Build();
         // Read all downstream service endpoints from config
         var swaggerEndpoints = builder.Configuration
             .GetSection("SwaggerEndpoints")
-            .Get<List<SwaggerEndpoint>>() ?? [];
+            .Get<List<SwaggerEndpoint>>() ?? new List<SwaggerEndpoint>();
 
         foreach (var ep in swaggerEndpoints)
         {
             var slug = ep.Name.Replace(" ", "-");
+            Console.WriteLine($"Registering swagger endpoint: {ep.Name} -> /swagger-proxy/{slug}/swagger.json");
             c.SwaggerEndpoint($"/swagger-proxy/{slug}/swagger.json", ep.Name);
         }
 
