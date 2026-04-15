@@ -98,12 +98,15 @@ namespace TelemedicineService.Controllers
                 });
             }
 
-            var appId = _configuration["Agora:AppId"];
-            var appCertificate = _configuration["Agora:AppCertificate"];
+            var appId = ResolveSetting("Agora:AppId", "AGORA__AppId", "AGORA__APPID", "AGORA_APP_ID");
+            var appCertificate = ResolveSetting("Agora:AppCertificate", "AGORA__AppCertificate", "AGORA__APPCERTIFICATE", "AGORA_APP_CERTIFICATE");
 
             if (string.IsNullOrWhiteSpace(appId) || string.IsNullOrWhiteSpace(appCertificate))
             {
-                _logger.LogError("Agora AppId or AppCertificate missing from configuration.");
+                _logger.LogError(
+                    "Agora AppId or AppCertificate missing from configuration. AppIdConfigured={AppIdConfigured}, AppCertConfigured={AppCertConfigured}",
+                    !string.IsNullOrWhiteSpace(appId),
+                    !string.IsNullOrWhiteSpace(appCertificate));
                 return StatusCode(500, new { error = "Server misconfiguration: Agora credentials missing" });
             }
 
@@ -142,6 +145,26 @@ namespace TelemedicineService.Controllers
                 uid,
                 expiresAtUtc = DateTimeOffset.FromUnixTimeSeconds(privilegeExpiredTs).UtcDateTime
             });
+        }
+
+        private string? ResolveSetting(string configKey, params string[] envKeys)
+        {
+            var value = _configuration[configKey];
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value;
+            }
+
+            foreach (var envKey in envKeys)
+            {
+                value = Environment.GetEnvironmentVariable(envKey);
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return value;
+                }
+            }
+
+            return null;
         }
 
         private static uint GenerateRandomUid()

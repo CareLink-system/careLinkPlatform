@@ -103,10 +103,12 @@ services:
       - "5007:5007"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - MongoDb__ConnectionString=mongodb://mongodb:27017
-      - MongoDb__Database=telemedicinedb
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=telemedicinedb;Username=admin;Password=admin123
+      - Jwt__Key=your-super-secret-key-for-development-only
+      - Jwt__Issuer=careLinkPlatform
+      - Jwt__Audience=careLinkPlatformUsers
     depends_on:
-      - mongodb
+      - postgres
     networks:
       - carelink-network
 

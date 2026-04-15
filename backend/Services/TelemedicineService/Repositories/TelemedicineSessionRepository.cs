@@ -1,38 +1,62 @@
-using MongoDB.Driver;
+using Microsoft.EntityFrameworkCore;
+using TelemedicineService.Data;
 using TelemedicineService.Models;
 
 namespace TelemedicineService.Repositories;
 
 public class TelemedicineSessionRepository : ITelemedicineSessionRepository
 {
-    private readonly IMongoCollection<TelemedicineSession> _collection;
+    private readonly TelemedicineDbContext _context;
 
-    public TelemedicineSessionRepository(IMongoDatabase database)
+    public TelemedicineSessionRepository(TelemedicineDbContext context)
     {
-        _collection = database.GetCollection<TelemedicineSession>("telemedicine_sessions");
-
-        var indexKeys = Builders<TelemedicineSession>.IndexKeys.Ascending(x => x.AppointmentId);
-        var indexOptions = new CreateIndexOptions { Unique = true };
-        _collection.Indexes.CreateOne(new CreateIndexModel<TelemedicineSession>(indexKeys, indexOptions));
+        _context = context;
     }
 
     public async Task<TelemedicineSession?> GetByAppointmentIdAsync(string appointmentId, CancellationToken cancellationToken)
     {
-        var session = await _collection
-            .Find(x => x.AppointmentId == appointmentId)
-            .FirstOrDefaultAsync(cancellationToken);
+        var entity = await _context.TelemedicineSessions
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.AppointmentId == appointmentId, cancellationToken);
 
-        return session;
+        if (entity is null)
+        {
+            return null;
+        }
+
+        entity.HydrateCollections();
+        return entity;
     }
 
-    public Task UpsertAsync(TelemedicineSession session, CancellationToken cancellationToken)
+    public async Task UpsertAsync(TelemedicineSession session, CancellationToken cancellationToken)
     {
         session.UpdatedAtUtc = DateTime.UtcNow;
+        session.PersistCollections();
 
-        return _collection.ReplaceOneAsync(
-            x => x.AppointmentId == session.AppointmentId,
-            session,
-            new ReplaceOptions { IsUpsert = true },
-            cancellationToken);
+        var existing = await _context.TelemedicineSessions
+            .FirstOrDefaultAsync(x => x.AppointmentId == session.AppointmentId, cancellationToken);
+
+        if (existing is null)
+        {
+            session.CreatedAtUtc = session.CreatedAtUtc == default ? DateTime.UtcNow : session.CreatedAtUtc;
+            _context.TelemedicineSessions.Add(session);
+        }
+        else
+        {
+            existing.AppointmentNumericId = session.AppointmentNumericId;
+            existing.DoctorId = session.DoctorId;
+            existing.PatientId = session.PatientId;
+            existing.AgoraChannelName = session.AgoraChannelName;
+            existing.Status = session.Status;
+            existing.StartedAtUtc = session.StartedAtUtc;
+            existing.EndedAtUtc = session.EndedAtUtc;
+            existing.DurationSeconds = session.DurationSeconds;
+            existing.ParticipantsJson = session.ParticipantsJson;
+            existing.MessagesJson = session.MessagesJson;
+            existing.DoctorNotesJson = session.DoctorNotesJson;
+            existing.UpdatedAtUtc = session.UpdatedAtUtc;
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
     }
 }

@@ -8,6 +8,7 @@ import { createPrescription } from '../features/prescription/api/prescriptionApi
 export default function VideoRoom({ appointmentId, appId: propAppId }) {
   const appId = propAppId || import.meta.env.VITE_AGORA_APP_ID;
   const [status, setStatus] = useState('Connecting...');
+  const [cameraHint, setCameraHint] = useState('');
   const [joined, setJoined] = useState(false);
   const [mutedAudio, setMutedAudio] = useState(false);
   const [mutedVideo, setMutedVideo] = useState(false);
@@ -38,6 +39,25 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
   })();
   const currentRole = auth?.user?.role || 'Patient';
   const isDoctor = String(currentRole).toLowerCase() === 'doctor';
+
+  const getCameraErrorHint = (err) => {
+    const message = String(err?.message || '').toLowerCase();
+    const code = String(err?.code || '').toUpperCase();
+
+    if (code.includes('NOT_ALLOWED') || code.includes('PERMISSION') || message.includes('permission') || message.includes('denied')) {
+      return 'Camera access was blocked by the browser. Allow camera/microphone access in the address bar or browser site settings, then refresh the page.';
+    }
+
+    if (code.includes('NOT_READABLE') || message.includes('not readable') || message.includes('no camera') || message.includes('device')) {
+      return 'No webcam was found or the camera is in use by another app. Close other camera apps or choose a different camera in browser settings.';
+    }
+
+    if (typeof window !== 'undefined' && !window.isSecureContext) {
+      return 'Camera access requires a secure context. Open the app over HTTPS or localhost.';
+    }
+
+    return 'Check browser camera permissions and confirm a webcam is available.';
+  };
 
   useEffect(() => {
     let active = true;
@@ -142,6 +162,7 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
 
         const [mic, cam] = await AgoraRTC.createMicrophoneAndCameraTracks();
         localTracksRef.current = { audioTrack: mic, videoTrack: cam };
+        setCameraHint('');
 
         if (localVideoRef.current) {
           localVideoRef.current.innerHTML = '';
@@ -158,6 +179,7 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
         console.error('Agora init error', err);
         const apiError = err?.response?.data?.error || err?.response?.data?.detail || err?.message;
         setStatus(apiError ? `Connection failed: ${apiError}` : 'Connection failed.');
+        setCameraHint(getCameraErrorHint(err));
       }
     }
 
@@ -281,6 +303,11 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
       {/* Changed: Dark background, flex-grow, min-height for better aspect ratio */}
       <div className="flex-1 bg-slate-900 rounded-2xl border border-slate-800 shadow-lg relative flex flex-col overflow-hidden min-h-[500px] lg:min-h-[65vh]">
         {status && !joined && <div className="absolute inset-0 flex items-center justify-center text-slate-300 animate-pulse">{status}</div>}
+        {cameraHint && !joined && (
+          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 max-w-[90%] rounded-xl border border-amber-300 bg-amber-50/95 px-4 py-3 text-sm text-amber-900 shadow-lg backdrop-blur">
+            {cameraHint}
+          </div>
+        )}
 
         <div className="w-full h-full relative flex items-center justify-center">
           <div ref={remotePlayerHostRef} className="absolute inset-0" />
