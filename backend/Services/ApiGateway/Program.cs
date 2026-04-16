@@ -1,14 +1,11 @@
 using ApiGateway.Model;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
 using Microsoft.OpenApi.Models;
 using System.Diagnostics;
 using System.Text;
 using System.Reflection;
-using Swashbuckle.AspNetCore.SwaggerGen;
-using ApiGateway.Filters;
-// using SharedConfiguration.Extensions;
+using ApiGateway.DTO;
 using DotNetEnv;
 
 Console.WriteLine("Starting API Gateway.....");
@@ -25,9 +22,7 @@ Console.WriteLine($"Thread pool configured - Worker: {newWorkerThreads}, IO: {ne
 // =====================
 // LOAD .ENV
 // =====================
-var rootPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", ".."));
-var envPath = Path.Combine(rootPath, ".env");
-
+var envPath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
 if (File.Exists(envPath))
 {
     Env.Load(envPath);
@@ -38,24 +33,154 @@ else
     Console.WriteLine($"⚠️ .env file not found at: {envPath}");
 }
 
-
 var builder = WebApplication.CreateBuilder(args);
 
-// Shared environment configuration (loads .env and config files)
-// builder.AddSharedEnvironmentConfiguration();
+// ============================================
+// 1. Load ServiceSettings
+// ============================================
+var serviceSettings = new ServiceSettings();
+builder.Configuration.GetSection("ServiceSettings").Bind(serviceSettings);
 
-// ── Controllers & Explorer ───────────────────────────────────────────────────
+if (string.IsNullOrWhiteSpace(serviceSettings.DatabaseName))
+    throw new InvalidOperationException("ServiceSettings:DatabaseName is missing in appsettings.json");
+
+// ============================================
+// 2. Get Environment Variables
+// ============================================
+var dbHost = Environment.GetEnvironmentVariable("DB_HOST");
+var dbPort = Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
+var dbUsername = Environment.GetEnvironmentVariable("DB_USERNAME");
+var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
+var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY");
+var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER");
+var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE");
+var stripeKey = Environment.GetEnvironmentVariable("STRIPE_SECRET_KEY");
+
+// ============================================
+// 3. Validate
+// ============================================
+if (string.IsNullOrWhiteSpace(dbHost))
+    throw new InvalidOperationException("DB_HOST environment variable is missing.");
+if (string.IsNullOrWhiteSpace(dbUsername))
+    throw new InvalidOperationException("DB_USERNAME environment variable is missing.");
+if (string.IsNullOrWhiteSpace(dbPassword))
+    throw new InvalidOperationException("DB_PASSWORD environment variable is missing.");
+
+if (string.IsNullOrWhiteSpace(jwtKey))
+{
+    jwtKey = builder.Configuration["Jwt:Key"];
+    if (string.IsNullOrWhiteSpace(jwtKey))
+        throw new InvalidOperationException("JWT_KEY is missing from .env and appsettings.json");
+}
+jwtIssuer ??= builder.Configuration["Jwt:Issuer"] ?? "careLinkPlatform";
+jwtAudience ??= builder.Configuration["Jwt:Audience"] ?? "careLinkPlatformUsers";
+
+if (string.IsNullOrWhiteSpace(stripeKey))
+{
+    var svcName = serviceSettings.ServiceName?.ToLower() ?? "";
+    if (svcName.Contains("payment"))
+        throw new InvalidOperationException("STRIPE_SECRET_KEY is missing. Payment Service requires it.");
+    Console.WriteLine("⚠️ STRIPE_SECRET_KEY not set. Payment features will not work.");
+}
+
+// ============================================
+// 4. Build Connection String
+// ============================================
+var sslMode = Environment.GetEnvironmentVariable("DB_SSL_MODE");
+if (string.IsNullOrWhiteSpace(sslMode))
+{
+    sslMode = dbHost.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+              dbHost == "127.0.0.1" || dbHost == "::1"
+        ? "Disable" : "Require";
+}
+
+var connectionString =
+    $"Host={dbHost};Port={dbPort};Database={serviceSettings.DatabaseName};" +
+    $"Username={dbUsername};Password={dbPassword};" +
+    $"SSL Mode={sslMode};Trust Server Certificate=true;" +
+    $"Timeout=30;Command Timeout=60;Keepalive=30;";
+
+// ============================================
+// 5. Push values into Configuration
+// ============================================
+builder.Configuration["ConnectionStrings:DefaultConnection"] = connectionString;
+builder.Configuration["Jwt:Key"] = jwtKey;
+builder.Configuration["Jwt:Issuer"] = jwtIssuer;
+builder.Configuration["Jwt:Audience"] = jwtAudience;
+
+if (!string.IsNullOrWhiteSpace(stripeKey))
+    builder.Configuration["Stripe:SecretKey"] = stripeKey;
+
+// ============================================
+// 6. Service URLs → ReverseProxy config
+// ============================================
+var serviceUrls = new Dictionary<string, (string cluster, string destination)>
+{
+    ["AUTH_SERVICE_URL"] = ("auth-cluster", "auth"),
+    ["PATIENT_SERVICE_URL"] = ("patient-cluster", "patient"),
+    ["DOCTOR_SERVICE_URL"] = ("doctor-cluster", "doctor"),
+    ["APPOINTMENT_SERVICE_URL"] = ("appointment-cluster", "appointment"),
+    ["TELEMEDICINE_SERVICE_URL"] = ("telemedicine-cluster", "telemedicine"),
+    ["PAYMENT_SERVICE_URL"] = ("payment-cluster", "payment"),
+    ["NOTIFICATION_SERVICE_URL"] = ("notification-cluster", "notification"),
+    ["SYMPTOM_CHECK_SERVICE_URL"] = ("symptom-check-cluster", "symptom-check"),
+    ["CHATBOT_SERVICE_URL"] = ("chatbot-cluster", "chatbot"),
+};
+
+foreach (var (envVar, (cluster, dest)) in serviceUrls)
+{
+    var url = Environment.GetEnvironmentVariable(envVar);
+    Console.WriteLine($"   {envVar}: {url ?? "not set"}");
+    if (!string.IsNullOrWhiteSpace(url))
+        builder.Configuration[$"ReverseProxy:Clusters:{cluster}:Destinations:{dest}:Address"] = url;
+}
+
+// ============================================
+// 7. Build SwaggerEndpoints in-memory store
+//    (KEY FIX: store in a singleton, not just a local list)
+// ============================================
+var swaggerEndpoints = new List<SwaggerEndpoint>();
+
+var swaggerEnvVars = new[]
+{
+    ("AUTH_SWAGGER_URL",          "Auth Service"),
+    ("PATIENT_SWAGGER_URL",       "Patient Service"),
+    ("DOCTOR_SWAGGER_URL",        "Doctor Service"),
+    ("APPOINTMENT_SWAGGER_URL",   "Appointment Service"),
+    ("TELEMEDICINE_SWAGGER_URL",  "Telemedicine Service"),
+    ("PAYMENT_SWAGGER_URL",       "Payment Service"),
+    ("NOTIFICATION_SWAGGER_URL",  "Notification Service"),
+    ("SYMPTOM_CHECK_SWAGGER_URL", "Symptom Check Service"),
+    ("CHATBOT_SWAGGER_URL",       "Chatbot Service"),
+};
+
+foreach (var (envVar, name) in swaggerEnvVars)
+{
+    var url = Environment.GetEnvironmentVariable(envVar);
+    if (!string.IsNullOrWhiteSpace(url))
+    {
+        swaggerEndpoints.Add(new SwaggerEndpoint { Name = name, Url = url });
+        Console.WriteLine($"✅ Swagger endpoint registered: {name} -> {url}");
+    }
+    else
+    {
+        Console.WriteLine($"⚠️ {envVar} not set, skipping '{name}' in Swagger UI.");
+    }
+}
+
+// ============================================
+// 8. Register Services
+// ============================================
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// ── CORS ─────────────────────────────────────────────────────────────────────
 builder.Services.AddCors(options =>
-{
     options.AddPolicy("AllowAll", policy =>
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
-});
+        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 
-// ── HttpClient for proxying downstream swagger.json files ────────────────────
+// KEY FIX: register swaggerEndpoints as a singleton so the proxy route can inject it
+builder.Services.AddSingleton(swaggerEndpoints);
+
 builder.Services.AddHttpClient("swagger-proxy")
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
     {
@@ -63,7 +188,6 @@ builder.Services.AddHttpClient("swagger-proxy")
             HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
     });
 
-// ── JWT Authentication ────────────────────────────────────────────────────────
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -73,19 +197,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(
-                    builder.Configuration["Jwt:Key"] ?? "default-key-for-development"))
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
         };
     });
 
-// ── YARP Reverse Proxy ────────────────────────────────────────────────────────
 builder.Services.AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
 
-// ── Swagger Services ─────────────────────────────────────────────────────────
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
@@ -95,7 +215,6 @@ builder.Services.AddSwaggerGen(c =>
         Description = "API Gateway for CareLink Platform"
     });
 
-    // Add JWT authentication to Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -112,69 +231,59 @@ builder.Services.AddSwaggerGen(c =>
             new OpenApiSecurityScheme
             {
                 Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
+                    { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
             },
             Array.Empty<string>()
         }
     });
-    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
-c.IncludeXmlComments(xmlPath);
+
+    var xmlPath = Path.Combine(AppContext.BaseDirectory,
+        $"{Assembly.GetExecutingAssembly().GetName().Name}.xml");
+    if (File.Exists(xmlPath))
+        c.IncludeXmlComments(xmlPath);
 });
 
+// ============================================
+// 9. Build the app
+// ============================================
 var app = builder.Build();
 
 // ── Swagger UI ────────────────────────────────────────────────────────────────
-
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    // KEY FIX: use the same in-memory list, not config (which was never written to correctly)
+    foreach (var ep in swaggerEndpoints)
     {
-        // Read all downstream service endpoints from config
-        var swaggerEndpoints = builder.Configuration
-            .GetSection("SwaggerEndpoints")
-            .Get<List<SwaggerEndpoint>>() ?? new List<SwaggerEndpoint>();
+        var slug = ep.Name.Replace(" ", "-");
+        c.SwaggerEndpoint($"/swagger-proxy/{slug}/swagger.json", ep.Name);
+        Console.WriteLine($"Registering Swagger UI tab: {ep.Name} -> /swagger-proxy/{slug}/swagger.json");
+    }
 
-        foreach (var ep in swaggerEndpoints)
-        {
-            var slug = ep.Name.Replace(" ", "-");
-            Console.WriteLine($"Registering swagger endpoint: {ep.Name} -> /swagger-proxy/{slug}/swagger.json");
-            c.SwaggerEndpoint($"/swagger-proxy/{slug}/swagger.json", ep.Name);
-        }
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "API Gateway");
+    c.RoutePrefix = "swagger";
+    c.DocumentTitle = "CareLink Platform API";
+    c.DefaultModelsExpandDepth(-1);
+});
 
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "API Gateway");
-        c.RoutePrefix = "swagger";
-        c.DocumentTitle = "CareLink Platform API";
-        c.DefaultModelsExpandDepth(-1);
-    });
-
-// ── Static files ──────────────────────────────────────────────────────────────
 app.UseStaticFiles();
 
-// ── Standard middleware pipeline ──────────────────────────────────────────────
 if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
-
-// ── Controllers ────────────────────────────────────────────────────────────────
 app.MapControllers();
 
-// ── Swagger JSON proxy route ──────────────────────────────────────────────────
+// ── Swagger JSON proxy ────────────────────────────────────────────────────────
+// KEY FIX: inject List<SwaggerEndpoint> from DI, not from IConfiguration
 app.MapGet("/swagger-proxy/{serviceName}/swagger.json", async (
     string serviceName,
     IHttpClientFactory httpClientFactory,
-    IConfiguration config) =>
+    List<SwaggerEndpoint> endpoints) =>          // <-- injected from singleton
 {
-    var endpoints = config
-        .GetSection("SwaggerEndpoints")
-        .Get<List<SwaggerEndpoint>>();
-
-    var endpoint = endpoints?.FirstOrDefault(e =>
+    var endpoint = endpoints.FirstOrDefault(e =>
         string.Equals(
             e.Name.Replace(" ", "-"),
             serviceName,
@@ -198,38 +307,29 @@ app.MapGet("/swagger-proxy/{serviceName}/swagger.json", async (
     }
 });
 
-// ── Health endpoint ───────────────────────────────────────────────────────────
+// ── Health ────────────────────────────────────────────────────────────────────
 app.MapGet("/api/Health", () => Results.Ok(new
 {
     service = "CareLink API Gateway",
     status = "Running",
     timestamp = DateTime.UtcNow,
     routes = new[] { "auth", "patients", "doctors", "appointments",
-                     "telemedicine", "payments", "notifications", "symptom-checker", "chatbot" }
+                        "telemedicine", "payments", "notifications",
+                        "symptom-checker", "chatbot" }
 }));
 
-// ── YARP (must be LAST) ────────────────────────────────────────────────────────
+// ── YARP (must be LAST) ───────────────────────────────────────────────────────
 app.MapReverseProxy();
 
-// ── Startup logs ─────────────────────────────────────────────────────────────
-Console.WriteLine("API Gateway is ready!");
-Console.WriteLine("Swagger Hub  : https://localhost:5000/swagger");
-Console.WriteLine("Health Check : https://localhost:5000/api/Health");
+// ── Startup logs ──────────────────────────────────────────────────────────────
+Console.WriteLine("✅ API Gateway is ready!");
+Console.WriteLine($"Swagger UI   : {(app.Environment.IsDevelopment() ? "https://localhost:5000/swagger" : "https://carelinkplatform-apigateway.onrender.com/swagger")}");
+Console.WriteLine("Health Check : /api/Health");
 
 if (app.Environment.IsDevelopment())
 {
-    try
-    {
-        Process.Start(new ProcessStartInfo
-        {
-            FileName = "https://localhost:5000/index.html",
-            UseShellExecute = true
-        });
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Could not auto-open browser: {ex.Message}");
-    }
+    try { Process.Start(new ProcessStartInfo { FileName = "https://localhost:5000/swagger", UseShellExecute = true }); }
+    catch (Exception ex) { Console.WriteLine($"Could not auto-open browser: {ex.Message}"); }
 }
 
 app.Run();
