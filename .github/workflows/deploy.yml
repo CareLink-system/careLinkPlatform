@@ -1,0 +1,172 @@
+# CareLink Platform - Deploy to Kubernetes
+# This workflow deploys the application to Kubernetes cluster
+
+name: Deploy to Kubernetes
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "kubernetes/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy to"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  REGISTRY: "ghcr.io"
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  deploy:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event.inputs.environment || 'staging' }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "latest"
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Create Secrets and ConfigMaps
+        run: |
+          cd kubernetes/base
+          kubectl apply -f secrets.yaml
+          kubectl apply -f configmap.yaml
+          kubectl apply -f namespace.yaml
+        continue-on-error: true
+
+      - name: Apply Kubernetes Manifests
+        run: |
+          cd kubernetes/deployments
+          kubectl apply -f api-gateway-deployment.yaml
+          kubectl apply -f api-gateway-service.yaml
+          kubectl apply -f auth-deployment.yaml
+          kubectl apply -f payment-deployment.yaml
+          kubectl apply -f appointment-deployment.yaml
+          kubectl apply -f doctor-deployment.yaml
+          kubectl apply -f patient-deployment.yaml
+          kubectl apply -f notification-deployment.yaml
+          kubectl apply -f telemedicine-deployment.yaml
+          kubectl apply -f symptom-check-deployment.yaml
+          kubectl apply -f chatbot-deployment.yaml
+
+      - name: Apply Services
+        run: |
+          cd kubernetes/services
+          kubectl apply -f database-services.yaml
+
+      - name: Apply Ingress
+        run: |
+          cd kubernetes/ingress
+          kubectl apply -f ingress.yaml
+
+      - name: Wait for Deployment
+        run: |
+          kubectl rollout status deployment/api-gateway -n carelink-platform --timeout=5m
+          kubectl rollout status deployment/auth-service -n carelink-platform --timeout=5m
+          kubectl rollout status deployment/payment-service -n carelink-platform --timeout=5m
+
+      - name: Verify Deployment
+        run: |
+          echo "=== Pod Status ==="
+          kubectl get pods -n carelink-platform
+          echo "=== Service Status ==="
+          kubectl get svc -n carelink-platform
+          echo "=== Deployment Status ==="
+          kubectl get deployments -n carelink-platform
+
+      - name: Get Ingress Details
+        run: |
+          kubectl get ingress -n carelink-platform
+          echo "Waiting for Ingress IP assignment..."
+          sleep 30
+          kubectl describe ingress -n carelink-platform
+
+  smoke-tests:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: success()
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install Dependencies
+        run: |
+          pip install requests
+
+      - name: Run Smoke Tests
+        run: |
+          python -c "
+          import requests
+          import time
+
+          # Get the service endpoints from Kubernetes
+          endpoints = [
+            'http://api-gateway:8080/api/Health',
+            'http://auth-service:8080/api/Health',
+            'http://payment-service:8080/api/Health'
+          ]
+
+          for endpoint in endpoints:
+            try:
+              response = requests.get(endpoint, timeout=5)
+              if response.status_code == 200:
+                print(f'✅ {endpoint} is healthy')
+              else:
+                print(f'⚠️  {endpoint} returned {response.status_code}')
+            except Exception as e:
+              print(f'❌ {endpoint} failed: {e}')
+          "
+        continue-on-error: true
+
+  rollback:
+    name: Rollback on Failure
+    runs-on: ubuntu-latest
+    needs: [deploy, smoke-tests]
+    if: failure()
+
+    steps:
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Rollback Deployments
+        run: |
+          echo "Rolling back deployments..."
+          kubectl rollout undo deployment/api-gateway -n carelink-platform
+          kubectl rollout undo deployment/auth-service -n carelink-platform
+          kubectl rollout undo deployment/payment-service -n carelink-platform
+          echo "Rollback completed"
+        continue-on-error: true
+
+      - name: Verify Rollback
+        run: |
+          kubectl get deployments -n carelink-platform

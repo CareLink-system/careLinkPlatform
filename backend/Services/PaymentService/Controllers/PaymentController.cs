@@ -2,13 +2,16 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using PaymentService.DTOs;
+using PaymentService.Enum;
+using PaymentService.Extensions;
 using PaymentService.Services;
+using Stripe;
+using Stripe.Checkout;
+using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using System.Text.Json;
-using Microsoft.Extensions.Caching.Memory;
-using System.ComponentModel.DataAnnotations;
-using PaymentService.Extensions;
 
 namespace PaymentService.Controllers;
 
@@ -24,17 +27,20 @@ public class PaymentController : ControllerBase
     private readonly ILogger<PaymentController> _logger;
     private readonly IMemoryCache _cache;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IWebHostEnvironment _environment; 
 
     public PaymentController(
         IPaymentService paymentService,
         ILogger<PaymentController> logger,
         IMemoryCache cache,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        IWebHostEnvironment environment)
     {
         _paymentService = paymentService;
         _logger = logger;
         _cache = cache;
         _httpContextAccessor = httpContextAccessor;
+        _environment = environment;
     }
 
     private string GetRequestId()
@@ -541,6 +547,397 @@ public class PaymentController : ControllerBase
                 Status = 500,
                 Title = "Internal Server Error",
                 Detail = "An error occurred while retrieving payment summary.",
+                RequestId = requestId
+            });
+        }
+    }
+
+
+    //[HttpPost("create-session")]
+    //public async Task<IActionResult> CreateSession([FromBody] CreateCheckoutSessionRequest request)
+    //{
+    //    var options = new SessionCreateOptions
+    //    {
+    //        //Mode = "payment",
+    //        //SuccessUrl = "http://localhost:5173/success",
+    //        //CancelUrl = "http://localhost:5173/cancel",
+    //        LineItems = new List<SessionLineItemOptions>
+    //        {
+    //            new SessionLineItemOptions
+    //            {
+    //                //Quantity = 1,
+    //                PriceData = new SessionLineItemPriceDataOptions
+    //                {
+    //                    Currency = request.Currency,
+    //                    UnitAmount = request.Amount, // $50
+    //                    ProductData = new SessionLineItemPriceDataProductDataOptions
+    //                    {
+    //                        Name = "Test Payment"
+    //                    }
+    //                }
+    //            }
+    //        }
+    //    };
+
+    //    var service = new SessionService();
+    //    var session = await service.CreateAsync(options);
+
+    //    return Ok(new { url = session.Url });
+    //}
+
+    /// <summary>
+    /// Create a Stripe Checkout Session for payment processing.
+    /// </summary>
+    /// <param name="request">Checkout session request details</param>
+    /// <response code="200">Returns Stripe checkout session URL.</response>
+    /// <response code="400">Invalid request data.</response>
+    /// <response code="401">Unauthorized.</response>
+    /// <response code="409">Payment already exists or conflict.</response>
+    /// <response code="422">Validation failed.</response>
+    /// <response code="500">Internal server error.</response>
+    [HttpPost("create-session")]
+    [ProducesResponseType(typeof(CheckoutSessionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> CreateSession([FromBody] CreateCheckoutSessionRequest request)
+    {
+        var requestId = GetRequestId();
+        var userId = User.GetUserId();
+        var userEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? User.FindFirst("email")?.Value;
+        var userName = User.FindFirst(ClaimTypes.Name)?.Value ?? "Customer";
+
+        // Validate request
+        if (request == null)
+        {
+            _logger.LogWarning("[{RequestId}] Null checkout session request received", requestId);
+            return BadRequest(new ApiErrorResponse
+            {
+                Status = 400,
+                Title = "Invalid Request",
+                Detail = "Checkout session request cannot be null.",
+                RequestId = requestId
+            });
+        }
+
+        // Validate required fields
+        var validationErrors = new List<ValidationError>();
+
+        if (request.Amount <= 0)
+            validationErrors.Add(new ValidationError { Field = "Amount", Message = "Amount must be greater than 0." });
+
+        if (string.IsNullOrWhiteSpace(request.Currency))
+            validationErrors.Add(new ValidationError { Field = "Currency", Message = "Currency is required." });
+
+        if (string.IsNullOrWhiteSpace(request.DoctorId))
+            validationErrors.Add(new ValidationError { Field = "DoctorId", Message = "Doctor ID is required." });
+
+        if (string.IsNullOrWhiteSpace(request.PatientId))
+            validationErrors.Add(new ValidationError { Field = "PatientId", Message = "Patient ID is required." });
+
+        if (string.IsNullOrWhiteSpace(request.SuccessUrl))
+            validationErrors.Add(new ValidationError { Field = "SuccessUrl", Message = "Success URL is required." });
+
+        if (string.IsNullOrWhiteSpace(request.CancelUrl))
+            validationErrors.Add(new ValidationError { Field = "CancelUrl", Message = "Cancel URL is required." });
+
+        // Validate URLs
+        if (!string.IsNullOrWhiteSpace(request.SuccessUrl) && !Uri.IsWellFormedUriString(request.SuccessUrl, UriKind.Absolute))
+            validationErrors.Add(new ValidationError { Field = "SuccessUrl", Message = "Success URL must be a valid absolute URL." });
+
+        if (!string.IsNullOrWhiteSpace(request.CancelUrl) && !Uri.IsWellFormedUriString(request.CancelUrl, UriKind.Absolute))
+            validationErrors.Add(new ValidationError { Field = "CancelUrl", Message = "Cancel URL must be a valid absolute URL." });
+
+        // ✅ Validate currency format - Only USD and LKR
+        var validCurrencies = new[] { "usd", "lkr" };
+        var currencyLower = request.Currency.ToLower();
+
+        if (!validCurrencies.Contains(currencyLower))
+        {
+            validationErrors.Add(new ValidationError
+            {
+                Field = "Currency",
+                Message = $"Currency must be one of: {string.Join(", ", validCurrencies)}. Current value: {request.Currency}"
+            });
+        }
+        else
+        {
+            //// Validate amount based on currency (minimum amounts)
+            //var minAmounts = new Dictionary<string, long>
+            //{
+            //    { "usd", 50 },     // $0.50 minimum for USD
+            //    { "lkr", 10000 }    // 100.00 LKR minimum
+            //};
+
+            //var maxAmounts = new Dictionary<string, long>
+            //{
+            //    { "usd", 99999900 },    // $999,999.00 maximum
+            //    { "lkr", 9999990000 }    // 99,999,900.00 LKR maximum
+            //};
+
+            //if (minAmounts.ContainsKey(currencyLower) && request.Amount < minAmounts[currencyLower])
+            //{
+            //    validationErrors.Add(new ValidationError
+            //    {
+            //        Field = "Amount",
+            //        Message = $"Minimum amount for {request.Currency.ToUpper()} is {(currencyLower == "usd" ? "$" : "Rs.")}{minAmounts[currencyLower] / 100.0:F2}"
+            //    });
+            //}
+
+            //if (maxAmounts.ContainsKey(currencyLower) && request.Amount > maxAmounts[currencyLower])
+            //{
+            //    validationErrors.Add(new ValidationError
+            //    {
+            //        Field = "Amount",
+            //        Message = $"Maximum amount for {request.Currency.ToUpper()} is {(currencyLower == "usd" ? "$" : "Rs.")}{maxAmounts[currencyLower] / 100.0:F2}"
+            //    });
+            //}
+        }
+
+        // Check if user is authorized to create payment for this patient
+        var userRole = User.GetUserRole();
+        if (userRole != "Admin" && request.PatientId != userId)
+        {
+            _logger.LogWarning("[{RequestId}] User {UserId} attempted to create payment for another patient {PatientId}",
+                requestId, userId, request.PatientId);
+            return Forbid();
+        }
+
+        if (validationErrors.Any())
+        {
+            _logger.LogWarning("[{RequestId}] Validation failed for checkout session creation. Errors: {Errors}",
+                requestId, string.Join(", ", validationErrors.Select(e => $"{e.Field}: {e.Message}")));
+            return UnprocessableEntity(new ValidationErrorResponse
+            {
+                Status = 422,
+                Title = "Validation Failed",
+                Errors = validationErrors,
+                RequestId = requestId
+            });
+        }
+
+        try
+        {
+            // Check if payment already exists for this consultation
+            if (request.ConsultationId.HasValue)
+            {
+                var existingPayment = await _paymentService.GetByConsultationIdAsync(request.ConsultationId);
+                if (existingPayment != null && existingPayment.PaymentStatus == CommonStatus.PaymentCompleted)
+                {
+                    _logger.LogWarning("[{RequestId}] Payment already completed for consultation {ConsultationId}",
+                        requestId, request.ConsultationId);
+                    return Conflict(new ApiErrorResponse
+                    {
+                        Status = 409,
+                        Title = "Payment Already Processed",
+                        Detail = "This consultation has already been paid for.",
+                        RequestId = requestId
+                    });
+                }
+            }
+
+            // Generate unique session ID for idempotency
+            var idempotencyKey = $"session_{request.ConsultationId ?? 0}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+
+            // Create product name and description based on currency
+            var amountDisplay = currencyLower == "usd"
+                ? $"${request.Amount / 100.0:F2} USD"
+                : $"Rs.{request.Amount / 100.0:F2} LKR";
+
+            var productName = string.IsNullOrWhiteSpace(request.ProductName)
+                ? $"Consultation with Dr. {request.DoctorName ?? request.DoctorId}"
+                : request.ProductName;
+
+            var productDescription = string.IsNullOrWhiteSpace(request.ProductDescription)
+                ? $"Payment for consultation - Amount: {amountDisplay}"
+                : request.ProductDescription;
+
+            // Create metadata for tracking
+            var metadata = new Dictionary<string, string>
+            {
+                { "user_id", userId },
+                { "patient_id", request.PatientId },
+                { "doctor_id", request.DoctorId },
+                { "consultation_id", request.ConsultationId?.ToString() ?? "" },
+                { "environment", _environment.EnvironmentName },
+                { "created_at", DateTime.UtcNow.ToString("o") },
+                { "currency", currencyLower }
+            };
+
+            // Add payment type to metadata if provided
+            //if (!string.IsNullOrWhiteSpace(request.PaymentType))
+            //{
+            //    metadata.Add("payment_type", request.PaymentType);
+            //}
+
+            // Build success and cancel URLs with query parameters
+            var successUrl = request.SuccessUrl.Contains('?')
+                ? $"{request.SuccessUrl}&session_id={{CHECKOUT_SESSION_ID}}&payment_id={{PAYMENT_INTENT_ID}}"
+                : $"{request.SuccessUrl}?session_id={{CHECKOUT_SESSION_ID}}&payment_id={{PAYMENT_INTENT_ID}}";
+
+            var cancelUrl = request.CancelUrl.Contains('?')
+                ? $"{request.CancelUrl}&session_id={{CHECKOUT_SESSION_ID}}"
+                : $"{request.CancelUrl}?session_id={{CHECKOUT_SESSION_ID}}";
+
+            // Configure payment method types based on currency
+            var paymentMethodTypes = new List<string> { "card" };
+
+            // Add additional payment methods for USD
+            //if (currencyLower == "usd")
+            //{
+            //    paymentMethodTypes.AddRange(new[] { "link", "cashapp", "us_bank_account" });
+            //}
+
+            // Add additional payment methods for LKR (Stripe supports card only for LKR)
+            // Note: For LKR, only card payments are supported by Stripe
+
+            // Configure the Stripe session
+            var options = new SessionCreateOptions
+            {
+                PaymentMethodTypes = paymentMethodTypes,
+                LineItems = new List<SessionLineItemOptions>
+            {
+                new SessionLineItemOptions
+                {
+                    PriceData = new SessionLineItemPriceDataOptions
+                    {
+                        Currency = currencyLower,
+                        UnitAmount = request.Amount,
+                        ProductData = new SessionLineItemPriceDataProductDataOptions
+                        {
+                            Name = productName,
+                            Description = productDescription,
+                            Metadata = metadata,
+                            Images = request.ProductImages ?? new List<string>()
+                        },
+                    },
+                    Quantity = 1,
+                    //AdjustableQuantity = new SessionLineItemAdjustableQuantityOptions
+                    //{
+                    //    Enabled = false,
+                    //    Maximum = 1,
+                    //    Minimum = 1
+                    //}
+                }
+            },
+                Mode = "payment",
+                SuccessUrl = successUrl,
+                CancelUrl = cancelUrl,
+                Metadata = metadata,
+                CustomerEmail = userEmail ?? request.CustomerEmail,
+                CustomerCreation = string.IsNullOrEmpty(userEmail) ? "always" : null,
+                ClientReferenceId = request.ConsultationId?.ToString() ?? Guid.NewGuid().ToString(),
+                ExpiresAt = DateTime.UtcNow.AddMinutes(30),
+                PaymentIntentData = new SessionPaymentIntentDataOptions
+                {
+                    Metadata = metadata,
+                    Description = productDescription,
+                    SetupFutureUsage = "off_session",
+                },
+                Locale = request.Locale ?? (currencyLower == "lkr" ? "en" : "auto"),
+                PaymentMethodOptions = new SessionPaymentMethodOptionsOptions
+                {
+                    Card = new SessionPaymentMethodOptionsCardOptions
+                    {
+                        RequestThreeDSecure = "automatic"
+                    }
+                }
+            };
+
+            // Add billing address collection only for USD
+            if (currencyLower == "usd")
+            {
+                options.BillingAddressCollection = "required";
+                options.ShippingAddressCollection = new SessionShippingAddressCollectionOptions
+                {
+                    AllowedCountries = new List<string> { "US", "CA", "GB", "AU", "DE", "FR", "ES", "IT", "NL" }
+                };
+                options.PhoneNumberCollection = new SessionPhoneNumberCollectionOptions
+                {
+                    Enabled = true,
+                };
+            }
+
+            // Create the Stripe session with idempotency
+            var service = new SessionService();
+            var requestOptions = new RequestOptions
+            {
+                IdempotencyKey = idempotencyKey
+            };
+            var session = await service.CreateAsync(options, requestOptions);
+
+
+            // Store session information in database for webhook handling
+            var paymentRequest = new PaymentRequestDto
+            {
+                AppointmentId = request.AppointmentId,
+                PatientId = request.PatientId,
+                DoctorId = request.DoctorId,
+                Amount = request.Amount,
+                Currency = currencyLower.ToUpper(),
+                PaymentMethod = "card",
+                PaymentStatus = CommonStatus.PaymentPending,
+                TransactionId = session.Id,
+                PaymentGateway = "Stripe",
+                Notes = $"Checkout session created at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC",
+                ConsultationId = request.ConsultationId,
+                StripeSessionId = session.Id,
+                StripePaymentIntentId = session.PaymentIntentId,
+                Metadata = JsonSerializer.Serialize(metadata)
+            };
+
+            // Create pending payment record
+            var paymentRecord = await _paymentService.CreatePendingAsync(paymentRequest);
+
+            _logger.LogInformation(
+                "[{RequestId}] Stripe checkout session created successfully. SessionId: {SessionId}, PaymentId: {PaymentId}, Amount: {Amount} {Currency}, Consultation: {ConsultationId}",
+                requestId, session.Id, paymentRecord?.Id, request.Amount / 100.0, currencyLower.ToUpper(), request.ConsultationId);
+
+            var expiresAt = session.ExpiresAt;
+
+            // Return session URL and session ID to client
+            return Ok(new CheckoutSessionResponse
+            {
+                SessionId = session.Id,
+                Url = session.Url,
+                PaymentId = paymentRecord?.Id,
+                ExpiresAt = expiresAt,
+                Amount = request.Amount,
+                Currency = currencyLower.ToUpper(),
+                ConsultationId = request.ConsultationId
+            });
+        }
+        catch (StripeException ex)
+        {
+            _logger.LogError(ex, "[{RequestId}] Stripe error creating checkout session: {StripeErrorType} - {StripeErrorMessage}",
+                requestId, ex.StripeError?.Type, ex.StripeError?.Message ?? ex.Message);
+
+            var errorDetail = ex.StripeError?.Message switch
+            {
+                var msg when msg?.Contains("currency") == true => "Invalid currency or amount for the selected currency.",
+                var msg when msg?.Contains("minimum") == true => "Amount is below the minimum allowed for this currency.",
+                var msg when msg?.Contains("maximum") == true => "Amount exceeds the maximum allowed for this currency.",
+                _ => ex.StripeError?.Message ?? "An error occurred with the payment provider."
+            };
+
+            return StatusCode(500, new ApiErrorResponse
+            {
+                Status = 500,
+                Title = "Payment Provider Error",
+                Detail = errorDetail,
+                RequestId = requestId
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[{RequestId}] Error creating checkout session for user {UserId}", requestId, userId);
+            return StatusCode(500, new ApiErrorResponse
+            {
+                Status = 500,
+                Title = "Internal Server Error",
+                Detail = "An error occurred while creating the checkout session. Please try again later.",
                 RequestId = requestId
             });
         }

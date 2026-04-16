@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/context/AuthContext'
 import {
   getAppointmentsByDoctorId,
@@ -23,6 +24,7 @@ const PAGE_SIZE = 5
 
 export default function DoctorAppointmentsPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
 
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
@@ -177,20 +179,31 @@ export default function DoctorAppointmentsPage() {
 
                       {/* ================= STATUS DROPDOWN ADDED ================= */}
                       <td>
-                        <select
-                          value={a.appointmentStatus}
-                          onChange={(e) =>
-                            updateStatus(a.id, Number(e.target.value))
-                          }
-                          className="text-xs border rounded px-2 py-1"
-                        >
-                          <option value={0}>Scheduled</option>
-                          <option value={1}>Confirm</option>
-                          <option value={2}>Cancel</option>
-                          <option value={3}>Complete</option>
-                          <option value={4}>Reschedule</option>
-                          <option value={5}>No Show</option>
-                        </select>
+                        <div className="flex items-center gap-2">
+                          {(a.appointmentStatus === 0 || a.appointmentStatus === 1) && (
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/telemedicine/${a.id}`)}
+                              className="text-xs border rounded px-2 py-1 bg-teal-50 border-teal-200 text-teal-700 hover:bg-teal-100"
+                            >
+                              Start Call
+                            </button>
+                          )}
+                          <select
+                            value={a.appointmentStatus}
+                            onChange={(e) =>
+                              updateStatus(a.id, Number(e.target.value))
+                            }
+                            className="text-xs border rounded px-2 py-1"
+                          >
+                            <option value={0}>Scheduled</option>
+                            <option value={1}>Confirm</option>
+                            <option value={2}>Cancel</option>
+                            <option value={3}>Complete</option>
+                            <option value={4}>Reschedule</option>
+                            <option value={5}>No Show</option>
+                          </select>
+                        </div>
                       </td>
 
                     </tr>

@@ -10,6 +10,7 @@ public enum CommonStatus
 
     PaymentCompleted = 10,
     PaymentFailed = 11,
+    PaymentPending = 15,
     RefundPending = 20,
     RefundCompleted = 21,
     AppointmentScheduled = 30,

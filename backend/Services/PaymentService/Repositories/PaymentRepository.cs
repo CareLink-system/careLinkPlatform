@@ -76,50 +76,57 @@ public class PaymentRepository : IPaymentRepository
 
     public async Task<PaginatedResponse<Payment>> GetPaginatedAsync(int page, int pageSize, string? status, DateTime? fromDate, DateTime? toDate, string userId, string userRole)
     {
-        var query = _db.Payments.Where(p => !p.IsDeleted);
-
-        // Apply authorization filters
-        if (userRole != "Admin")
+        try
         {
-            if (userRole == "Patient")
+            var query = _db.Payments.Where(p => !p.IsDeleted);
+
+            // Apply authorization filters
+            if (userRole != "Admin")
             {
-                query = query.Where(p => p.PatientId == userId);
+                if (userRole == "Patient")
+                {
+                    query = query.Where(p => p.PatientId == userId);
+                }
+                else if (userRole == "Doctor")
+                {
+                    query = query.Where(p => p.DoctorId == userId);
+                }
             }
-            else if (userRole == "Doctor")
+
+            if (!string.IsNullOrEmpty(status))
             {
-                query = query.Where(p => p.DoctorId == userId);
+                query = query.Where(p => p.Status.ToString() == status);
             }
+
+            if (fromDate.HasValue)
+            {
+                query = query.Where(p => p.CreatedAt >= fromDate.Value);
+            }
+
+            if (toDate.HasValue)
+            {
+                query = query.Where(p => p.CreatedAt <= toDate.Value);
+            }
+
+            var totalCount = await query.CountAsync();
+            var items = await query
+                .OrderByDescending(p => p.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return new PaginatedResponse<Payment>
+            {
+                Items = items,
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalCount
+            };
         }
-
-        if (!string.IsNullOrEmpty(status))
+        catch(Exception ex)
         {
-            query = query.Where(p => p.Status.ToString() == status);
+            throw new KeyNotFoundException(ex.Message);
         }
-
-        if (fromDate.HasValue)
-        {
-            query = query.Where(p => p.CreatedAt >= fromDate.Value);
-        }
-
-        if (toDate.HasValue)
-        {
-            query = query.Where(p => p.CreatedAt <= toDate.Value);
-        }
-
-        var totalCount = await query.CountAsync();
-        var items = await query
-            .OrderByDescending(p => p.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
-
-        return new PaginatedResponse<Payment>
-        {
-            Items = items,
-            Page = page,
-            PageSize = pageSize,
-            TotalCount = totalCount
-        };
     }
 
     public async Task<PaymentSummaryDto> GetSummaryAsync(string userId, string userRole)
@@ -175,4 +182,35 @@ public class PaymentRepository : IPaymentRepository
     {
         return await _db.Database.BeginTransactionAsync();
     }
+
+    // ✅ NEW: Get payment by consultation ID
+    public async Task<Payment?> GetByConsultationIdAsync(int consultationId)
+    {
+        return await _db.Payments
+            .Where(p => !p.IsDeleted && p.ConsultationId == consultationId)
+            .FirstOrDefaultAsync();
+    }
+
+    // ✅ NEW: Get payment by Stripe session ID
+    public async Task<Payment?> GetByStripeSessionIdAsync(string stripeSessionId)
+    {
+        if (string.IsNullOrWhiteSpace(stripeSessionId))
+            return null;
+
+        return await _db.Payments
+            .Where(p => !p.IsDeleted && p.StripeSessionId == stripeSessionId)
+            .FirstOrDefaultAsync();
+    }
+
+    // ✅ NEW: Get payment by Stripe payment intent ID
+    public async Task<Payment?> GetByStripePaymentIntentIdAsync(string paymentIntentId)
+    {
+        if (string.IsNullOrWhiteSpace(paymentIntentId))
+            return null;
+
+        return await _db.Payments
+            .Where(p => !p.IsDeleted && p.StripePaymentIntentId == paymentIntentId)
+            .FirstOrDefaultAsync();
+    }
+
 }

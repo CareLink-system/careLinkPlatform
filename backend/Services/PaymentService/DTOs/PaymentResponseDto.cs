@@ -17,6 +17,10 @@ public class PaymentResponseDto
     public DateTime CreatedAt { get; set; }
     public DateTime? PaidAt { get; set; }
     public string? Notes { get; set; }
+    // New fields
+    public int? ConsultationId { get; set; }
+    public string? StripeSessionId { get; set; }
+    public string? StripePaymentIntentId { get; set; }
 }
 
 public class PaginatedResponse<T>
@@ -59,13 +63,4 @@ public class PaymentSummaryDto
     public Dictionary<string, int> CountByStatus { get; set; } = new();
     public decimal ThisMonthTotal { get; set; }
     public int ThisMonthCount { get; set; }
-}
-
-public class PaymentRefundedEvent
-{
-    public int PaymentId { get; set; }
-    public int AppointmentId { get; set; }
-    public decimal Amount { get; set; }
-    public string Reason { get; set; } = string.Empty;
-    public DateTime RefundedAt { get; set; }
 }
