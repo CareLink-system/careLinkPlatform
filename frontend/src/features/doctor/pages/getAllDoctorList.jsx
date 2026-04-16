@@ -87,17 +87,17 @@ export default function GetAllDoctorList() {
     <div className="max-w-7xl mx-auto p-6 space-y-8">
 
       {/* ================= HEADER ================= */}
-      <div className="bg-gradient-to-r from-[#1649FF] to-[#06b6d4] text-white p-8 rounded-3xl shadow-xl flex flex-col md:flex-row md:items-center md:justify-between">
+      <div className="bg-gradient-to-r from-[#8dd9e4] to-[#4B9AA8] text-slate-900 p-8 rounded-3xl shadow-xl flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
             Find Your Doctor
           </h1>
-          <p className="text-sm opacity-80 mt-1">
+          <p className="text-sm text-slate-700 mt-1">
             Search, explore, and book appointments easily
           </p>
         </div>
 
-        <div className="mt-4 md:mt-0 text-sm opacity-80">
+        <div className="mt-4 md:mt-0 text-sm text-slate-700">
           {filtered.length} doctors available
         </div>
       </div>
@@ -111,7 +111,7 @@ export default function GetAllDoctorList() {
             placeholder="🔍 Search doctor name..."
             value={searchName}
             onChange={(e) => setSearchName(e.target.value)}
-            className="border p-3 pl-4 rounded-xl w-full focus:ring-2 focus:ring-blue-400 outline-none"
+            className="border p-3 pl-4 rounded-xl w-full focus:ring-2 focus:ring-[#6EC7D4] outline-none"
           />
         </div>
 
@@ -121,7 +121,7 @@ export default function GetAllDoctorList() {
             placeholder="🩺 Filter by speciality..."
             value={speciality}
             onChange={(e) => setSpeciality(e.target.value)}
-            className="border p-3 pl-4 rounded-xl w-full focus:ring-2 focus:ring-blue-400 outline-none"
+            className="border p-3 pl-4 rounded-xl w-full focus:ring-2 focus:ring-[#6EC7D4] outline-none"
           />
         </div>
       </div>
@@ -150,27 +150,22 @@ export default function GetAllDoctorList() {
                 {/* TOP */}
                 <div className="space-y-3">
 
-                  {/* Avatar + Name */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 flex items-center justify-center text-white font-bold">
-                      {doctorName.charAt(0)}
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-bold text-gray-800">
-                        Dr. {doctorName}
-                      </h2>
-                      <p className="text-xs text-gray-400">
-                        {doc.user?.email || 'No email'}
-                      </p>
-                    </div>
+                  {/* Name */}
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-800">
+                      Dr. {doctorName}
+                    </h2>
+                    <p className="text-xs text-gray-400">
+                      {doc.user?.email || 'No email'}
+                    </p>
                   </div>
 
                   {/* Tags */}
                   <div className="flex flex-wrap gap-2">
-                    <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
+                    <span className="text-xs bg-cyan-100 text-cyan-700 px-2 py-1 rounded-full">
                       {doc.specializationId || 'General'}
                     </span>
-                    <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">
+                    <span className="text-xs bg-teal-100 text-teal-700 px-2 py-1 rounded-full">
                       {doc.department || 'General'}
                     </span>
                   </div>
@@ -200,7 +195,7 @@ export default function GetAllDoctorList() {
 
                     navigate(`/doctor/${doctorId}/availability`)
                   }}
-                  className="mt-6 w-full bg-gradient-to-r from-[#1649FF] to-[#06b6d4] text-white py-2.5 rounded-xl font-semibold shadow-md hover:shadow-lg hover:scale-[1.03] active:scale-[0.98] transition"
+                  className="mt-6 w-full bg-gradient-to-r from-[#4B9AA8] to-[#6EC7D4] text-white py-2.5 rounded-xl font-semibold shadow-md hover:shadow-lg hover:scale-[1.03] active:scale-[0.98] transition"
                 >
                   View Availability
                 </button>
