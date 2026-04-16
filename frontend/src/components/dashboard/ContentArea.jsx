@@ -89,8 +89,15 @@ export default function ContentArea() {
       }
 
       setAppointments(Array.isArray(aptRes.data) ? aptRes.data : [])
-      setNearbyDoctors(Array.isArray(nearbyRes.data) ? nearbyRes.data : [])
-      setRecommendedDoctors(Array.isArray(recRes.data) ? recRes.data : [])
+      const nearbyArr = Array.isArray(nearbyRes.data) ? nearbyRes.data : []
+      const recArr = Array.isArray(recRes.data) ? recRes.data : []
+
+      // debug: ensure arrays look correct
+      // eslint-disable-next-line no-console
+      console.debug('Dashboard loaded: nearby count=', nearbyArr.length, 'recommended count=', recArr.length)
+
+      setNearbyDoctors(nearbyArr)
+      setRecommendedDoctors(recArr)
 
       setErrors({
         user: userRes.error || '',
@@ -144,17 +151,10 @@ export default function ContentArea() {
   const handleProfileAction = (action) => {
     setIsProfileMenuOpen(false)
     if (action === 'profile') {
-      navigate('/profile')
+      navigate('/patient-profile')
       return
     }
-    if (action === 'settings') {
-      toast.info('User management', { description: 'Account management panel is coming soon.' })
-      return
-    }
-    if (action === 'password') {
-      navigate('/auth/change-password')
-      return
-    }
+    
     if (action === 'logout') {
       logout()
       navigate('/auth/login')
@@ -239,8 +239,6 @@ export default function ContentArea() {
             {isProfileMenuOpen && (
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="absolute right-0 top-[58px] z-40 w-full sm:w-[240px] bg-white border border-slate-200 rounded-2xl shadow-xl p-2">
                 <button onClick={() => handleProfileAction('profile')} className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-sm">My Profile</button>
-                <button onClick={() => handleProfileAction('settings')} className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-sm">User Management</button>
-                <button onClick={() => handleProfileAction('password')} className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-sm">Change Password</button>
                 <div className="h-px bg-slate-100 my-1" />
                 <button onClick={() => handleProfileAction('logout')} className="w-full text-left px-3 py-2 rounded-lg hover:bg-red-50 text-red-600 text-sm">Logout</button>
               </motion.div>
@@ -292,11 +290,11 @@ export default function ContentArea() {
               </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {filteredNearby.length === 0 ? (
+                {Array.isArray(filteredNearby) && filteredNearby.length === 0 ? (
                   <EmptyCard title="No nearby doctors" message={errors.nearby || (searchQuery ? 'No doctors matched your search.' : 'Looks like there are no nearby doctors at the moment.')} />
                 ) : (
                   filteredNearby.map((doc, i) => (
-                    <div key={i} className="bg-white rounded-[1.2rem] md:rounded-[1.5rem] p-4 md:p-5 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all cursor-pointer">
+                    <div key={doc.id || doc.name || i} className="bg-white rounded-[1.2rem] md:rounded-[1.5rem] p-4 md:p-5 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all cursor-pointer">
                       <div className="mb-4">
                         <h4 className="text-sm font-bold text-slate-900 truncate max-w-[120px]">{doc.name}</h4>
                         <p className="text-[11px] text-slate-500 mt-0.5">{doc.specialty}</p>
@@ -326,11 +324,11 @@ export default function ContentArea() {
               </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {filteredRecommended.length === 0 ? (
+                {Array.isArray(filteredRecommended) && filteredRecommended.length === 0 ? (
                   <EmptyCard title="No recommendations yet" message={errors.recommended || (searchQuery ? 'No recommendations matched your search.' : 'Looks like we do not have recommendations for you yet.')} />
                 ) : (
                   filteredRecommended.map((doc, i) => (
-                    <div key={i} className="bg-white rounded-[1.5rem] p-5 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col hover:border-cyan-100 transition-colors">
+                    <div key={doc.id || doc.name || i} className="bg-white rounded-[1.5rem] p-5 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col hover:border-cyan-100 transition-colors">
                       <div className="mb-5 min-w-0">
                         <h4 className="text-sm font-extrabold text-slate-900 truncate">{doc.name}</h4>
                         <span className="inline-block mt-1 px-2 py-0.5 bg-cyan-50/80 text-cyan-600 rounded text-[10px] font-bold tracking-wide truncate max-w-full">{doc.specialty}</span>
