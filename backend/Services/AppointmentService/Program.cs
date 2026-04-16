@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using AppointmentService.Data;
 using DotNetEnv;
-using SharedConfiguration.Extensions;
+// using SharedConfiguration.Extensions;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 using AppointmentService.DependencyInjection;
@@ -31,7 +31,7 @@ var builder = WebApplication.CreateBuilder(args);
 // =====================
 // SHARED CONFIG
 // =====================
-builder.AddSharedEnvironmentConfiguration();
+//builder.AddSharedEnvironmentConfiguration();
 
 // =====================
 // 🔥 FIX: IHttpContextAccessor (IMPORTANT)
