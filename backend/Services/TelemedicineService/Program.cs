@@ -6,7 +6,7 @@ using Microsoft.OpenApi.Models;
 using System.Reflection;
 using System.Text;
 using Swashbuckle.AspNetCore.SwaggerGen;
-using SharedConfiguration.Extensions;
+//using SharedConfiguration.Extensions;
 using TelemedicineService.Data;
 using TelemedicineService.Clients;
 using TelemedicineService.Filters;
@@ -27,7 +27,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 if (string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("DefaultConnection")))
 {
-    builder.AddSharedEnvironmentConfiguration();
+    //builder.AddSharedEnvironmentConfiguration();
 }
 
 // Add CORS (allow the frontend at http://localhost:5173)
