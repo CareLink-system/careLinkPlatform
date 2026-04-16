@@ -349,7 +349,17 @@ export default function ContentArea() {
                         </div>
                       </div>
                       
-                      <button className="mt-auto w-full py-2.5 bg-[#4B9AA8] hover:bg-[#3c828e] text-white text-xs font-bold rounded-xl transition-all active:scale-95 shadow-sm shadow-[#4B9AA8]/20">
+                      <button
+                        onClick={() => {
+                          const doctorId = doc.id || doc._id || doc?.id
+                          if (!doctorId) {
+                            toast.error('Unable to book: missing doctor id')
+                            return
+                          }
+                          navigate(`/doctor/${doctorId}/availability`)
+                        }}
+                        className="mt-auto w-full py-2.5 bg-[#4B9AA8] hover:bg-[#3c828e] text-white text-xs font-bold rounded-xl transition-all active:scale-95 shadow-sm shadow-[#4B9AA8]/20"
+                      >
                         Book an appointment
                       </button>
                     </div>
