@@ -27,7 +27,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Shared\SharedConfiguration\SharedConfiguration.csproj" />
+	  <!--For Deployment-->
+	  <!--<ProjectReference Include="..\..\Shared\SharedConfiguration\SharedConfiguration.csproj" />-->
   </ItemGroup>
 
 </Project>
