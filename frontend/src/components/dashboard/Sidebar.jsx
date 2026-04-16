@@ -50,12 +50,9 @@ export default function Sidebar({ close }) {
       navItems: [
         { to: '/doctor-dashboard', icon: '⊞', label: 'Dashboard' },
         { to: '/doctor-dashboard', icon: '📅', label: 'Schedule' },
-        { to: '/patients', icon: '👥', label: 'Patients' },
         { to: '/doctor/appointments', icon: '📋', label: 'Appointments' },
         { to: '/all-medical-reports', icon: '📈', label: 'Medical Reports'},
         { to: '/prescriptions', icon: '📋', label: 'Prescriptions' },
-        { to: '/reports', icon: '📈', label: 'Reports' },
-        { to: '/help', icon: '❓', label: 'Support' },
         { to: '/doctor-profile', icon: '👤', label: 'My Profile' },
         { to: '/slots/manage', icon: '⏰', label: 'Manage Slots' },
       ],

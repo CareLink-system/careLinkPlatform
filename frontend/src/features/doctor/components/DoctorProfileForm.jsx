@@ -1,5 +1,12 @@
 import React, { useState } from 'react'
 
+const Input = (props) => (
+  <input
+    {...props}
+    className="w-full h-11 px-3 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:border-[#1649FF] focus:ring-2 focus:ring-[#1649FF]/20"
+  />
+)
+
 export default function DoctorProfileForm({ initialData = {}, onSubmit, isEdit }) {
   const [form, setForm] = useState({
     doctorName: initialData.doctorName || '',
@@ -25,13 +32,6 @@ export default function DoctorProfileForm({ initialData = {}, onSubmit, isEdit }
     })
   }
 
-  const Input = (props) => (
-    <input
-      {...props}
-      className="w-full h-11 px-3 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:border-[#1649FF] focus:ring-2 focus:ring-[#1649FF]/20"
-    />
-  )
-
   return (
     <div className="flex justify-center w-full">
       <form
@@ -42,7 +42,6 @@ export default function DoctorProfileForm({ initialData = {}, onSubmit, isEdit }
           {isEdit ? 'Update Doctor Profile' : 'Create Doctor Profile'}
         </h2>
 
-        {/* ✅ NEW FIELD */}
         <Input
           name="doctorName"
           value={form.doctorName}
