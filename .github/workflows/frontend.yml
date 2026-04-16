@@ -15,7 +15,7 @@ on:
       - "frontend/**"
 
 env:
-  NODE_VERSION: "18.x"
+  NODE_VERSION: "22.x"
 
 jobs:
   build-and-test:
@@ -44,13 +44,13 @@ jobs:
 
       - name: Build Application
         working-directory: ./frontend
-        run: npm run build
+        run: node --trace-uncaught --trace-warnings ./node_modules/vite/bin/vite.js build
         env:
           VITE_API_BASE_URL: "http://api.example.com"
 
       - name: Run Tests
         working-directory: ./frontend
-        run: npm test -- --run
+        run: npm run test --if-present -- --run
         continue-on-error: true
 
       - name: Upload Build Artifacts
