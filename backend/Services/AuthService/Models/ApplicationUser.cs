@@ -16,6 +16,7 @@ public class ApplicationUser : IdentityUser<Guid>
     public string? RefreshToken { get; set; }
     public DateTime? RefreshTokenExpireTime { get; set; }
 
+    public int status { get; set; }
     public string? LastLoginIp { get; set; }
     public DateTime? LastLoginAt { get; set; }
 
