@@ -1,15 +1,27 @@
 import React, { useEffect, useRef, useState } from 'react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
-import { getAgoraToken } from '../api/telemedicine';
+import { endSession, getAgoraToken, postDoctorSessionNote, postSessionMessage, startSession } from '../api/telemedicine';
+import { getAppointmentById } from '../features/appointment/api/appointmentApi';
+import { getDoctorByUserId } from '../features/doctor/api/doctorApi';
+import { createPrescription } from '../features/prescription/api/prescriptionApi';
 
 export default function VideoRoom({ appointmentId, appId: propAppId }) {
   const appId = propAppId || import.meta.env.VITE_AGORA_APP_ID;
   const [status, setStatus] = useState('Connecting...');
+  const [cameraHint, setCameraHint] = useState('');
   const [joined, setJoined] = useState(false);
   const [mutedAudio, setMutedAudio] = useState(false);
   const [mutedVideo, setMutedVideo] = useState(false);
   
   const [chatMessage, setChatMessage] = useState('');
+  const [doctorNote, setDoctorNote] = useState('');
+  const [doctorNoteSaving, setDoctorNoteSaving] = useState(false);
+  const [doctorNoteStatus, setDoctorNoteStatus] = useState('');
+  const [doctorProfileId, setDoctorProfileId] = useState(null);
+  const [appointmentDetails, setAppointmentDetails] = useState(null);
+  const [prescriptionSaving, setPrescriptionSaving] = useState(false);
+  const [prescriptionStatus, setPrescriptionStatus] = useState('');
+  const [prescriptionForm, setPrescriptionForm] = useState({ diagnosis: '', medicines: '', notes: '' });
   const [messages, setMessages] = useState([{ sender: 'System', text: 'Chat started.', time: new Date().toLocaleTimeString() }]);
 
   const clientRef = useRef(null);
@@ -18,6 +30,77 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
   const remotePlayerHostRef = useRef(null);
   const [hasRemoteVideo, setHasRemoteVideo] = useState(false);
 
+  const auth = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('carelink.auth') || 'null');
+    } catch {
+      return null;
+    }
+  })();
+  const currentRole = auth?.user?.role || 'Patient';
+  const isDoctor = String(currentRole).toLowerCase() === 'doctor';
+
+  const getCameraErrorHint = (err) => {
+    const message = String(err?.message || '').toLowerCase();
+    const code = String(err?.code || '').toUpperCase();
+
+    if (code.includes('NOT_ALLOWED') || code.includes('PERMISSION') || message.includes('permission') || message.includes('denied')) {
+      return 'Camera access was blocked by the browser. Allow camera/microphone access in the address bar or browser site settings, then refresh the page.';
+    }
+
+    if (code.includes('NOT_READABLE') || message.includes('not readable') || message.includes('no camera') || message.includes('device')) {
+      return 'No webcam was found or the camera is in use by another app. Close other camera apps or choose a different camera in browser settings.';
+    }
+
+    if (typeof window !== 'undefined' && !window.isSecureContext) {
+      return 'Camera access requires a secure context. Open the app over HTTPS or localhost.';
+    }
+
+    return 'Check browser camera permissions and confirm a webcam is available.';
+  };
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadDoctorProfile() {
+      if (!isDoctor || !auth?.user?.id) return;
+      const doctorRes = await getDoctorByUserId(auth.user.id);
+      if (!active) return;
+
+      if (doctorRes.data?.id) {
+        setDoctorProfileId(doctorRes.data.id);
+      } else {
+        setPrescriptionStatus('Doctor profile not found. Unable to issue prescription.');
+      }
+    }
+
+    loadDoctorProfile();
+    return () => {
+      active = false;
+    };
+  }, [auth?.user?.id, isDoctor]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadAppointment() {
+      if (!appointmentId) return;
+
+      const result = await getAppointmentById(appointmentId);
+      if (!active) return;
+
+      if (result.data) {
+        setAppointmentDetails(result.data);
+      }
+    }
+
+    loadAppointment();
+
+    return () => {
+      active = false;
+    };
+  }, [appointmentId]);
+
   useEffect(() => {
     if (!appointmentId || !appId) return;
     let mounted = true;
@@ -25,6 +108,7 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
 
     async function init() {
       try {
+        await startSession(appointmentId);
         const { token, channelName, uid } = await getAgoraToken(appointmentId);
         const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
         clientRef.current = client;
@@ -78,6 +162,7 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
 
         const [mic, cam] = await AgoraRTC.createMicrophoneAndCameraTracks();
         localTracksRef.current = { audioTrack: mic, videoTrack: cam };
+        setCameraHint('');
 
         if (localVideoRef.current) {
           localVideoRef.current.innerHTML = '';
@@ -92,7 +177,9 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
         setJoined(true);
       } catch (err) {
         console.error('Agora init error', err);
-        setStatus('Connection failed.');
+        const apiError = err?.response?.data?.error || err?.response?.data?.detail || err?.message;
+        setStatus(apiError ? `Connection failed: ${apiError}` : 'Connection failed.');
+        setCameraHint(getCameraErrorHint(err));
       }
     }
 
@@ -133,14 +220,79 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
     }
     setHasRemoteVideo(false);
     await clientRef.current?.leave();
+    try {
+      await endSession(appointmentId);
+    } catch (error) {
+      console.warn('Unable to mark telemedicine session ended', error);
+    }
     setJoined(false); setStatus('Call Ended.');
   };
 
-  const sendChat = (e) => {
+  const sendChat = async (e) => {
     e.preventDefault();
     if (!chatMessage.trim()) return;
-    setMessages([...messages, { sender: 'You', text: chatMessage, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }]);
+    const msg = chatMessage.trim();
+    try {
+      await postSessionMessage(appointmentId, msg);
+    } catch (error) {
+      console.warn('Failed to persist session message', error);
+    }
+    setMessages((prev) => [
+      ...prev,
+      { sender: 'You', text: msg, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }
+    ]);
     setChatMessage('');
+  };
+
+  const saveDoctorNote = async () => {
+    if (!doctorNote.trim()) return;
+    setDoctorNoteSaving(true);
+    setDoctorNoteStatus('');
+    try {
+      await postDoctorSessionNote(appointmentId, doctorNote.trim());
+      setDoctorNote('');
+      setDoctorNoteStatus('Consultation note saved');
+    } catch {
+      setDoctorNoteStatus('Could not save note');
+    } finally {
+      setDoctorNoteSaving(false);
+    }
+  };
+
+  const submitPrescription = async () => {
+    if (!isDoctor) return;
+    if (!doctorProfileId || !appointmentDetails?.patientId) {
+      setPrescriptionStatus('Missing doctor/patient information for prescription.');
+      return;
+    }
+
+    if (!prescriptionForm.diagnosis.trim() || !prescriptionForm.medicines.trim()) {
+      setPrescriptionStatus('Diagnosis and medicines are required.');
+      return;
+    }
+
+    setPrescriptionSaving(true);
+    setPrescriptionStatus('');
+
+    const payload = {
+      doctorId: doctorProfileId,
+      patientId: appointmentDetails.patientId,
+      appointmentId: Number(appointmentId),
+      diagnosis: prescriptionForm.diagnosis.trim(),
+      medicines: prescriptionForm.medicines.trim(),
+      notes: prescriptionForm.notes.trim() || null,
+    };
+
+    const result = await createPrescription(payload);
+
+    if (result.data) {
+      setPrescriptionForm({ diagnosis: '', medicines: '', notes: '' });
+      setPrescriptionStatus('Prescription issued successfully. It will appear on the prescriptions page.');
+    } else {
+      setPrescriptionStatus(result.error || 'Failed to issue prescription.');
+    }
+
+    setPrescriptionSaving(false);
   };
 
   return (
@@ -151,6 +303,11 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
       {/* Changed: Dark background, flex-grow, min-height for better aspect ratio */}
       <div className="flex-1 bg-slate-900 rounded-2xl border border-slate-800 shadow-lg relative flex flex-col overflow-hidden min-h-[500px] lg:min-h-[65vh]">
         {status && !joined && <div className="absolute inset-0 flex items-center justify-center text-slate-300 animate-pulse">{status}</div>}
+        {cameraHint && !joined && (
+          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 max-w-[90%] rounded-xl border border-amber-300 bg-amber-50/95 px-4 py-3 text-sm text-amber-900 shadow-lg backdrop-blur">
+            {cameraHint}
+          </div>
+        )}
 
         <div className="w-full h-full relative flex items-center justify-center">
           <div ref={remotePlayerHostRef} className="absolute inset-0" />
@@ -210,6 +367,65 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
           </button>
         </form>
+
+        {isDoctor && (
+          <div className="p-3 border-t border-slate-100 bg-slate-50">
+            <div className="text-xs font-semibold text-slate-700 mb-2">Private consultation note</div>
+            <textarea
+              value={doctorNote}
+              onChange={(e) => setDoctorNote(e.target.value)}
+              placeholder="Add doctor-only consultation notes"
+              className="w-full min-h-[72px] rounded-lg border border-slate-200 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4B9AA8]/30"
+            />
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={saveDoctorNote}
+                disabled={doctorNoteSaving || !doctorNote.trim()}
+                className="px-3 py-1.5 text-xs rounded-md bg-[#4B9AA8] text-white disabled:opacity-60"
+              >
+                {doctorNoteSaving ? 'Saving...' : 'Save note'}
+              </button>
+              {doctorNoteStatus && <span className="text-xs text-slate-500">{doctorNoteStatus}</span>}
+            </div>
+          </div>
+        )}
+
+        {isDoctor && (
+          <div className="p-3 border-t border-slate-100 bg-white">
+            <div className="text-xs font-semibold text-slate-700 mb-2">Issue prescription</div>
+            <input
+              type="text"
+              value={prescriptionForm.diagnosis}
+              onChange={(e) => setPrescriptionForm((prev) => ({ ...prev, diagnosis: e.target.value }))}
+              placeholder="Diagnosis"
+              className="w-full mb-2 rounded-lg border border-slate-200 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4B9AA8]/30"
+            />
+            <textarea
+              value={prescriptionForm.medicines}
+              onChange={(e) => setPrescriptionForm((prev) => ({ ...prev, medicines: e.target.value }))}
+              placeholder="Medicines and dosage"
+              className="w-full min-h-[70px] mb-2 rounded-lg border border-slate-200 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4B9AA8]/30"
+            />
+            <textarea
+              value={prescriptionForm.notes}
+              onChange={(e) => setPrescriptionForm((prev) => ({ ...prev, notes: e.target.value }))}
+              placeholder="Additional notes (optional)"
+              className="w-full min-h-[60px] rounded-lg border border-slate-200 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4B9AA8]/30"
+            />
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={submitPrescription}
+                disabled={prescriptionSaving}
+                className="px-3 py-1.5 text-xs rounded-md bg-[#4B9AA8] text-white disabled:opacity-60"
+              >
+                {prescriptionSaving ? 'Issuing...' : 'Issue prescription'}
+              </button>
+              {prescriptionStatus && <span className="text-xs text-slate-500 text-right">{prescriptionStatus}</span>}
+            </div>
+          </div>
+        )}
       </div>
 
     </div>

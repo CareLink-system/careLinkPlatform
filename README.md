@@ -651,10 +651,12 @@ userName - dinildulnethNew@gmail.com
 Password - Dinildulnet123!@#
 
 Patient
+id - 019d8544-8588-7a4b-ae4c-ad54320fe9b3
 userName - dinildulneth123@gmail.com
 Password - Dinildulnet123!@#
 
 Admin
+id - 019d8546-510a-7101-b485-7af06f60dbd8
 userName - dinildulnethl@gmail.com
 Password - Dinildulnet123!@#
 

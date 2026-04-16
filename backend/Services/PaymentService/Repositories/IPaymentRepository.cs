@@ -16,4 +16,9 @@ public interface IPaymentRepository
     
     // ✅ ADD THIS: For transactions in Service layer
     Task<IDbContextTransaction> BeginTransactionAsync();
+
+    // NEW METHODS
+    Task<Payment?> GetByConsultationIdAsync(int consultationId);
+    Task<Payment?> GetByStripeSessionIdAsync(string stripeSessionId);
+    Task<Payment?> GetByStripePaymentIntentIdAsync(string paymentIntentId);
 }
