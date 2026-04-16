@@ -4,7 +4,7 @@ using DoctorService.Filters;
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using SharedConfiguration.Extensions;
+// using SharedConfiguration.Extensions;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Reflection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -31,7 +31,8 @@ else
 var builder = WebApplication.CreateBuilder(args);
 
 // Apply shared environment-based configuration
-builder.AddSharedEnvironmentConfiguration();
+//builder.AddSharedEnvironmentConfiguration();
+
 builder.Services.AddDoctorDependencies();
 
 var jwtKey = builder.Configuration["Jwt:Key"];
