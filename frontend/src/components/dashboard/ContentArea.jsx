@@ -89,8 +89,15 @@ export default function ContentArea() {
       }
 
       setAppointments(Array.isArray(aptRes.data) ? aptRes.data : [])
-      setNearbyDoctors(Array.isArray(nearbyRes.data) ? nearbyRes.data : [])
-      setRecommendedDoctors(Array.isArray(recRes.data) ? recRes.data : [])
+      const nearbyArr = Array.isArray(nearbyRes.data) ? nearbyRes.data : []
+      const recArr = Array.isArray(recRes.data) ? recRes.data : []
+
+      // debug: ensure arrays look correct
+      // eslint-disable-next-line no-console
+      console.debug('Dashboard loaded: nearby count=', nearbyArr.length, 'recommended count=', recArr.length)
+
+      setNearbyDoctors(nearbyArr)
+      setRecommendedDoctors(recArr)
 
       setErrors({
         user: userRes.error || '',
@@ -144,17 +151,10 @@ export default function ContentArea() {
   const handleProfileAction = (action) => {
     setIsProfileMenuOpen(false)
     if (action === 'profile') {
-      navigate('/profile')
+      navigate('/patient-profile')
       return
     }
-    if (action === 'settings') {
-      toast.info('User management', { description: 'Account management panel is coming soon.' })
-      return
-    }
-    if (action === 'password') {
-      navigate('/auth/change-password')
-      return
-    }
+    
     if (action === 'logout') {
       logout()
       navigate('/auth/login')
@@ -239,8 +239,6 @@ export default function ContentArea() {
             {isProfileMenuOpen && (
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="absolute right-0 top-[58px] z-40 w-full sm:w-[240px] bg-white border border-slate-200 rounded-2xl shadow-xl p-2">
                 <button onClick={() => handleProfileAction('profile')} className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-sm">My Profile</button>
-                <button onClick={() => handleProfileAction('settings')} className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-sm">User Management</button>
-                <button onClick={() => handleProfileAction('password')} className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-sm">Change Password</button>
                 <div className="h-px bg-slate-100 my-1" />
                 <button onClick={() => handleProfileAction('logout')} className="w-full text-left px-3 py-2 rounded-lg hover:bg-red-50 text-red-600 text-sm">Logout</button>
               </motion.div>
@@ -269,12 +267,7 @@ export default function ContentArea() {
                   <span className="md:hidden"> </span>Get your consultation online.
                 </h2>
                 <p className="text-white/80 text-[10px] sm:text-xs md:text-sm mb-4 md:mb-6 font-medium tracking-wide">Audio / text / video / in-person</p>
-                <div className="flex items-center gap-2 md:gap-4">
-                  <div className="flex -space-x-2 md:-space-x-3">
-                    <img src="https://i.pravatar.cc/40?img=1" className="w-6 h-6 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-full border-2 border-[#7DA1A9] object-cover" alt="doc" />
-                    <img src="https://i.pravatar.cc/40?img=2" className="w-6 h-6 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-full border-2 border-[#7DA1A9] object-cover" alt="doc" />
-                    <img src="https://i.pravatar.cc/40?img=3" className="w-6 h-6 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-full border-2 border-[#7DA1A9] object-cover" alt="doc" />
-                  </div>
+                <div className="inline-flex items-center rounded-full bg-white/20 px-3 py-1">
                   <span className="text-white text-[9px] sm:text-[10px] md:text-xs font-semibold">+180 doctors online</span>
                 </div>
               </div>
@@ -286,21 +279,25 @@ export default function ContentArea() {
             <motion.div variants={itemVariants} className="flex flex-col gap-4">
               <div className="flex items-center justify-between px-1">
                 <h3 className="text-lg md:text-xl font-bold text-slate-900 tracking-tight">Nearby Doctors</h3>
-                {nearbyDoctors.length > 0 && <a href="#" className="text-sm font-semibold text-emerald-500 hover:text-emerald-600 transition-colors">View All {'>'}</a>}
+                {nearbyDoctors.length > 0 && (
+                  <button
+                    onClick={() => navigate('/find')}
+                    className="text-sm font-semibold text-emerald-500 hover:text-emerald-600 transition-colors"
+                  >
+                    View All {'>'}
+                  </button>
+                )}
               </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {filteredNearby.length === 0 ? (
+                {Array.isArray(filteredNearby) && filteredNearby.length === 0 ? (
                   <EmptyCard title="No nearby doctors" message={errors.nearby || (searchQuery ? 'No doctors matched your search.' : 'Looks like there are no nearby doctors at the moment.')} />
                 ) : (
                   filteredNearby.map((doc, i) => (
-                    <div key={i} className="bg-white rounded-[1.2rem] md:rounded-[1.5rem] p-4 md:p-5 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all cursor-pointer">
-                      <div className="flex items-center gap-3 mb-4">
-                        <img src={doc.image || `https://i.pravatar.cc/100?img=${i+10}`} className="w-10 h-10 md:w-12 md:h-12 rounded-[0.8rem] object-cover bg-slate-50" alt="Doctor" />
-                        <div>
-                          <h4 className="text-sm font-bold text-slate-900 truncate max-w-[120px]">{doc.name}</h4>
-                          <p className="text-[11px] text-slate-500 mt-0.5">{doc.specialty}</p>
-                        </div>
+                    <div key={doc.id || doc.name || i} className="bg-white rounded-[1.2rem] md:rounded-[1.5rem] p-4 md:p-5 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all cursor-pointer">
+                      <div className="mb-4">
+                        <h4 className="text-sm font-bold text-slate-900 truncate max-w-[120px]">{doc.name}</h4>
+                        <p className="text-[11px] text-slate-500 mt-0.5">{doc.specialty}</p>
                       </div>
                       <div className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -316,21 +313,25 @@ export default function ContentArea() {
             <motion.div variants={itemVariants} className="flex flex-col gap-4">
               <div className="flex items-center justify-between px-1">
                 <h3 className="text-lg md:text-xl font-bold text-slate-900 tracking-tight">Recommended Doctors</h3>
-                {recommendedDoctors.length > 0 && <a href="#" className="text-sm font-semibold text-emerald-500 hover:text-emerald-600 transition-colors">View All {'>'}</a>}
+                {recommendedDoctors.length > 0 && (
+                  <button
+                    onClick={() => navigate('/find')}
+                    className="text-sm font-semibold text-emerald-500 hover:text-emerald-600 transition-colors"
+                  >
+                    View All {'>'}
+                  </button>
+                )}
               </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {filteredRecommended.length === 0 ? (
+                {Array.isArray(filteredRecommended) && filteredRecommended.length === 0 ? (
                   <EmptyCard title="No recommendations yet" message={errors.recommended || (searchQuery ? 'No recommendations matched your search.' : 'Looks like we do not have recommendations for you yet.')} />
                 ) : (
                   filteredRecommended.map((doc, i) => (
-                    <div key={i} className="bg-white rounded-[1.5rem] p-5 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col hover:border-cyan-100 transition-colors">
-                      <div className="flex items-center gap-4 mb-5">
-                        <img src={doc.image || `https://i.pravatar.cc/100?img=${i+20}`} className="w-12 h-12 rounded-full object-cover bg-slate-50 border border-slate-100" alt="Doctor" />
-                        <div className="min-w-0">
-                          <h4 className="text-sm font-extrabold text-slate-900 truncate">{doc.name}</h4>
-                          <span className="inline-block mt-1 px-2 py-0.5 bg-cyan-50/80 text-cyan-600 rounded text-[10px] font-bold tracking-wide truncate max-w-full">{doc.specialty}</span>
-                        </div>
+                    <div key={doc.id || doc.name || i} className="bg-white rounded-[1.5rem] p-5 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col hover:border-cyan-100 transition-colors">
+                      <div className="mb-5 min-w-0">
+                        <h4 className="text-sm font-extrabold text-slate-900 truncate">{doc.name}</h4>
+                        <span className="inline-block mt-1 px-2 py-0.5 bg-cyan-50/80 text-cyan-600 rounded text-[10px] font-bold tracking-wide truncate max-w-full">{doc.specialty}</span>
                       </div>
                       
                       <div className="flex items-center justify-between mb-5 px-1">
@@ -346,7 +347,17 @@ export default function ContentArea() {
                         </div>
                       </div>
                       
-                      <button className="mt-auto w-full py-2.5 bg-[#4B9AA8] hover:bg-[#3c828e] text-white text-xs font-bold rounded-xl transition-all active:scale-95 shadow-sm shadow-[#4B9AA8]/20">
+                      <button
+                        onClick={() => {
+                          const doctorId = doc.id || doc._id || doc?.id
+                          if (!doctorId) {
+                            toast.error('Unable to book: missing doctor id')
+                            return
+                          }
+                          navigate(`/doctor/${doctorId}/availability`)
+                        }}
+                        className="mt-auto w-full py-2.5 bg-[#4B9AA8] hover:bg-[#3c828e] text-white text-xs font-bold rounded-xl transition-all active:scale-95 shadow-sm shadow-[#4B9AA8]/20"
+                      >
                         Book an appointment
                       </button>
                     </div>
@@ -363,7 +374,14 @@ export default function ContentArea() {
               
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg md:text-xl font-bold text-slate-900 tracking-tight">Upcoming Appointments</h3>
-                {appointments.length > 0 && <a href="#" className="text-xs font-semibold text-emerald-500 hover:text-emerald-600 transition-colors">View All {'>'}</a>}
+                {appointments.length > 0 && (
+                  <button
+                    onClick={() => navigate('/appointments')}
+                    className="text-xs font-semibold text-emerald-500 hover:text-emerald-600 transition-colors"
+                  >
+                    View All {'>'}
+                  </button>
+                )}
               </div>
 
               {/* Date Selector */}
