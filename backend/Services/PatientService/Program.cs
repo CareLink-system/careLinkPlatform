@@ -3,7 +3,7 @@ using PatientService.Filters;
 using PatientService;
 using Microsoft.EntityFrameworkCore;
 using DotNetEnv;
-using SharedConfiguration.Extensions;
+//using SharedConfiguration.Extensions;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -30,7 +30,7 @@ else
 var builder = WebApplication.CreateBuilder(args);
 
 // Shared environment-based configuration
-builder.AddSharedEnvironmentConfiguration();
+//builder.AddSharedEnvironmentConfiguration();
 
 // ---------------- JWT Authentication Setup ----------------
 var jwtKey = builder.Configuration["Jwt:Key"];
