@@ -8,7 +8,7 @@ using System.Text;
 using System.Reflection;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using ApiGateway.Filters;
-using SharedConfiguration.Extensions;
+// using SharedConfiguration.Extensions;
 using DotNetEnv;
 
 Console.WriteLine("Starting API Gateway.....");
@@ -42,7 +42,7 @@ else
 var builder = WebApplication.CreateBuilder(args);
 
 // Shared environment configuration (loads .env and config files)
-builder.AddSharedEnvironmentConfiguration();
+// builder.AddSharedEnvironmentConfiguration();
 
 // ── Controllers & Explorer ───────────────────────────────────────────────────
 builder.Services.AddControllers();
