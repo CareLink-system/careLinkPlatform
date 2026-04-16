@@ -1,7 +1,7 @@
 ﻿using DoctorService.DTOs;
 using DoctorService.Services.Interfaces;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace DoctorService.Controllers;
 
@@ -16,73 +16,64 @@ public class AvailabilityController : ControllerBase
         _availabilityService = availabilityService;
     }
 
-    [Authorize(Roles = "Doctor,Admin")]
+    // ================= CREATE =================
+    [Authorize(Roles = "Doctor")]
     [HttpPost]
     public async Task<IActionResult> CreateSlot([FromBody] CreateAvailabilitySlotDto dto)
     {
-        try
-        {
-            var result = await _availabilityService.CreateSlotAsync(dto, User.Identity?.Name ?? "system");
+        var result = await _availabilityService.CreateSlotAsync(dto, User.Identity?.Name);
 
-            if (result == null)
-                return NotFound(new { message = "Doctor not found." });
+        if (result == null)
+            return NotFound(new { message = "Doctor not found" });
 
-            return Ok(result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        return Ok(result);
     }
 
+    // ================= GET BY DOCTOR =================
     [AllowAnonymous]
     [HttpGet("doctor/{doctorId:int}")]
-    public async Task<IActionResult> GetSlotsByDoctorId(int doctorId)
+    public async Task<IActionResult> GetSlotsByDoctor(int doctorId)
     {
         var slots = await _availabilityService.GetSlotsByDoctorIdAsync(doctorId);
         return Ok(slots);
     }
 
+    // ================= GET BY ID =================
     [AllowAnonymous]
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetSlotById(int id)
+    public async Task<IActionResult> GetSlot(int id)
     {
         var slot = await _availabilityService.GetSlotByIdAsync(id);
 
         if (slot == null)
-            return NotFound(new { message = "Availability slot not found." });
+            return NotFound();
 
         return Ok(slot);
     }
 
-    [Authorize(Roles = "Doctor,Admin")]
+    // ================= UPDATE =================
+    [Authorize(Roles = "Doctor")]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> UpdateSlot(int id, [FromBody] UpdateAvailabilitySlotDto dto)
     {
-        try
-        {
-            var updatedSlot = await _availabilityService.UpdateSlotAsync(id, dto, User.Identity?.Name ?? "system");
+        var updated = await _availabilityService.UpdateSlotAsync(id, dto, User.Identity?.Name);
 
-            if (updatedSlot == null)
-                return NotFound(new { message = "Availability slot not found." });
+        if (updated == null)
+            return NotFound();
 
-            return Ok(updatedSlot);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+        return Ok(updated);
     }
 
-    [Authorize(Roles = "Doctor,Admin")]
+    // ================= DELETE =================
+    [Authorize(Roles = "Doctor")]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteSlot(int id)
     {
-        var deleted = await _availabilityService.SoftDeleteSlotAsync(id, User.Identity?.Name ?? "system");
+        var deleted = await _availabilityService.SoftDeleteSlotAsync(id, User.Identity?.Name);
 
         if (!deleted)
-            return NotFound(new { message = "Availability slot not found." });
+            return NotFound();
 
-        return Ok(new { message = "Availability slot deleted successfully." });
+        return Ok(new { message = "Deleted successfully" });
     }
 }

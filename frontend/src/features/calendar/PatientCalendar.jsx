@@ -70,7 +70,7 @@ export default function PatientCalendar() {
         <div className="flex flex-col items-center gap-4">
 
           {/* Spinner */}
-          <div className="w-12 h-12 border-1 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-1 border-[#4B9AA8] border-t-transparent rounded-full animate-spin"></div>
 
           {/* Text */}
           <p className="text-gray-500 text-sm">
@@ -86,10 +86,10 @@ export default function PatientCalendar() {
     <div className="max-w-7xl mx-auto p-6 space-y-6 font-sans">
 
       {/* ================= HEADER (IMPROVED) ================= */}
-      <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 text-white p-6 rounded-2xl shadow-lg">
+      <div className="bg-gradient-to-r from-[#8dd9e4] to-[#4B9AA8] text-slate-900 p-6 rounded-2xl shadow-lg">
         <h1 className="text-3xl font-bold">Patient Calendar</h1>
 
-        <p className="text-sm opacity-90 mt-1">
+        <p className="text-sm text-slate-700 mt-1">
           Holidays • 2026 Calendar
         </p>
       </div>

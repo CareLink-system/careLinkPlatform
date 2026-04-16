@@ -41,7 +41,7 @@ export default function GetAllMedicalReports() {
         } else {
           setReports(res?.data || [])
         }
-      } catch (err) {
+      } catch {
         toast.error('Failed to load reports')
       } finally {
         setLoading(false)
@@ -84,7 +84,7 @@ export default function GetAllMedicalReports() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="w-12 h-12 border-1 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-12 h-12 border-1 border-[#4B9AA8] border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
@@ -93,9 +93,9 @@ export default function GetAllMedicalReports() {
     <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
 
       {/* HEADER */}
-      <div className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-5 md:p-6 rounded-2xl shadow-lg">
+      <div className="bg-gradient-to-r from-[#8dd9e4] to-[#4B9AA8] text-slate-900 p-5 md:p-6 rounded-2xl shadow-lg">
         <h1 className="text-xl md:text-2xl font-bold">All Medical Reports</h1>
-        <p className="text-sm text-blue-100 mt-1">
+        <p className="text-sm text-slate-700 mt-1">
           {reports.length} total reports
         </p>
       </div>
@@ -105,7 +105,7 @@ export default function GetAllMedicalReports() {
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search by patient, type, diagnosis..."
-        className="w-full border border-gray-200 px-4 py-2 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+        className="w-full border border-gray-200 px-4 py-2 rounded-xl focus:ring-2 focus:ring-[#6EC7D4] outline-none"
       />
 
       {/* TABLE (DESKTOP) */}
@@ -140,7 +140,7 @@ export default function GetAllMedicalReports() {
                   <td className="p-4 font-medium">{r.patientName}</td>
 
                   <td className="p-4">
-                    <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">
+                    <span className="bg-cyan-100 text-cyan-700 px-2 py-1 rounded-full text-xs">
                       {r.reportType}
                     </span>
                   </td>
@@ -159,7 +159,7 @@ export default function GetAllMedicalReports() {
                     {r.reports ? (
                       <button
                         onClick={() => openFile(r.reports)}
-                        className="text-blue-600 hover:underline text-xs"
+                        className="text-[#2f7f8d] hover:underline text-xs"
                       >
                         {isPdf(r.reports) ? 'View PDF' : 'View Image'}
                       </button>
@@ -171,7 +171,7 @@ export default function GetAllMedicalReports() {
                   <td className="p-4">
                     <button
                       onClick={() => setViewReport(r)}
-                      className="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs hover:bg-blue-700"
+                      className="bg-[#4B9AA8] text-white px-3 py-1 rounded-lg text-xs hover:bg-[#3f8a97]"
                     >
                       View
                     </button>
@@ -195,7 +195,7 @@ export default function GetAllMedicalReports() {
                 {(page - 1) * ITEMS_PER_PAGE + i + 1}
               </span>
 
-              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+              <span className="text-xs bg-cyan-100 text-cyan-700 px-2 py-1 rounded-full">
                 {r.reportType}
               </span>
             </div>
@@ -217,7 +217,7 @@ export default function GetAllMedicalReports() {
                 {r.reports && (
                   <button
                     onClick={() => openFile(r.reports)}
-                    className="text-blue-600"
+                    className="text-[#2f7f8d]"
                   >
                     Open
                   </button>
@@ -225,7 +225,7 @@ export default function GetAllMedicalReports() {
 
                 <button
                   onClick={() => setViewReport(r)}
-                  className="text-white bg-blue-600 px-2 py-1 rounded"
+                  className="text-white bg-[#4B9AA8] px-2 py-1 rounded"
                 >
                   View
                 </button>

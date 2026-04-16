@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { getStoredAuth } from '../../auth/api/authApi'
+import { getDoctorByUserId } from '../../doctor/api/doctorApi' // YOU MUST HAVE THIS
 
 const API = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL + '/api/v1/doctors/availability',
@@ -14,20 +15,26 @@ API.interceptors.request.use((config) => {
   return config
 })
 
-// ================= READ =================
-export const getSlotsByDoctorId = async (doctorId) => {
-  try {
-    const res = await API.get(`/doctor/${doctorId}`)
-    return { data: res.data, error: null }
-  } catch (err) {
-    return { data: null, error: err.response?.data || err.message }
-  }
+// ================= RESOLVE doctorId =================
+export const resolveDoctorId = async (userId) => {
+  const res = await getDoctorByUserId(userId)
+  return res.data?.id || null
 }
 
 // ================= CREATE =================
 export const createSlot = async (payload) => {
   try {
     const res = await API.post('', payload)
+    return { data: res.data, error: null }
+  } catch (err) {
+    return { data: null, error: err.response?.data || err.message }
+  }
+}
+
+// ================= READ =================
+export const getSlotsByDoctorId = async (doctorId) => {
+  try {
+    const res = await API.get(`/doctor/${doctorId}`)
     return { data: res.data, error: null }
   } catch (err) {
     return { data: null, error: err.response?.data || err.message }
