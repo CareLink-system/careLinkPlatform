@@ -11,7 +11,6 @@ export default function PaymentPage() {
   const { user } = useAuth();
 
   const [loading, setLoading] = useState(false);
-  const [paymentDetails, setPaymentDetails] = useState(null);
 
   // Payment amount (in cents) - £50 = 5000 cents
   const CONSULTATION_FEE = 5000;
@@ -66,8 +65,6 @@ export default function PaymentPage() {
       );
       setLoading(false);
     } else if (result.data?.url) {
-      // Store payment info for reference
-      setPaymentDetails(result.data);
       // Redirect to Stripe checkout page
       window.location.href = result.data.url;
     } else {

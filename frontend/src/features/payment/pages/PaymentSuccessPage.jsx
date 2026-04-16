@@ -15,7 +15,6 @@ export default function PaymentSuccessPage() {
     const fetchPaymentData = async () => {
       try {
         const queryParams = new URLSearchParams(location.search);
-        const sessionId = queryParams.get("session_id");
         const paymentId = queryParams.get("payment_id");
         const appointmentId = queryParams.get("appointmentId");
 

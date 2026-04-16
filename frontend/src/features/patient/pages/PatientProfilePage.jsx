@@ -47,7 +47,7 @@ export default function PatientProfilePage() {
             bloodGroup: res.data.bloodGroup || '',
           })
         }
-      } catch (err) {
+      } catch {
         toast.error('Failed to load profile')
       } finally {
         setLoading(false)

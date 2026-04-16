@@ -252,7 +252,7 @@ export default function VideoRoom({ appointmentId, appId: propAppId }) {
       await postDoctorSessionNote(appointmentId, doctorNote.trim());
       setDoctorNote('');
       setDoctorNoteStatus('Consultation note saved');
-    } catch (error) {
+    } catch {
       setDoctorNoteStatus('Could not save note');
     } finally {
       setDoctorNoteSaving(false);
