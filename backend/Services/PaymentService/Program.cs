@@ -6,7 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using PaymentService;
 using DotNetEnv;
-using SharedConfiguration.Extensions;
+//using SharedConfiguration.Extensions;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 using Stripe;
@@ -34,7 +34,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 
 // Apply shared environment-based configuration
-builder.AddSharedEnvironmentConfiguration();
+//builder.AddSharedEnvironmentConfiguration();
 
 StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 var stripeKey = builder.Configuration["Stripe:SecretKey"];
