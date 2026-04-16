@@ -56,6 +56,22 @@ public class UserUpdateDto
 
 }
 
+public class UserUpdateDtoNew
+{
+    
+    public string? FirstName { get; set; } = default!;
+
+    
+    public string? LastName { get; set; } = default!;
+    public string? Role { get; set; }
+    public string? Titles { get; set; }
+    public string? PhoneNumber { get; set; }
+    public string? FullName { get; set; }
+    public string? Designation { get; set; }
+    public bool? IsActive { get; set; }
+    public int? status { get; set; }
+
+}
 public class PaginatedUserResponse
 {
     public List<UserResponseDto> Users { get; set; } = new();
