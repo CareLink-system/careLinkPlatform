@@ -3,7 +3,7 @@ using AuthService;
 using AuthService.Data;
 using Microsoft.AspNetCore.HttpOverrides;
 using DotNetEnv;
-using SharedConfiguration.Extensions;
+//using SharedConfiguration.Extensions;
 using System.Reflection;
 
 Console.WriteLine("🚀 Starting AuthService...");
@@ -25,7 +25,7 @@ else
 var builder = WebApplication.CreateBuilder(args);
 
 // Apply shared environment-based configuration
-builder.AddSharedEnvironmentConfiguration();
+//builder.AddSharedEnvironmentConfiguration();
 
 // Check if we should run migrations directly (skipping the whole application startup)
 MigrationRunner.RunMigrations(args);
