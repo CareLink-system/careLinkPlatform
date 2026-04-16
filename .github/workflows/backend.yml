@@ -33,17 +33,17 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Restore Dependencies
-        run: dotnet restore backend/careLinkPlatform.sln
-        continue-on-error: true
+        run: dotnet restore careLinkPlatform.sln
+        continue-on-error: false
 
       - name: Build Solution
-        run: dotnet build backend/careLinkPlatform.sln --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
+        run: dotnet build careLinkPlatform.sln --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
         continue-on-error: false
 
       - name: Run Tests
         run: |
           # Find and run all test projects
-          dotnet test backend/careLinkPlatform.sln \
+          dotnet test careLinkPlatform.sln \
             --configuration ${{ env.BUILD_CONFIGURATION }} \
             --no-build \
             --verbosity normal \
@@ -53,14 +53,14 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: "**/test-results.trx"
 
       - name: Upload Coverage Reports
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-reports
           path: "**/coverage.cobertura.xml"
@@ -142,7 +142,7 @@ jobs:
 
       - name: Format Check
         run: |
-          dotnet format backend/careLinkPlatform.sln --verify-no-changes --verbosity diagnostic
+          dotnet format careLinkPlatform.sln --verify-no-changes --verbosity diagnostic
         continue-on-error: true
 
   notify:

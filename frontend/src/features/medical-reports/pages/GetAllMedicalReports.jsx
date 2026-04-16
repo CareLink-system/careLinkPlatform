@@ -41,7 +41,7 @@ export default function GetAllMedicalReports() {
         } else {
           setReports(res?.data || [])
         }
-      } catch (err) {
+      } catch {
         toast.error('Failed to load reports')
       } finally {
         setLoading(false)

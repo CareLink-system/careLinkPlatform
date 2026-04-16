@@ -22,6 +22,7 @@ import PatientAppointmentsPage from "./features/appointment/pages/PatientAppoint
 import DoctorAppointmentsPage from "./features/appointment/pages/DoctorAppointmentsPage";
 import UserManagementPage from "./features/userManagement/pages/userManagementPage";
 import BasicFinancialTransactionMonitoringPage from "./features/paymentTransaction/pages/basicFinancialTransactionMonitoringPage";
+import ManageSlotsPage from "./features/slots/pages/ManageSlotsPage";
 import PaymentPage from "./features/payment/pages/PaymentPage";
 import PaymentSuccessPage from "./features/payment/pages/PaymentSuccessPage";
 import PaymentCancelPage from "./features/payment/pages/PaymentCancelPage";
@@ -73,8 +74,8 @@ function App() {
         <Route path="/payment/cancel" element={<PaymentCancelPage />} />
      
         <Route path="/doctor/appointments" element={<DoctorAppointmentsPage />} />
+        <Route path="/slots/manage" element={<ManageSlotsPage />} />
         <Route path="/prescriptions" element={<PrescriptionsPage />} />
-        
         </Route>
     </Routes>
   );
