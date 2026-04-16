@@ -8,6 +8,8 @@ import {
   deleteUser,
   updateUser
 } from "../api/user";
+import { getDoctorByUserId } from "../../doctor/api/doctorApi";
+import { getPatientByUserId } from "../../patient/api/patientApi";
 
 const STATUS_LABELS = {
   10: { label: "Approved", className: "bg-green-100 text-green-800" },
@@ -49,6 +51,8 @@ export default function UserManagementPage() {
   const [roleFilter, setRoleFilter] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [userDetails, setUserDetails] = useState(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   const [editUser, setEditUser] = useState(null);
   const [formValues, setFormValues] = useState({
     firstName: "",
@@ -64,14 +68,20 @@ export default function UserManagementPage() {
   const loadUsers = async () => {
     setLoading(true);
     setError("");
-    try {
-      const data = await getUsers({
-        pageNumber,
-        pageSize,
-        searchTerm: searchTerm.trim() || undefined,
-        role: roleFilter || undefined
-      });
 
+    const { data, error: fetchError } = await getUsers({
+      pageNumber,
+      pageSize,
+      searchTerm: searchTerm.trim() || undefined,
+      role: roleFilter || undefined
+    });
+
+    if (fetchError) {
+      setError(fetchError);
+      toast.error(fetchError);
+      setUsers([]);
+      setTotalPages(1);
+    } else {
       const loadedUsers = data?.users || data?.items || [];
       setUsers(loadedUsers);
       setTotalPages(
@@ -81,12 +91,9 @@ export default function UserManagementPage() {
             Math.ceil((data?.totalCount || loadedUsers.length) / pageSize)
           )
       );
-    } catch (err) {
-      setError(err.message || "Unable to load users");
-      toast.error(err.message || "Unable to load users");
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -105,8 +112,31 @@ export default function UserManagementPage() {
     await loadUsers();
   };
 
-  const showUserDetails = (user) => {
+  const showUserDetails = async (user) => {
     setSelectedUser(user);
+    setUserDetails(null);
+    setLoadingDetails(true);
+
+    // Fetch role-specific details
+    if (user.role === "Doctor") {
+      const { data, error } = await getDoctorByUserId(user.id);
+      if (error) {
+        console.error("Failed to load doctor details:", error);
+        toast.error("Failed to load doctor profile");
+      } else {
+        setUserDetails(data);
+      }
+    } else if (user.role === "Patient") {
+      const { data, error } = await getPatientByUserId(user.id);
+      if (error) {
+        console.error("Failed to load patient details:", error);
+        toast.error("Failed to load patient profile");
+      } else {
+        setUserDetails(data);
+      }
+    }
+
+    setLoadingDetails(false);
   };
 
   const openEditModal = (user) => {
@@ -137,21 +167,25 @@ export default function UserManagementPage() {
       return;
     }
 
-    try {
-      await updateUser(editUser.id, {
-        firstName: formValues.firstName,
-        lastName: formValues.lastName,
-        role: formValues.role,
-        titles: formValues.titles,
-        phoneNumber: formValues.phoneNumber,
-        designation: formValues.designation,
-        isActive: formValues.isActive
-      });
+    const { error: updateError } = await updateUser(editUser.id, {
+      firstName: formValues.firstName,
+      lastName: formValues.lastName,
+      role: formValues.role,
+      titles: formValues.titles,
+      phoneNumber: formValues.phoneNumber,
+      designation: formValues.designation,
+      isActive: formValues.isActive
+    });
+
+    if (updateError) {
+      toast.error(updateError);
+    } else {
       toast.success("User updated successfully");
       closeModal();
       await loadUsers();
-    } catch (err) {
-      toast.error(err.message || "Unable to update user");
+      if (selectedUser?.id === editUser.id) {
+        await showUserDetails(editUser);
+      }
     }
   };
 
@@ -160,28 +194,31 @@ export default function UserManagementPage() {
       !window.confirm(`Delete ${user.email || user.firstName || "this user"}?`)
     )
       return;
-    try {
-      await deleteUser(user.id);
+
+    const { error: deleteError } = await deleteUser(user.id);
+
+    if (deleteError) {
+      toast.error(deleteError);
+    } else {
       toast.success("User deleted");
       if (selectedUser?.id === user.id) setSelectedUser(null);
       await loadUsers();
-    } catch (err) {
-      toast.error(err.message || "Unable to delete user");
     }
   };
 
   const handleToggleActive = async (user) => {
-    try {
-      if (user.isActive) {
-        await deactivateUser(user.id);
-        toast.success("User deactivated");
-      } else {
-        await activateUser(user.id);
-        toast.success("User activated");
-      }
+    let result;
+    if (user.isActive) {
+      result = await deactivateUser(user.id);
+    } else {
+      result = await activateUser(user.id);
+    }
+
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success(user.isActive ? "User deactivated" : "User activated");
       await loadUsers();
-    } catch (err) {
-      toast.error(err.message || "Unable to update activation");
     }
   };
 
@@ -192,22 +229,24 @@ export default function UserManagementPage() {
       )
     )
       return;
-    try {
-      await updateUser(user.id, {
-        firstName: user.firstName || "",
-        lastName: user.lastName || "",
-        role: user.role,
-        titles: user.titles,
-        phoneNumber: user.phoneNumber,
-        designation: user.designation,
-        fullName: user.fullName,
-        isActive: user.isActive,
-        status: statusValue
-      });
+
+    const { error: updateError } = await updateUser(user.id, {
+      firstName: user.firstName || "",
+      lastName: user.lastName || "",
+      role: user.role,
+      titles: user.titles,
+      phoneNumber: user.phoneNumber,
+      designation: user.designation,
+      fullName: user.fullName,
+      isActive: user.isActive,
+      status: statusValue
+    });
+
+    if (updateError) {
+      toast.error(updateError);
+    } else {
       toast.success(`Status updated to ${STATUS_LABELS[statusValue].label}`);
       await loadUsers();
-    } catch (err) {
-      toast.error(err.message || "Unable to update user status");
     }
   };
 
@@ -218,6 +257,144 @@ export default function UserManagementPage() {
     admins: users.filter((user) => user.role === "Admin").length,
     doctors: users.filter((user) => user.role === "Doctor").length,
     patients: users.filter((user) => user.role === "Patient").length
+  };
+
+  // Render doctor details
+  const renderDoctorDetails = (doctor) => {
+    return (
+      <div className="space-y-3">
+        <div className="border-b border-slate-200 pb-2">
+          <h4 className="font-semibold text-slate-900">
+            Professional Information
+          </h4>
+        </div>
+        <div className="grid gap-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-slate-500">Doctor Name:</span>
+            <span className="font-medium">{doctor.doctorName || "—"}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">License Number:</span>
+            <span className="font-medium">{doctor.licenseNumber || "—"}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Specialization ID:</span>
+            <span className="font-medium">
+              {doctor.specializationId || "—"}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Qualifications:</span>
+            <span className="font-medium">{doctor.qualifications || "—"}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Experience:</span>
+            <span className="font-medium">{doctor.experience || "—"}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Department:</span>
+            <span className="font-medium">{doctor.department || "—"}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Consultation Fee:</span>
+            <span className="font-medium">
+              ${doctor.consultationFee || "—"}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Rating:</span>
+            <span className="font-medium">{doctor.rating || "—"} ⭐</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Status:</span>
+            <span
+              className={`font-medium ${doctor.status === "Active" ? "text-green-600" : "text-red-600"}`}
+            >
+              {doctor.status || "—"}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Verified:</span>
+            <span className="font-medium">
+              {doctor.isVerified ? "✅ Yes" : "❌ No"}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Available:</span>
+            <span className="font-medium">
+              {doctor.isAvailable ? "🟢 Available" : "🔴 Not Available"}
+            </span>
+          </div>
+          {doctor.bio && (
+            <div className="mt-2">
+              <span className="text-slate-500">Bio:</span>
+              <p className="mt-1 text-slate-700">{doctor.bio}</p>
+            </div>
+          )}
+          <div className="flex justify-between">
+            <span className="text-slate-500">Member Since:</span>
+            <span className="font-medium">
+              {doctor.createdAt
+                ? new Date(doctor.createdAt).toLocaleDateString()
+                : "—"}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render patient details
+  const renderPatientDetails = (patient) => {
+    return (
+      <div className="space-y-3">
+        <div className="border-b border-slate-200 pb-2">
+          <h4 className="font-semibold text-slate-900">Personal Information</h4>
+        </div>
+        <div className="grid gap-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-slate-500">Full Name:</span>
+            <span className="font-medium">{patient.fullName || "—"}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Phone:</span>
+            <span className="font-medium">{patient.phone || "—"}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Date of Birth:</span>
+            <span className="font-medium">
+              {patient.dateOfBirth
+                ? new Date(patient.dateOfBirth).toLocaleDateString()
+                : "—"}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Gender:</span>
+            <span className="font-medium">{patient.gender || "—"}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Blood Group:</span>
+            <span className="font-medium">{patient.bloodGroup || "—"}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Status:</span>
+            <span
+              className={`font-medium ${patient.status === "Active" ? "text-green-600" : "text-red-600"}`}
+            >
+              {patient.status || "—"}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Registered On:</span>
+            <span className="font-medium">
+              {patient.createdAt
+                ? new Date(patient.createdAt).toLocaleDateString()
+                : "—"}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -502,8 +679,8 @@ export default function UserManagementPage() {
             </div>
 
             {selectedUser ? (
-              <div className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                <div className="space-y-2">
+              <div className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-4 max-h-[600px] overflow-y-auto">
+                <div className="space-y-2 sticky top-0 bg-slate-50 pt-2">
                   <p className="text-sm text-slate-500">Selected account</p>
                   <h3 className="text-lg font-semibold text-slate-900">
                     {selectedUser.firstName || selectedUser.email}
@@ -537,7 +714,23 @@ export default function UserManagementPage() {
                   </div>
                 </div>
 
-                <div className="grid gap-3">
+                {/* Role-specific details */}
+                {loadingDetails ? (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-slate-500">Loading details...</p>
+                  </div>
+                ) : (
+                  userDetails && (
+                    <div className="mt-4 pt-4 border-t border-slate-200">
+                      {selectedUser.role === "Doctor" &&
+                        renderDoctorDetails(userDetails)}
+                      {selectedUser.role === "Patient" &&
+                        renderPatientDetails(userDetails)}
+                    </div>
+                  )
+                )}
+
+                <div className="grid gap-3 pt-4 border-t border-slate-200">
                   <button
                     onClick={() => openEditModal(selectedUser)}
                     className="rounded-2xl bg-[#4B9AA8] px-4 py-3 text-sm font-semibold text-white hover:bg-[#3c828e]"
@@ -563,6 +756,7 @@ export default function UserManagementPage() {
           </aside>
         </div>
 
+        {/* Edit User Modal */}
         {editUser && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 py-6">
             <div className="w-full max-w-2xl overflow-hidden rounded-4xl bg-white shadow-2xl">
