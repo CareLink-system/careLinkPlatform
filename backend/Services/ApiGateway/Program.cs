@@ -8,6 +8,8 @@ using System.Text;
 using System.Reflection;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using ApiGateway.Filters;
+using SharedConfiguration.Extensions;
+using DotNetEnv;
 
 Console.WriteLine("Starting API Gateway.....");
 
@@ -20,7 +22,27 @@ ThreadPool.SetMinThreads(
     Math.Max(completionPortThreads, newCompletionPortThreads));
 Console.WriteLine($"Thread pool configured - Worker: {newWorkerThreads}, IO: {newCompletionPortThreads}");
 
+// =====================
+// LOAD .ENV
+// =====================
+var rootPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", ".."));
+var envPath = Path.Combine(rootPath, ".env");
+
+if (File.Exists(envPath))
+{
+    Env.Load(envPath);
+    Console.WriteLine($"✅ Loaded .env from: {envPath}");
+}
+else
+{
+    Console.WriteLine($"⚠️ .env file not found at: {envPath}");
+}
+
+
 var builder = WebApplication.CreateBuilder(args);
+
+// Shared environment configuration (loads .env and config files)
+builder.AddSharedEnvironmentConfiguration();
 
 // ── Controllers & Explorer ───────────────────────────────────────────────────
 builder.Services.AddControllers();
