@@ -51,13 +51,25 @@ public static class SharedConfigurationExtensions
                 "JWT_KEY environment variable is missing.");
         }
 
+        var sslMode = Environment.GetEnvironmentVariable("DB_SSL_MODE");
+        if (string.IsNullOrWhiteSpace(sslMode))
+        {
+            sslMode = dbHost is null
+                ? "Require"
+                : dbHost.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+                  dbHost.Equals("127.0.0.1") ||
+                  dbHost.Equals("::1")
+                    ? "Disable"
+                    : "Require";
+        }
+
         var connectionString =
             $"Host={dbHost};" +
             $"Port={dbPort};" +
             $"Database={serviceSettings.DatabaseName};" +
             $"Username={dbUsername};" +
             $"Password={dbPassword};" +
-            $"SSL Mode=Require;" +
+            $"SSL Mode={sslMode};" +
             $"Trust Server Certificate=true;" +
             $"Timeout=30;" +
             $"Command Timeout=60;" +
