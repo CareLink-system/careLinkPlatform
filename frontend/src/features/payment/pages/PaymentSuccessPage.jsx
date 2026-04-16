@@ -7,41 +7,41 @@ import { toast } from "sonner";
 export default function PaymentSuccessPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [payment, setPayment] = useState(null);
+  //const [payment, setPayment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchPaymentData = async () => {
       try {
-        const queryParams = new URLSearchParams(location.search);
-        const sessionId = queryParams.get("session_id");
-        const paymentId = queryParams.get("payment_id");
-        const appointmentId = queryParams.get("appointmentId");
-
-        if (paymentId) {
-          const result = await getPaymentById(paymentId);
-          if (result.data) {
-            setPayment(result.data);
-            toast.success("Payment completed successfully!");
-          } else {
-            setError("Failed to fetch payment details");
-            toast.error("Could not retrieve payment details");
-          }
-        } else if (appointmentId) {
-          // If we have appoointment ID but no payment, redirect after showing message
-          setTimeout(() => {
-            navigate("/appointments");
-          }, 3000);
-          toast.info("Redirecting to appointments...");
-        } else {
-          setError("No payment information found");
-          toast.error("Payment information missing");
-        }
+        // const queryParams = new URLSearchParams(location.search);
+        // const sessionId = queryParams.get("session_id");
+        // const paymentId = queryParams.get("payment_id");
+        // const appointmentId = queryParams.get("appointmentId");
+        // if (paymentId) {
+        //   console.log("Fetching payment details for ID:", paymentId);
+        //   const result = await getPaymentById(paymentId);
+        //   if (result.data) {
+        //     setPayment(result.data);
+        //     toast.success("Payment completed successfully!");
+        //   } else {
+        //     setError("Failed to fetch payment details");
+        //     toast.error("Could not retrieve payment details");
+        //   }
+        // } else if (appointmentId) {
+        //   // If we have appoointment ID but no payment, redirect after showing message
+        //   setTimeout(() => {
+        //     navigate("/appointments");
+        //   }, 3000);
+        //   toast.info("Redirecting to appointments...");
+        // } else {
+        //   setError("No payment information found");
+        //   toast.error("Payment information missing");
+        // }
       } catch (err) {
-        console.error("Error fetching payment data:", err);
-        setError("An error occurred while retrieving payment details");
-        toast.error("Error retrieving payment details");
+        // console.error("Error fetching payment data:", err);
+        // setError("An error occurred while retrieving payment details");
+        // toast.error("Error retrieving payment details");
       } finally {
         setLoading(false);
       }
@@ -135,7 +135,7 @@ export default function PaymentSuccessPage() {
 
         {/* Payment Details */}
         <div className="p-6">
-          <div className="space-y-3 mb-6">
+          {/* <div className="space-y-3 mb-6">
             <h3 className="font-semibold text-gray-900 mb-3">
               Payment Details
             </h3>
@@ -168,7 +168,7 @@ export default function PaymentSuccessPage() {
                 {payment ? new Date(payment.createdAt).toLocaleString() : "N/A"}
               </span>
             </div>
-          </div>
+          </div> */}
 
           {/* Action Buttons */}
           <div className="space-y-3">
