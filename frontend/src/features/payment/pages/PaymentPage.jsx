@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/context/AuthContext";
-import { createCheckoutSession } from "../api/paymentApi";
+import { createCheckoutSession, createPayment } from "../api/paymentApi";
 import { toast } from "sonner";
 
 export default function PaymentPage() {
@@ -11,7 +11,7 @@ export default function PaymentPage() {
   const { user } = useAuth();
 
   const [loading, setLoading] = useState(false);
-  const [paymentDetails, setPaymentDetails] = useState(null);
+  //const [paymentDetails, setPaymentDetails] = useState(null);
 
   // Payment amount (in cents) - £50 = 5000 cents
   const CONSULTATION_FEE = 5000;
@@ -27,6 +27,10 @@ export default function PaymentPage() {
   }, [state, navigate]);
 
   const handleProceedToPayment = async () => {
+    console.log(
+      "Proceeding to payment with appointment details:",
+      state?.appointment
+    );
     if (!state?.appointment) {
       toast.error("Appointment details missing");
       return;
@@ -36,19 +40,43 @@ export default function PaymentPage() {
 
     // Get current page URL for success/cancel redirects
     const currentUrl = window.location.origin;
+    console.log("Current URL for payment redirects:", currentUrl);
+
+    // const paymentRequest = {
+    //   amount: CONSULTATION_FEE,
+    //   currency: CURRENCY,
+    //   patientId: user?.id || state.appointment.patientId,
+    //   appointmentId: state.appointment.id,
+    //   doctorId: state.appointment.doctorId,
+    //   doctorName: state.appointment.doctorName || "Doctor",
+    //   consultationId: state.appointment.consultationId || state.appointment.id,
+    //   successUrl: `${currentUrl}/payment/success`,
+    //   cancelUrl: `${currentUrl}/payment/cancel?appointmentId=${state.appointment.id}`,
+    //   productName: `Consultation with Dr. ${state.appointment.doctorName || "Specialist"}`,
+    //   productDescription: `${state.appointmentType} consultation - ${state.appointmentDate} at ${state.timeSlot}`,
+    //   productImages: ["https://example.com/doctor-image.jpg"],
+    //   customerEmail: user?.email,
+    //   locale: "en",
+    //   metadata: {
+    //     appointment_type: state.appointmentType,
+    //     appointment_date: state.appointmentDate,
+    //     time_slot: state.timeSlot
+    //   }
+    // };
 
     const paymentRequest = {
       amount: CONSULTATION_FEE,
       currency: CURRENCY,
       patientId: user?.id || state.appointment.patientId,
       appointmentId: state.appointment.id,
-      doctorId: state.appointment.doctorId,
+      doctorId: String(state.appointment.doctorId), // ✅ Convert to string
       doctorName: state.appointment.doctorName || "Doctor",
       consultationId: state.appointment.consultationId || state.appointment.id,
       successUrl: `${currentUrl}/payment/success`,
       cancelUrl: `${currentUrl}/payment/cancel?appointmentId=${state.appointment.id}`,
       productName: `Consultation with Dr. ${state.appointment.doctorName || "Specialist"}`,
       productDescription: `${state.appointmentType} consultation - ${state.appointmentDate} at ${state.timeSlot}`,
+      productImages: ["https://example.com/doctor-image.jpg"], // ✅ Array format
       customerEmail: user?.email,
       locale: "en",
       metadata: {
@@ -57,6 +85,7 @@ export default function PaymentPage() {
         time_slot: state.timeSlot
       }
     };
+    console.log("Initiating payment with request:", paymentRequest);
 
     const result = await createCheckoutSession(paymentRequest);
 
@@ -66,8 +95,44 @@ export default function PaymentPage() {
       );
       setLoading(false);
     } else if (result.data?.url) {
+      // Create payment record before redirecting to Stripe
+      const paymentRecord = {
+        appointmentId: state.appointment.id,
+        patientId: user?.id || state.appointment.patientId,
+        doctorId: String(state.appointment.doctorId),
+        amount: CONSULTATION_FEE,
+        currency: CURRENCY,
+        paymentMethod: "card",
+        paymentStatus: 0, // Pending
+        transactionId: result.data.sessionId,
+        paymentGateway: "stripe",
+        paidAt: null,
+        notes: "Payment initiated for consultation",
+        consultationId:
+          state.appointment.consultationId || state.appointment.id,
+        stripeSessionId: result.data.sessionId,
+        stripePaymentIntentId: result.data.paymentIntentId || null,
+        metadata: JSON.stringify(paymentRequest.metadata)
+      };
+
+      console.log("Creating payment record:", paymentRecord);
+
+      //test here
+      const paymentResult = await createPayment(paymentRecord);
+
+      if (paymentResult.error) {
+        console.error("Failed to create payment record:", paymentResult.error);
+        toast.error(
+          "Payment session created but failed to save payment record. Please contact support."
+        );
+        setLoading(false);
+        return;
+      }
+
+      console.log("Payment record created:", paymentResult.data);
+
       // Store payment info for reference
-      setPaymentDetails(result.data);
+      //setPaymentDetails(result.data);
       // Redirect to Stripe checkout page
       window.location.href = result.data.url;
     } else {
