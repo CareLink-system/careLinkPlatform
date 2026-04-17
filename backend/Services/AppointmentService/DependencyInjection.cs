@@ -33,6 +33,16 @@ public static class ServiceRegistration
             c.BaseAddress = new Uri(baseUrl);
         });
 
+        services.AddHttpClient<AuthClient>(c =>
+        {
+            c.BaseAddress = new Uri(baseUrl);
+        });
+
+        services.AddHttpClient<NotificationClient>(c =>
+        {
+            c.BaseAddress = new Uri(baseUrl);
+        });
+
         return services;
     }
 }

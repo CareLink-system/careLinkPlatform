@@ -181,6 +181,35 @@ public class UsersController : ControllerBase
     }
 
     /// <summary>
+    /// Internal endpoint for service-to-service contact lookup.
+    /// </summary>
+    [HttpGet("internal/{id}/contact")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetUserContactInternal(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return BadRequest(new { message = "Invalid user id." });
+        }
+
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null)
+        {
+            return NotFound(new { message = "User not found." });
+        }
+
+        return Ok(new
+        {
+            email = user.Email,
+            phoneNumber = user.PhoneNumber,
+            firstName = user.FirstName,
+            lastName = user.LastName
+        });
+    }
+
+    /// <summary>
     /// Gets current authenticated user profile.
     /// </summary>
     [HttpGet("me")]

@@ -6,6 +6,7 @@ using AppointmentService.Repositories.Interfaces;
 using AppointmentService.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
+using System.Globalization;
 
 namespace AppointmentService.Services;
 
@@ -15,20 +16,29 @@ public class AppointmentService : IAppointmentService
     private readonly DoctorClient _doctor;
     private readonly PatientClient _patient;
     private readonly AvailabilityClient _availability;
+    private readonly AuthClient _auth;
+    private readonly NotificationClient _notification;
     private readonly IHttpContextAccessor _httpContext;
+    private readonly ILogger<AppointmentService> _logger;
 
     public AppointmentService(
         IAppointmentRepository repo,
         DoctorClient doctor,
         PatientClient patient,
         AvailabilityClient availability,
-        IHttpContextAccessor httpContext)
+        AuthClient auth,
+        NotificationClient notification,
+        IHttpContextAccessor httpContext,
+        ILogger<AppointmentService> logger)
     {
         _repo = repo;
         _doctor = doctor;
         _patient = patient;
         _availability = availability;
+        _auth = auth;
+        _notification = notification;
         _httpContext = httpContext;
+        _logger = logger;
     }
 
     // ================= HELPERS =================
@@ -77,7 +87,66 @@ public class AppointmentService : IAppointmentService
             IsDeleted = false
         };
 
-        return await _repo.AddAsync(entity);
+        var created = await _repo.AddAsync(entity);
+        await SendAppointmentNotifications(created, dto);
+
+        return created;
+    }
+
+    private async Task SendAppointmentNotifications(Appointment created, CreateAppointmentDto dto)
+    {
+        try
+        {
+            var patientProfile = await _patient.GetById(dto.PatientId);
+            var doctorProfile = await _doctor.GetById(dto.DoctorId);
+
+            var patientContact = patientProfile == null
+                ? null
+                : await _auth.GetUserContactById(patientProfile.UserId.ToString());
+
+            var doctorContact = doctorProfile == null || string.IsNullOrWhiteSpace(doctorProfile.UserId)
+                ? null
+                : await _auth.GetUserContactById(doctorProfile.UserId);
+
+            var payload = new AppointmentNotificationRequest
+            {
+                AppointmentId = created.Id.ToString(),
+                AppointmentTime = ResolveAppointmentTime(dto),
+                PatientName = dto.PatientName,
+                PatientEmail = patientContact?.Email ?? string.Empty,
+                PatientPhone = !string.IsNullOrWhiteSpace(dto.Phone) ? dto.Phone : patientProfile?.Phone ?? patientContact?.PhoneNumber ?? string.Empty,
+                DoctorName = doctorProfile?.DoctorName ?? $"Doctor {dto.DoctorId}",
+                DoctorEmail = doctorContact?.Email ?? string.Empty,
+                DoctorPhone = doctorContact?.PhoneNumber ?? string.Empty
+            };
+
+            var sent = await _notification.SendAppointmentBookedAsync(payload);
+            if (!sent)
+            {
+                _logger.LogWarning("NotificationService returned non-success for appointment {AppointmentId}", created.Id);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Do not fail appointment creation if downstream notifications are unavailable.
+            _logger.LogError(ex, "Failed to trigger notifications for appointment {AppointmentId}", created.Id);
+        }
+    }
+
+    private static DateTime ResolveAppointmentTime(CreateAppointmentDto dto)
+    {
+        if (!DateTime.TryParse(dto.AppointmentDate, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var datePart))
+        {
+            return DateTime.UtcNow;
+        }
+
+        var timeCandidate = dto.TimeSlot?.Split('-', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+        if (timeCandidate != null && TimeSpan.TryParse(timeCandidate, CultureInfo.InvariantCulture, out var timePart))
+        {
+            return datePart.Date.Add(timePart);
+        }
+
+        return datePart;
     }
 
     // ================= READ =================
