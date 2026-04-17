@@ -4,7 +4,7 @@ using DoctorService.Filters;
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using SharedConfiguration.Extensions;
+// using SharedConfiguration.Extensions;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Reflection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -15,8 +15,9 @@ using System.Text;
 Console.WriteLine("🚀 Starting DoctorService...");
 
 // Load root .env file
-var rootPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", ".."));
-var envPath = Path.Combine(rootPath, ".env");
+//var rootPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", ".."));
+//var envPath = Path.Combine(rootPath, ".env");
+var envPath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
 
 if (File.Exists(envPath))
 {
@@ -28,15 +29,72 @@ else
     Console.WriteLine($"⚠️ .env file not found at: {envPath}");
 }
 
+
 var builder = WebApplication.CreateBuilder(args);
 
+// =====================
+// LOAD DATABASE CONFIGURATION
+// =====================
+var dbHost = Environment.GetEnvironmentVariable("DB_HOST");
+var dbPort = Environment.GetEnvironmentVariable("DB_PORT");
+var dbName = Environment.GetEnvironmentVariable("DB_NAME") ;
+var dbUsername = Environment.GetEnvironmentVariable("DB_USERNAME");
+var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
+
+if (string.IsNullOrEmpty(dbHost)) throw new Exception("DB_HOST missing");
+if (string.IsNullOrEmpty(dbUsername)) throw new Exception("DB_USERNAME missing");
+if (string.IsNullOrEmpty(dbPassword)) throw new Exception("DB_PASSWORD missing");
+
+var sslMode = dbHost.Equals("localhost", StringComparison.OrdinalIgnoreCase) ? "Disable" : "Require";
+
+var connectionString = $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUsername};Password={dbPassword};SSL Mode={sslMode};Trust Server Certificate=true;";
+
+builder.Configuration["ConnectionStrings:DefaultConnection"] = connectionString;
+
+// =====================
+// LOAD JWT CONFIGURATION
+// =====================
+var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY");
+var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER");
+var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE");
+
+if (string.IsNullOrEmpty(jwtKey)) throw new Exception("JWT_KEY missing");
+if (string.IsNullOrEmpty(jwtIssuer)) throw new Exception("JWT_ISSUER missing");
+if (string.IsNullOrEmpty(jwtAudience)) throw new Exception("JWT_AUDIENCE missing");
+
+builder.Configuration["Jwt:Key"] = jwtKey;
+builder.Configuration["Jwt:Issuer"] = jwtIssuer;
+builder.Configuration["Jwt:Audience"] = jwtAudience;
+
+// =====================
+// LOAD STRIPE (Payment Service only)
+// =====================
+var stripeKey = Environment.GetEnvironmentVariable("STRIPE_SECRET_KEY");
+if (!string.IsNullOrEmpty(stripeKey))
+{
+    builder.Configuration["Stripe:SecretKey"] = stripeKey;
+}
+
+// =====================
+// LOAD AGORA (Telemedicine Service only)
+// =====================
+var agoraAppId = Environment.GetEnvironmentVariable("AGORA__AppId");
+var agoraCertificate = Environment.GetEnvironmentVariable("AGORA__AppCertificate");
+
+if (!string.IsNullOrEmpty(agoraAppId))
+{
+    builder.Configuration["Agora:AppId"] = agoraAppId;
+    builder.Configuration["Agora:AppCertificate"] = agoraCertificate;
+}
+
 // Apply shared environment-based configuration
-builder.AddSharedEnvironmentConfiguration();
+//builder.AddSharedEnvironmentConfiguration();
+
 builder.Services.AddDoctorDependencies();
 
-var jwtKey = builder.Configuration["Jwt:Key"];
-var jwtIssuer = builder.Configuration["Jwt:Issuer"];
-var jwtAudience = builder.Configuration["Jwt:Audience"];
+// var jwtKey = builder.Configuration["Jwt:Key"];
+// var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+// var jwtAudience = builder.Configuration["Jwt:Audience"];
 
 if (string.IsNullOrWhiteSpace(jwtKey))
 {
