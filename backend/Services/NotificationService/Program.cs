@@ -5,8 +5,40 @@ using Microsoft.OpenApi.Models;
 using System.Reflection;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using NotificationService.Filters;
+using DotNetEnv;
+using MongoDB.Driver;
+using NotificationService.Models;
+using NotificationService.Options;
+using NotificationService.Services;
+
+if (File.Exists(".env"))
+{
+    Env.Load(".env");
+}
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.Configure<MongoOptions>(builder.Configuration.GetSection(MongoOptions.SectionName));
+builder.Services.Configure<NotificationProvidersOptions>(builder.Configuration.GetSection(NotificationProvidersOptions.SectionName));
+
+var mongoConnectionString = builder.Configuration["Mongo:ConnectionString"] ?? Environment.GetEnvironmentVariable("MONGO_URI") ?? string.Empty;
+var mongoDatabaseName = builder.Configuration["Mongo:DatabaseName"] ?? Environment.GetEnvironmentVariable("MONGO_DB") ?? "notifications";
+var mongoCollectionName = builder.Configuration["Mongo:CollectionName"] ?? "notificationRecords";
+
+if (string.IsNullOrWhiteSpace(mongoConnectionString))
+{
+    throw new InvalidOperationException("MongoDB connection string is not configured. Set Mongo:ConnectionString or MONGO_URI.");
+}
+
+builder.Services.AddSingleton<IMongoCollection<NotificationRecord>>(_ =>
+{
+    var client = new MongoClient(mongoConnectionString);
+    var database = client.GetDatabase(mongoDatabaseName);
+    return database.GetCollection<NotificationRecord>(mongoCollectionName);
+});
+
+builder.Services.AddHttpClient<IEmailService, EmailService>();
+builder.Services.AddHttpClient<ISmsService, SmsService>();
 
 builder.Services.AddMassTransit(x =>
 {
@@ -132,32 +164,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("AllowAll");
 app.UseAuthorization();
 app.MapControllers();
 
-// Optional: Keep the weather forecast endpoint if you want
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
-
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
