@@ -39,9 +39,11 @@ public class NotificationController : ControllerBase
         }
 
         var correlationId = Guid.NewGuid().ToString("N");
-        var subject = "Appointment Booking Confirmation";
-        var patientMessage = $"Hello {request.PatientName}, your appointment (ID: {request.AppointmentId}) is confirmed for {request.AppointmentTime:yyyy-MM-dd HH:mm}.";
-        var doctorMessage = $"Hello Dr. {request.DoctorName}, appointment (ID: {request.AppointmentId}) is booked for {request.AppointmentTime:yyyy-MM-dd HH:mm}.";
+        var subject = "Your CareLink appointment is confirmed";
+        var patientMessage =
+            $"Hi {request.PatientName}, your appointment with Dr. {request.DoctorName} is confirmed for {request.AppointmentTime:ddd, MMM d at h:mm tt}. Ref: {request.AppointmentId}.";
+        var doctorMessage =
+            $"Hi Dr. {request.DoctorName}, new appointment booked with {request.PatientName} for {request.AppointmentTime:ddd, MMM d at h:mm tt}. Ref: {request.AppointmentId}.";
 
         var records = BuildRecords(request, patientMessage, doctorMessage);
         if (records.Count == 0)
