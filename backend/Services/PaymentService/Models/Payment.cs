@@ -32,5 +32,11 @@ public class Payment : AuditableEntity
 
     // 📝 Optional
     public string? Notes { get; set; }
+
+    // New fields for consultation and Stripe integration
+    public int? ConsultationId { get; set; }
+    public string? StripeSessionId { get; set; }
+    public string? StripePaymentIntentId { get; set; }
+    public string? Metadata { get; set; }
 }
 

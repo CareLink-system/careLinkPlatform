@@ -2,6 +2,7 @@
 using DoctorService.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace DoctorService.Controllers;
 
@@ -10,6 +11,11 @@ namespace DoctorService.Controllers;
 public class PrescriptionsController : ControllerBase
 {
     private readonly IPrescriptionService _prescriptionService;
+
+    private string? CurrentUserId =>
+        User.FindFirstValue(ClaimTypes.NameIdentifier)
+        ?? User.FindFirstValue(ClaimTypes.Name)
+        ?? User.Identity?.Name;
 
     public PrescriptionsController(IPrescriptionService prescriptionService)
     {
@@ -20,12 +26,36 @@ public class PrescriptionsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreatePrescription([FromBody] CreatePrescriptionDto dto)
     {
-        var result = await _prescriptionService.CreatePrescriptionAsync(dto, User.Identity?.Name ?? "system");
+        var result = await _prescriptionService.CreatePrescriptionAsync(dto, CurrentUserId ?? "system");
 
         if (result == null)
             return NotFound(new { message = "Doctor not found." });
 
         return CreatedAtAction(nameof(GetPrescriptionById), new { id = result.Id }, result);
+    }
+
+    [Authorize(Roles = "Doctor,Admin")]
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> UpdatePrescription(int id, [FromBody] UpdatePrescriptionDto dto)
+    {
+        try
+        {
+            var result = await _prescriptionService.UpdatePrescriptionAsync(
+                id,
+                dto,
+                CurrentUserId ?? "system",
+                CurrentUserId,
+                User.IsInRole("Admin"));
+
+            if (result == null)
+                return NotFound(new { message = "Prescription not found." });
+
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid();
+        }
     }
 
     [Authorize(Roles = "Doctor,Admin,Patient")]
@@ -68,11 +98,22 @@ public class PrescriptionsController : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeletePrescription(int id)
     {
-        var deleted = await _prescriptionService.SoftDeletePrescriptionAsync(id, User.Identity?.Name ?? "system");
+        try
+        {
+            var deleted = await _prescriptionService.SoftDeletePrescriptionAsync(
+                id,
+                CurrentUserId ?? "system",
+                CurrentUserId,
+                User.IsInRole("Admin"));
 
-        if (!deleted)
-            return NotFound(new { message = "Prescription not found." });
+            if (!deleted)
+                return NotFound(new { message = "Prescription not found." });
 
-        return Ok(new { message = "Prescription deleted successfully." });
+            return Ok(new { message = "Prescription deleted successfully." });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
     }
 }

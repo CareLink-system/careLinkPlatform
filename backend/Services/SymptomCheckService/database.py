@@ -1,14 +1,17 @@
 from dotenv import load_dotenv
 import os
+from pathlib import Path
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
-load_dotenv()
+_ENV_PATH = Path(__file__).resolve().parent / ".env"
+load_dotenv(dotenv_path=_ENV_PATH, override=False)
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+MONGO_DB = os.getenv("MONGO_DB", "symptom-checker")
 
-client: AsyncIOMotorClient = AsyncIOMotorClient(MONGO_URI)
+client: AsyncIOMotorClient = AsyncIOMotorClient(MONGO_URI, serverSelectionTimeoutMS=5000)
 
-def get_database(name: str = "symptom-checker") -> AsyncIOMotorDatabase:
-    return client[name]
+def get_database(name: str | None = None) -> AsyncIOMotorDatabase:
+    return client[name or MONGO_DB]
 
 def close_client() -> None:
     client.close()

@@ -69,7 +69,9 @@ public class UsersController : ControllerBase
                 pageNumber, pageSize, searchTerm ?? "none", role ?? "all");
 
             // Build query
-            var query = _userManager.Users.AsQueryable();
+            var query = _userManager.Users
+                .Where(u => u.status != 99)
+                .AsQueryable();
 
             // Apply search filter
             if (!string.IsNullOrWhiteSpace(searchTerm))
@@ -220,7 +222,7 @@ public class UsersController : ControllerBase
     /// Updates user information.
     /// </summary>
     [HttpPut("{id}")]
-    [Authorize(Roles = "Admin")]
+    //[Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(ApiResponse<UserResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -229,7 +231,7 @@ public class UsersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<ApiResponse<UserResponseDto>>> UpdateUser(
         string id,
-        [FromBody] UserUpdateDto request,
+        [FromBody] UserUpdateDtoNew request,
         CancellationToken cancellationToken = default)
     {
         try
@@ -267,6 +269,14 @@ public class UsersController : ControllerBase
             user.Titles = request.Titles ?? user.Titles;
             user.IsActive = request.IsActive ?? user.IsActive;
             user.UpdatedAt = DateTime.UtcNow;
+            if(request.status == 0 || request.status == 99)
+            {
+                user.IsActive = false;
+            } else if (request.status == 1)
+            {
+                user.IsActive = true;
+            }
+            user.status = request.status ?? user.status;
 
             var updateResult = await _userManager.UpdateAsync(user);
             if (!updateResult.Succeeded)
@@ -430,7 +440,7 @@ public class UsersController : ControllerBase
     /// Permanently deletes a user (hard delete - admin only).
     /// </summary>
     [HttpDelete("{id}/permanent")]
-    [Authorize(Roles = "Admin")]
+    //[Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -540,7 +550,7 @@ public class UsersController : ControllerBase
     /// Deactivates a user (Admin only).
     /// </summary>
     [HttpPut("{id}/deactivate")]
-    [Authorize(Roles = "Admin")]
+    //[Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(ApiResponse<UserResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

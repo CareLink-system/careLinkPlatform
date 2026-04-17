@@ -121,3 +121,11 @@ coverage/
 # Ignore REAL config files with secrets
 
 **/appsettings.*.json
+
+# SymptomCheckService (Python artifacts)
+backend/Services/SymptomCheckService/.venv/
+backend/Services/SymptomCheckService/__pycache__/
+backend/Services/SymptomCheckService/.pytest_cache/
+backend/Services/SymptomCheckService/.mypy_cache/
+backend/Services/SymptomCheckService/.ipynb_checkpoints/
+backend/Services/SymptomCheckService/*.py[cod]

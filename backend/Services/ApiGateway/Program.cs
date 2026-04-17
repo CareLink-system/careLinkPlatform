@@ -8,6 +8,8 @@ using System.Text;
 using System.Reflection;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using ApiGateway.Filters;
+using SharedConfiguration.Extensions;
+using DotNetEnv;
 
 Console.WriteLine("Starting API Gateway.....");
 
@@ -20,7 +22,27 @@ ThreadPool.SetMinThreads(
     Math.Max(completionPortThreads, newCompletionPortThreads));
 Console.WriteLine($"Thread pool configured - Worker: {newWorkerThreads}, IO: {newCompletionPortThreads}");
 
+// =====================
+// LOAD .ENV
+// =====================
+var rootPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", ".."));
+var envPath = Path.Combine(rootPath, ".env");
+
+if (File.Exists(envPath))
+{
+    Env.Load(envPath);
+    Console.WriteLine($"✅ Loaded .env from: {envPath}");
+}
+else
+{
+    Console.WriteLine($"⚠️ .env file not found at: {envPath}");
+}
+
+
 var builder = WebApplication.CreateBuilder(args);
+
+// Shared environment configuration (loads .env and config files)
+builder.AddSharedEnvironmentConfiguration();
 
 // ── Controllers & Explorer ───────────────────────────────────────────────────
 builder.Services.AddControllers();
@@ -113,11 +135,12 @@ var app = builder.Build();
         // Read all downstream service endpoints from config
         var swaggerEndpoints = builder.Configuration
             .GetSection("SwaggerEndpoints")
-            .Get<List<SwaggerEndpoint>>() ?? [];
+            .Get<List<SwaggerEndpoint>>() ?? new List<SwaggerEndpoint>();
 
         foreach (var ep in swaggerEndpoints)
         {
             var slug = ep.Name.Replace(" ", "-");
+            Console.WriteLine($"Registering swagger endpoint: {ep.Name} -> /swagger-proxy/{slug}/swagger.json");
             c.SwaggerEndpoint($"/swagger-proxy/{slug}/swagger.json", ep.Name);
         }
 
@@ -182,7 +205,7 @@ app.MapGet("/api/Health", () => Results.Ok(new
     status = "Running",
     timestamp = DateTime.UtcNow,
     routes = new[] { "auth", "patients", "doctors", "appointments",
-                     "telemedicine", "payments", "notifications" }
+                     "telemedicine", "payments", "notifications", "symptom-checker", "chatbot" }
 }));
 
 // ── YARP (must be LAST) ────────────────────────────────────────────────────────

@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telemedicine-service
+  namespace: carelink
+  labels:
+    app: telemedicine-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: telemedicine-service
+  template:
+    metadata:
+      labels:
+        app: telemedicine-service
+    spec:
+      containers:
+        - name: telemedicine-service
+          image: carelink/telemedicine-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5007
+              name: http
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: ASPNETCORE_ENVIRONMENT
+            - name: MongoDb__ConnectionString
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: MongoDb__ConnectionString
+            - name: MongoDb__Database
+              value: telemedicinedb
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: telemedicine-service
+  namespace: carelink
+spec:
+  selector:
+    app: telemedicine-service
+  ports:
+    - port: 5007
+      targetPort: 5007
+  type: ClusterIP

@@ -5,10 +5,13 @@ namespace DoctorService.DTOs;
 public class CreateDoctorDto
 {
     [Required]
-    public int UserId { get; set; }
+    public string UserId { get; set; }
 
     [Required]
     public string SpecializationId { get; set; } = default!;
+
+     
+    public string DoctorName { get; set; }
 
     [Required]
     public string LicenseNumber { get; set; } = default!;

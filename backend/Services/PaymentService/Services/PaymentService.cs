@@ -53,17 +53,17 @@ public class PaymentService : IPaymentService
             var created = await _repository.AddAsync(payment);
             
             // 2. Publish event (if this fails, everything rolls back)
-            await _publishEndpoint.Publish(new PaymentCreatedEvent
-            {
-                PaymentId = created.Id,
-                AppointmentId = created.AppointmentId,
-                PatientId = created.PatientId,
-                DoctorId = created.DoctorId,
-                Amount = created.Amount,
-                Currency = created.Currency,
-                Status = created.Status,
-                CreatedAt = created.CreatedAt
-            });
+            //await _publishEndpoint.Publish(new PaymentCreatedEvent
+            //{
+            //    PaymentId = created.Id,
+            //    AppointmentId = created.AppointmentId,
+            //    PatientId = created.PatientId,
+            //    DoctorId = created.DoctorId,
+            //    Amount = created.Amount,
+            //    Currency = created.Currency,
+            //    Status = created.Status,
+            //    CreatedAt = created.CreatedAt
+            //});
             
             // 3. Commit transaction - ALL operations succeed together
             await transaction.CommitAsync();
@@ -194,6 +194,150 @@ public class PaymentService : IPaymentService
             throw;
         }
     }
+    // ✅ NEW: Get payment by consultation ID
+    public async Task<PaymentResponseDto?> GetByConsultationIdAsync(int? consultationId)
+    {
+        if (!consultationId.HasValue || consultationId.Value <= 0)
+            return null;
+
+        var payment = await _repository.GetByConsultationIdAsync(consultationId.Value);
+        return payment == null ? null : ToDto(payment);
+    }
+
+    // ✅ NEW: Create pending payment (for Stripe checkout sessions)
+    public async Task<PaymentResponseDto> CreatePendingAsync(PaymentRequestDto request)
+    {
+        IDbContextTransaction? transaction = null;
+
+        try
+        {
+            transaction = await _repository.BeginTransactionAsync();
+
+            // Check if payment already exists for this consultation
+            if (request.ConsultationId.HasValue)
+            {
+                var existingPayment = await _repository.GetByConsultationIdAsync(request.ConsultationId.Value);
+                if (existingPayment != null && existingPayment.Status != Enum.CommonStatus.PaymentFailed)
+                {
+                    _logger.LogWarning("Payment already exists for consultation {ConsultationId}. Existing payment ID: {PaymentId}",
+                        request.ConsultationId, existingPayment.Id);
+
+                    // Return existing payment if it's pending
+                    if (existingPayment.Status == Enum.CommonStatus.Active ||
+                        existingPayment.Status == Enum.CommonStatus.PaymentPending)
+                    {
+                        await transaction.CommitAsync();
+                        return ToDto(existingPayment);
+                    }
+                }
+            }
+
+            // Create pending payment record
+            var payment = new Payment
+            {
+                AppointmentId = request.AppointmentId,
+                PatientId = request.PatientId,
+                DoctorId = request.DoctorId,
+                Amount = request.Amount,
+                Currency = request.Currency,
+                PaymentMethod = request.PaymentMethod ?? "stripe",
+                Status = Enum.CommonStatus.PaymentPending, // Pending status
+                TransactionId = request.TransactionId,
+                PaymentGateway = request.PaymentGateway ?? "Stripe",
+                PaidAt = null, // Not paid yet
+                Notes = request.Notes ?? "Payment initiated via Stripe checkout",
+                ConsultationId = request.ConsultationId,
+                StripeSessionId = request.StripeSessionId,
+                StripePaymentIntentId = request.StripePaymentIntentId,
+                Metadata = request.Metadata,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var created = await _repository.AddAsync(payment);
+
+            // Publish pending payment event
+            //await _publishEndpoint.Publish(new PaymentPendingEvent
+            //{
+            //    PaymentId = created.Id,
+            //    ConsultationId = created.ConsultationId,
+            //    PatientId = created.PatientId,
+            //    DoctorId = created.DoctorId,
+            //    Amount = created.Amount,
+            //    Currency = created.Currency,
+            //    StripeSessionId = created.StripeSessionId,
+            //    CreatedAt = created.CreatedAt
+            //});
+
+            await transaction.CommitAsync();
+
+            _logger.LogInformation("Pending payment created successfully. PaymentId: {PaymentId}, SessionId: {SessionId}",
+                created.Id, created.StripeSessionId);
+
+            return ToDto(created);
+        }
+        catch (Exception ex)
+        {
+            if (transaction != null)
+                await transaction.RollbackAsync();
+
+            _logger.LogError(ex, "Failed to create pending payment for consultation {ConsultationId}", request.ConsultationId);
+            throw;
+        }
+    }
+
+    // ✅ Helper method to update payment after successful Stripe payment
+    public async Task<PaymentResponseDto> CompletePaymentAsync(string stripeSessionId, string paymentIntentId)
+    {
+        IDbContextTransaction? transaction = null;
+
+        try
+        {
+            transaction = await _repository.BeginTransactionAsync();
+
+            var payment = await _repository.GetByStripeSessionIdAsync(stripeSessionId);
+            if (payment == null)
+                throw new KeyNotFoundException($"Payment not found for Stripe session: {stripeSessionId}");
+
+            // Update payment status
+            payment.Status = Enum.CommonStatus.PaymentCompleted;
+            payment.StripePaymentIntentId = paymentIntentId;
+            payment.PaidAt = DateTime.UtcNow;
+            payment.UpdatedAt = DateTime.UtcNow;
+            payment.Notes = (payment.Notes ?? "") + " | Payment completed successfully via Stripe";
+
+            var updated = await _repository.UpdateAsync(payment);
+
+            // Publish payment completed event
+            await _publishEndpoint.Publish(new PaymentCompletedEvent
+            {
+                PaymentId = payment.Id,
+                ConsultationId = payment.ConsultationId,
+                AppointmentId = payment.AppointmentId,
+                PatientId = payment.PatientId,
+                DoctorId = payment.DoctorId,
+                Amount = payment.Amount,
+                Currency = payment.Currency,
+                StripePaymentIntentId = paymentIntentId,
+                PaidAt = payment.PaidAt.Value
+            });
+
+            await transaction.CommitAsync();
+
+            _logger.LogInformation("Payment completed successfully. PaymentId: {PaymentId}, SessionId: {SessionId}",
+                payment.Id, stripeSessionId);
+
+            return ToDto(updated);
+        }
+        catch (Exception ex)
+        {
+            if (transaction != null)
+                await transaction.RollbackAsync();
+
+            _logger.LogError(ex, "Failed to complete payment for Stripe session {SessionId}", stripeSessionId);
+            throw;
+        }
+    }
+
 
     private static PaymentResponseDto ToDto(Payment p) => new()
     {
@@ -209,6 +353,9 @@ public class PaymentService : IPaymentService
         PaymentGateway = p.PaymentGateway,
         CreatedAt = p.CreatedAt,
         PaidAt = p.PaidAt,
-        Notes = p.Notes
+        Notes = p.Notes,
+        ConsultationId = p.ConsultationId,
+        StripeSessionId = p.StripeSessionId,
+        StripePaymentIntentId = p.StripePaymentIntentId
     };
 }

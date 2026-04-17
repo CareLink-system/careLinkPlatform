@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chatbot-service
+  namespace: carelink
+  labels:
+    app: chatbot-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chatbot-service
+  template:
+    metadata:
+      labels:
+        app: chatbot-service
+    spec:
+      containers:
+        - name: chatbot-service
+          image: carelink/chatbot-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8001
+              name: http
+          env:
+            - name: MONGO_URI
+              value: mongodb://mongodb-service:27017
+            - name: MONGO_DB
+              value: chatbot
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chatbot-service
+  namespace: carelink
+spec:
+  selector:
+    app: chatbot-service
+  ports:
+    - port: 8001
+      targetPort: 8001
+  type: ClusterIP

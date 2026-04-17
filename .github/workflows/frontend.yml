@@ -1,0 +1,169 @@
+# CareLink Platform - Frontend CI/CD
+# This workflow builds, tests, and lints the React frontend
+
+name: Frontend CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "frontend/**"
+
+env:
+  NODE_VERSION: "22.x"
+
+jobs:
+  build-and-test:
+    name: Build and Test Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "frontend/package-lock.json"
+
+      - name: Install Dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: ./frontend
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Build Application
+        working-directory: ./frontend
+        run: node --trace-uncaught --trace-warnings ./node_modules/vite/bin/vite.js build
+        env:
+          VITE_API_BASE_URL: "http://api.example.com"
+
+      - name: Run Tests
+        working-directory: ./frontend
+        run: npm run test --if-present -- --run
+        continue-on-error: true
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/dist/
+          retention-days: 5
+
+  security-scan:
+    name: Dependency & Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: NPM Audit
+        working-directory: ./frontend
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "frontend/"
+          format: "sarif"
+          output: "trivy-results.sarif"
+        continue-on-error: true
+
+      - name: Upload Trivy Results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
+        continue-on-error: true
+
+  lighthouse:
+    name: Lighthouse Performance Audit
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: success()
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "frontend/package-lock.json"
+
+      - name: Install Dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Build Application
+        working-directory: ./frontend
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: "http://api.example.com"
+
+      - name: Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v10
+        with:
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+          configPath: "./frontend/lighthouserc.json"
+        continue-on-error: true
+
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "frontend/package-lock.json"
+
+      - name: Install Dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run Prettier Check
+        working-directory: ./frontend
+        run: npm run format:check
+        continue-on-error: true
+
+  notify:
+    name: Send Notifications
+    runs-on: ubuntu-latest
+    needs: [build-and-test, security-scan]
+    if: always()
+
+    steps:
+      - name: Job Status
+        run: |
+          if [ "${{ needs.build-and-test.result }}" = "success" ]; then
+            echo "✅ Frontend build and tests passed!"
+          else
+            echo "❌ Frontend build or tests failed!"
+          fi

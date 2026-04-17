@@ -1,8 +1,10 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
+from bson import ObjectId
+from pymongo.errors import PyMongoError
 
-from schemas import SymptomRequest, SymptomResponse
+from schemas import SymptomRequest, SymptomResponse, AnalysisFeedbackRequest, SymptomUpdateRequest
 from ml_service import MLService
 from database import get_database
 
@@ -19,27 +21,55 @@ app.add_middleware(
 ml_service = MLService()
 db = get_database()
 
+
+def _serialize_doc(doc):
+    doc["_id"] = str(doc["_id"])
+    return doc
+
+
+def _parse_object_id(raw_id: str) -> ObjectId:
+    if not ObjectId.is_valid(raw_id):
+        raise HTTPException(status_code=400, detail="Invalid analysis_id")
+    return ObjectId(raw_id)
+
 @app.post("/api/symptom-checker/analyze", response_model=SymptomResponse)
 async def analyze(req: SymptomRequest):
     payload = req.symptoms if req.symptoms else req.description
     
     predicted, confidence, specialty, feedback = await ml_service.predict(payload)
+    # Ensure we always return non-empty medical guidance. Prefer ML service output
+    # (Gemini when available) and fall back to the ML service's deterministic guidance.
+    if not feedback or not str(feedback).strip():
+        try:
+            # Use the MLService fallback guidance generator to keep messaging consistent
+            feedback = ml_service._fallback_guidance(predicted, specialty)
+        except Exception:
+            feedback = (
+                f"Based on your symptoms, {predicted} is a possible condition. "
+                f"Please consult a {specialty} for a proper diagnosis."
+            )
 
     doc = req.dict()
     doc.update({
+        "symptoms_reported": req.symptoms or [],
         "predicted_condition": predicted, 
         "confidence": confidence, 
         "recommended_specialty": specialty,
         "ai_feedback": feedback,
+        "feedback": None,
         "created_at": datetime.utcnow()
     })
 
+    inserted_id = None
     try:
-        await db["analyses"].insert_one(doc)
-    except Exception:
-        raise HTTPException(status_code=500, detail="Failed to save analysis to database")
+        result = await db["analyses"].insert_one(doc)
+        inserted_id = str(result.inserted_id)
+    except Exception as e:
+        # Do not fail user-facing analysis when persistence is temporarily unavailable.
+        print(f"WARNING: Failed to save analysis to database: {e}")
 
     return SymptomResponse(
+        analysis_id=inserted_id,
         predicted_condition=predicted, 
         confidence=confidence,
         recommended_specialty=specialty,
@@ -47,18 +77,174 @@ async def analyze(req: SymptomRequest):
     )
 
 
+@app.put("/api/symptom-checker/analyze/{analysis_id}", response_model=SymptomResponse)
+async def update_analysis(analysis_id: str, req: SymptomUpdateRequest):
+    object_id = _parse_object_id(analysis_id)
+
+    try:
+        existing = await db["analyses"].find_one({"_id": object_id})
+        if not existing:
+            raise HTTPException(status_code=404, detail="Analysis not found")
+
+        updated_user_id = req.user_id or existing.get("user_id")
+        updated_symptoms = req.symptoms if req.symptoms is not None else existing.get("symptoms") or existing.get("symptoms_reported") or []
+        updated_description = req.description if req.description is not None else existing.get("description")
+
+        payload = updated_symptoms if updated_symptoms else updated_description
+        predicted, confidence, specialty, feedback = await ml_service.predict(payload)
+        if not feedback or not str(feedback).strip():
+            try:
+                feedback = ml_service._fallback_guidance(predicted, specialty)
+            except Exception:
+                feedback = (
+                    f"Based on your symptoms, {predicted} is a possible condition. "
+                    f"Please consult a {specialty} for a proper diagnosis."
+                )
+
+        update_doc = {
+            "user_id": updated_user_id,
+            "symptoms": updated_symptoms,
+            "description": updated_description,
+            "symptoms_reported": updated_symptoms or [],
+            "predicted_condition": predicted,
+            "confidence": confidence,
+            "recommended_specialty": specialty,
+            "ai_feedback": feedback,
+            "updated_at": datetime.utcnow(),
+        }
+
+        await db["analyses"].update_one({"_id": object_id}, {"$set": update_doc})
+
+        return SymptomResponse(
+            analysis_id=analysis_id,
+            predicted_condition=predicted,
+            confidence=confidence,
+            recommended_specialty=specialty,
+            ai_feedback=feedback,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"WARNING: Failed to update analysis: {e}")
+        raise HTTPException(status_code=503, detail="Analysis service unavailable")
+
+
+@app.get("/api/symptom-checker/symptoms")
+async def get_symptoms():
+    return {"symptoms": ml_service.features}
+
+
+@app.get("/api/symptom-checker/analyze/{analysis_id}")
+async def get_analysis(analysis_id: str):
+    object_id = _parse_object_id(analysis_id)
+    try:
+        doc = await db["analyses"].find_one({"_id": object_id})
+        if not doc:
+            raise HTTPException(status_code=404, detail="Analysis not found")
+        return _serialize_doc(doc)
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"WARNING: Failed to fetch analysis: {e}")
+        raise HTTPException(status_code=503, detail="Analysis service unavailable")
+
+
 # --- NEW ENDPOINT FOR HISTORY ---
 @app.get("/api/symptom-checker/history/{user_id}")
 async def get_history(user_id: str):
     try:
-        # Fetch user's history from MongoDB, sorted by newest first (-1)
         cursor = db["analyses"].find({"user_id": user_id}).sort("created_at", -1).limit(10)
         history = await cursor.to_list(length=10)
-        
-        # Convert MongoDB _id (ObjectId) to string for JSON serialization
         for doc in history:
-            doc["_id"] = str(doc["_id"])
-            
+            _serialize_doc(doc)
         return history
+    except PyMongoError as e:
+        print(f"WARNING: Failed to fetch history: {e}")
+        raise HTTPException(status_code=503, detail="Symptom checker database unavailable")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch history: {str(e)}")
+        print(f"WARNING: Failed to fetch history: {e}")
+        raise HTTPException(status_code=503, detail="Symptom checker database unavailable")
+
+
+@app.delete("/api/symptom-checker/analyze/{analysis_id}")
+async def delete_analysis(analysis_id: str):
+    object_id = _parse_object_id(analysis_id)
+    try:
+        result = await db["analyses"].delete_one({"_id": object_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Analysis not found")
+        return {"deleted": True, "analysis_id": analysis_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"WARNING: Failed to delete analysis: {e}")
+        raise HTTPException(status_code=503, detail="Analysis service unavailable")
+
+
+@app.delete("/api/symptom-checker/history/{user_id}")
+async def clear_history(user_id: str):
+    try:
+        result = await db["analyses"].delete_many({"user_id": user_id})
+        return {"deleted_count": result.deleted_count, "user_id": user_id}
+    except Exception as e:
+        print(f"WARNING: Failed to clear history: {e}")
+        return {"deleted_count": 0, "user_id": user_id}
+
+
+@app.patch("/api/symptom-checker/analyze/{analysis_id}/feedback")
+async def set_feedback(analysis_id: str, payload: AnalysisFeedbackRequest):
+    object_id = _parse_object_id(analysis_id)
+    try:
+        result = await db["analyses"].update_one(
+            {"_id": object_id},
+            {
+                "$set": {
+                    "feedback": {"was_accurate": payload.was_accurate},
+                    "feedback_updated_at": datetime.utcnow(),
+                }
+            },
+        )
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Analysis not found")
+        return {"updated": True, "analysis_id": analysis_id, "was_accurate": payload.was_accurate}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"WARNING: Failed to update feedback: {e}")
+        return {"updated": False, "analysis_id": analysis_id, "was_accurate": payload.was_accurate}
+
+
+@app.get("/api/symptom-checker/stats")
+async def get_stats(x_role: str | None = Header(default=None)):
+    if (x_role or "").lower() != "admin":
+        raise HTTPException(status_code=403, detail="Admin role required")
+
+    try:
+        total = await db["analyses"].count_documents({})
+
+        common_cursor = db["analyses"].aggregate([
+            {"$group": {"_id": "$predicted_condition", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}},
+            {"$limit": 10},
+        ])
+        common = await common_cursor.to_list(length=10)
+
+        avg_cursor = db["analyses"].aggregate([
+            {"$group": {"_id": None, "avg_confidence": {"$avg": "$confidence"}}}
+        ])
+        avg_result = await avg_cursor.to_list(length=1)
+        avg_confidence = avg_result[0]["avg_confidence"] if avg_result else 0
+
+        return {
+            "total_analyses": total,
+            "average_ai_confidence": avg_confidence,
+            "most_common_predicted_conditions": [
+                {"condition": row["_id"], "count": row["count"]} for row in common
+            ],
+        }
+    except PyMongoError as e:
+        print(f"WARNING: Failed to fetch stats: {e}")
+        raise HTTPException(status_code=503, detail="Symptom checker database unavailable")
+    except Exception as e:
+        print(f"WARNING: Failed to fetch stats: {e}")
+        raise HTTPException(status_code=503, detail="Symptom checker database unavailable")
