@@ -122,7 +122,7 @@ export default function MedicalReportsPage() {
   if (loading)
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4B9AA8]" />
       </div>
     )
 
@@ -130,16 +130,16 @@ export default function MedicalReportsPage() {
     <div className="max-w-6xl mx-auto p-6 space-y-6 font-sans">
 
       {/* Header */}
-      <div className="flex items-center justify-between bg-gradient-to-r from-blue-600 to-blue-700 text-white p-5 rounded-2xl shadow-lg">
+      <div className="flex items-center justify-between bg-gradient-to-r from-[#8dd9e4] to-[#4B9AA8] text-slate-900 p-5 rounded-2xl shadow-lg">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Medical Reports</h1>
-          <p className="text-blue-100 text-sm mt-0.5">
+          <p className="text-slate-700 text-sm mt-0.5">
             {reports.length} total report{reports.length !== 1 ? 's' : ''}
           </p>
         </div>
         <button
           onClick={openCreate}
-          className="bg-white text-blue-600 font-semibold px-5 py-2 rounded-xl hover:bg-blue-50 transition-colors shadow"
+          className="bg-white text-[#2f7f8d] font-semibold px-5 py-2 rounded-xl hover:bg-cyan-50 transition-colors shadow"
         >
           + New Report
         </button>
@@ -156,7 +156,7 @@ export default function MedicalReportsPage() {
             placeholder="Search by name, type, diagnosis…"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm"
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#6EC7D4] bg-white text-sm"
           />
         </div>
         {search && (
@@ -196,13 +196,13 @@ export default function MedicalReportsPage() {
                 </tr>
               ) : (
                 paginated.map((r, i) => (
-                  <tr key={r.id} className="hover:bg-blue-50/30 transition-colors">
+                  <tr key={r.id} className="hover:bg-cyan-50/40 transition-colors">
                     <td className="px-5 py-3.5 text-gray-400 font-mono text-xs">
                       {(page - 1) * ITEMS_PER_PAGE + i + 1}
                     </td>
                     <td className="px-5 py-3.5 font-medium text-gray-800">{r.patientName || '—'}</td>
                     <td className="px-5 py-3.5">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-cyan-100 text-cyan-700">
                         {r.reportType || '—'}
                       </span>
                     </td>
@@ -216,7 +216,7 @@ export default function MedicalReportsPage() {
                       {r.reports ? (
                         <button
                           onClick={() => openFile(r.reports)}
-                          className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs font-medium underline underline-offset-2"
+                          className="inline-flex items-center gap-1 text-[#2f7f8d] hover:text-[#276f7c] text-xs font-medium underline underline-offset-2"
                         >
                           {isPdf(r.reports) ? '📄' : '🖼️'} View
                         </button>
@@ -228,7 +228,7 @@ export default function MedicalReportsPage() {
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => setViewReport(r)}
-                          className="text-gray-400 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 transition-colors"
+                          className="text-gray-400 hover:text-[#2f7f8d] p-1.5 rounded-lg hover:bg-cyan-50 transition-colors"
                           title="View details"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -283,7 +283,7 @@ export default function MedicalReportsPage() {
                   onClick={() => setPage(p)}
                   className={`w-8 h-8 text-xs rounded-lg border transition-colors ${
                     p === page
-                      ? 'bg-blue-600 text-white border-blue-600'
+                      ? 'bg-[#4B9AA8] text-white border-[#4B9AA8]'
                       : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                   }`}
                 >

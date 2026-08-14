@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net.NetworkInformation;
 using System.Security.Claims;
 using System.Text;
 
@@ -89,6 +90,12 @@ public class AuthController : ControllerBase
 
             _logger.LogInformation("Registering user. Email: {Email}, IP: {IP}", request.Email, userIp);
 
+            int status = 1;
+            if(request.Role == "Doctor")
+            {
+                 status = 0; // For Admin need to approve
+            }
+
             // Create new user with ApplicationUser model
             var user = new ApplicationUser
             {
@@ -99,7 +106,8 @@ public class AuthController : ControllerBase
                 Role = NormalizeRegistrationRole(request.Role),
                 Titles = request.Titles,
                 CreatedAt = DateTime.UtcNow,
-                IsActive = true
+                IsActive = true,
+                status = status
             };
 
             var result = await _userManager.CreateAsync(user, request.Password);

@@ -31,7 +31,8 @@
     <PackageReference Include="MassTransit.RabbitMQ" Version="7.3.1" />
   </ItemGroup>
 	<ItemGroup>
-		<ProjectReference Include="..\..\Shared\SharedConfiguration\SharedConfiguration.csproj" />
+		<!--For Deployment-->
+		<!--<ProjectReference Include="..\..\Shared\SharedConfiguration\SharedConfiguration.csproj" />-->
 	</ItemGroup>
 	<ItemGroup>
 	  <Folder Include="Migrations\" />

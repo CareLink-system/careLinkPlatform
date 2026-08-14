@@ -26,7 +26,11 @@ import ManageSlotsPage from "./features/slots/pages/ManageSlotsPage";
 import PaymentPage from "./features/payment/pages/PaymentPage";
 import PaymentSuccessPage from "./features/payment/pages/PaymentSuccessPage";
 import PaymentCancelPage from "./features/payment/pages/PaymentCancelPage";
+import PaymentHistoryPage from "./features/payment/pages/PaymentHistoryPage";
+import PaymentDetailsPage from "./features/payment/pages/PaymentDetailsPage";
+import ReceiptPage from "./features/payment/pages/ReceiptPage";
 import PrescriptionsPage from "./features/prescription/pages/PrescriptionsPage";
+import HelpPage from "./features/help/pages/HelpPage";
 
 import "./App.css";
 
@@ -72,10 +76,14 @@ function App() {
         <Route path="/payment" element={<PaymentPage />} />
         <Route path="/payment/success" element={<PaymentSuccessPage />} />
         <Route path="/payment/cancel" element={<PaymentCancelPage />} />
+        <Route path="/payment/history" element={<PaymentHistoryPage />} />
+        <Route path="/payment/details/:paymentId" element={<PaymentDetailsPage />} />
+        <Route path="/payment/receipt/:paymentId" element={<ReceiptPage />} />
      
         <Route path="/doctor/appointments" element={<DoctorAppointmentsPage />} />
         <Route path="/slots/manage" element={<ManageSlotsPage />} />
         <Route path="/prescriptions" element={<PrescriptionsPage />} />
+        <Route path="/help" element={<HelpPage />} />
         </Route>
     </Routes>
   );

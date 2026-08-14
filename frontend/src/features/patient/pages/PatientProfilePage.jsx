@@ -116,9 +116,9 @@ export default function PatientProfilePage() {
     <div className="max-w-5xl mx-auto p-6 space-y-6">
 
       {/* ================= HEADER ================= */}
-      <div className="bg-gradient-to-r from-[#1649FF] to-[#06b6d4] text-white p-6 rounded-2xl shadow-lg">
+      <div className="bg-gradient-to-r from-[#8dd9e4] to-[#4B9AA8] text-slate-900 p-6 rounded-2xl shadow-lg">
         <h1 className="text-2xl font-bold">Patient Profile</h1>
-        <p className="text-sm opacity-80">Manage your personal health information</p>
+        <p className="text-sm text-slate-700">Manage your personal health information</p>
       </div>
 
       {/* ================= USER CARD ================= */}
@@ -224,7 +224,7 @@ export default function PatientProfilePage() {
             <button
               onClick={handleUpdate}
               disabled={actionLoading}
-              className="bg-[#1649FF] hover:bg-blue-700 text-white px-5 py-2 rounded-lg disabled:opacity-50"
+              className="bg-[#4B9AA8] hover:bg-[#3f8a97] text-white px-5 py-2 rounded-lg disabled:opacity-50"
             >
               {actionLoading ? 'Updating...' : 'Update Patient Profile'}
             </button>

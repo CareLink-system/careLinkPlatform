@@ -53,17 +53,17 @@ public class PaymentService : IPaymentService
             var created = await _repository.AddAsync(payment);
             
             // 2. Publish event (if this fails, everything rolls back)
-            await _publishEndpoint.Publish(new PaymentCreatedEvent
-            {
-                PaymentId = created.Id,
-                AppointmentId = created.AppointmentId,
-                PatientId = created.PatientId,
-                DoctorId = created.DoctorId,
-                Amount = created.Amount,
-                Currency = created.Currency,
-                Status = created.Status,
-                CreatedAt = created.CreatedAt
-            });
+            //await _publishEndpoint.Publish(new PaymentCreatedEvent
+            //{
+            //    PaymentId = created.Id,
+            //    AppointmentId = created.AppointmentId,
+            //    PatientId = created.PatientId,
+            //    DoctorId = created.DoctorId,
+            //    Amount = created.Amount,
+            //    Currency = created.Currency,
+            //    Status = created.Status,
+            //    CreatedAt = created.CreatedAt
+            //});
             
             // 3. Commit transaction - ALL operations succeed together
             await transaction.CommitAsync();

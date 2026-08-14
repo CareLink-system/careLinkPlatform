@@ -31,7 +31,7 @@ export default function DoctorSlotsPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-        <div className="w-14 h-14 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
+        <div className="w-14 h-14 border-2 border-[#4B9AA8] border-t-transparent rounded-full animate-spin mb-4" />
         <p className="text-gray-500 text-sm">Loading availability slots...</p>
       </div>
     )
@@ -41,17 +41,17 @@ export default function DoctorSlotsPage() {
     <div className="max-w-6xl mx-auto p-6 space-y-8">
 
       {/* ================= HEADER ================= */}
-      <div className="bg-gradient-to-r from-[#1649FF] to-[#06b6d4] text-white p-7 rounded-3xl shadow-xl flex flex-col md:flex-row md:items-center md:justify-between">
+      <div className="bg-gradient-to-r from-[#8dd9e4] to-[#4B9AA8] text-slate-900 p-7 rounded-3xl shadow-xl flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
             Availability Slots
           </h1>
-          <p className="text-sm opacity-80 mt-1">
+          <p className="text-sm text-slate-700 mt-1">
             Choose a time slot and book your appointment
           </p>
         </div>
 
-        <div className="mt-4 md:mt-0 text-sm opacity-80">
+        <div className="mt-4 md:mt-0 text-sm text-slate-700">
           {slots.length} slots available
         </div>
       </div>

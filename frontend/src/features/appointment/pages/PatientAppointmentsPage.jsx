@@ -100,20 +100,20 @@ export default function PatientAppointmentsPage() {
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
 
         {/* ── Header ── */}
-        <div className="flex items-center justify-between bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-5 rounded-2xl shadow-lg">
+        <div className="flex items-center justify-between bg-gradient-to-r from-[#8dd9e4] to-[#4B9AA8] text-slate-900 px-6 py-5 rounded-2xl shadow-lg">
             <div>
               <h1 className="text-2xl font-bold tracking-tight">
                 My Appointments
               </h1>
 
-              <p className="text-blue-100 text-sm mt-1">
+              <p className="text-slate-700 text-sm mt-1">
                 Track and manage all your scheduled visits
               </p>
             </div>
 
             <button
               onClick={load}
-              className="flex items-center gap-2 text-sm font-medium text-blue-700 bg-white px-4 py-2 rounded-xl shadow-sm hover:bg-blue-50 transition"
+              className="flex items-center gap-2 text-sm font-medium text-[#2f7f8d] bg-white px-4 py-2 rounded-xl shadow-sm hover:bg-cyan-50 transition"
             >
               <svg
                 className="w-4 h-4"
@@ -138,7 +138,7 @@ export default function PatientAppointmentsPage() {
           {[
             { label: 'Total',       value: total,     bg: 'bg-white',       border: 'border-gray-200',  text: 'text-gray-800' },
             { label: 'Scheduled',   value: scheduled, bg: 'bg-yellow-50',   border: 'border-yellow-200',text: 'text-yellow-700' },
-            { label: 'Confirmed',   value: confirmed, bg: 'bg-blue-50',     border: 'border-blue-200',  text: 'text-blue-700' },
+            { label: 'Confirmed',   value: confirmed, bg: 'bg-cyan-50',     border: 'border-cyan-200',  text: 'text-cyan-700' },
             { label: 'Completed',   value: completed, bg: 'bg-green-50',    border: 'border-green-200', text: 'text-green-700' },
             { label: 'Cancelled',   value: cancelled, bg: 'bg-red-50',      border: 'border-red-200',   text: 'text-red-700' },
           ].map(({ label, value, bg, border, text }) => (
@@ -162,7 +162,7 @@ export default function PatientAppointmentsPage() {
               placeholder="Search by ID, reason, type, status..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setCurrentPage(1) }}
-              className="w-full pl-9 pr-9 py-2.5 text-sm border border-gray-200 rounded-xl bg-white placeholder-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition shadow-sm"
+              className="w-full pl-9 pr-9 py-2.5 text-sm border border-gray-200 rounded-xl bg-white placeholder-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#6EC7D4] focus:border-transparent transition shadow-sm"
             />
             {search && (
               <button
@@ -184,7 +184,7 @@ export default function PatientAppointmentsPage() {
                 onClick={() => { setStatusFilter(value); setCurrentPage(1) }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
                   statusFilter === value
-                    ? 'bg-blue-600 text-white shadow-sm'
+                    ? 'bg-[#4B9AA8] text-white shadow-sm'
                     : 'text-gray-500 hover:bg-gray-100'
                 }`}
               >
@@ -207,7 +207,7 @@ export default function PatientAppointmentsPage() {
         {loading ? (
           <div className="flex items-center justify-center py-20 bg-white rounded-2xl border border-gray-100">
             <div className="flex flex-col items-center gap-3">
-              <div className="w-10 h-10 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+              <div className="w-10 h-10 border-2 border-cyan-200 border-t-[#4B9AA8] rounded-full animate-spin" />
               <p className="text-xs text-gray-400 font-medium">Loading appointments...</p>
             </div>
           </div>
@@ -250,7 +250,7 @@ export default function PatientAppointmentsPage() {
                     onClick={() => setCurrentPage(num)}
                     className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all ${
                       currentPage === num
-                        ? 'bg-blue-600 text-white shadow-sm'
+                        ? 'bg-[#4B9AA8] text-white shadow-sm'
                         : 'border border-gray-200 text-gray-500 hover:bg-gray-50'
                     }`}
                   >

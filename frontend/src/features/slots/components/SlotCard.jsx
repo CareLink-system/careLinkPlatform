@@ -22,7 +22,7 @@ export default function SlotCard({
         {/* Date */}
         <div>
           <p className="text-sm text-gray-400">📅 Date</p>
-          <p className="font-semibold text-blue-600 text-lg">
+          <p className="font-semibold text-[#2f7f8d] text-lg">
             {formattedDate}
           </p>
         </div>
@@ -62,7 +62,7 @@ export default function SlotCard({
           className={`mt-5 w-full py-2.5 rounded-xl font-semibold transition-all duration-200 ${
             isBooked
               ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              : 'bg-gradient-to-r from-[#1649FF] to-[#06b6d4] text-white hover:scale-[1.03] active:scale-[0.97] shadow-md hover:shadow-lg'
+              : 'bg-gradient-to-r from-[#4B9AA8] to-[#6EC7D4] text-white hover:scale-[1.03] active:scale-[0.97] shadow-md hover:shadow-lg'
           }`}
         >
           {isBooked ? 'Already Booked' : 'Book Appointment'}

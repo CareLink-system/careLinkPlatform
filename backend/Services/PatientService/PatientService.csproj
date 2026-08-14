@@ -28,7 +28,7 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="7.0.0" />
   </ItemGroup>
 <ItemGroup>
-		<ProjectReference Include="..\..\Shared\SharedConfiguration\SharedConfiguration.csproj" />
+		<!--<ProjectReference Include="..\..\Shared\SharedConfiguration\SharedConfiguration.csproj" />-->
 	</ItemGroup>
 <ItemGroup>
   <Folder Include="Migrations\" />

@@ -27,8 +27,9 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="7.0.0" />
   </ItemGroup>
-	<ItemGroup>
+  <!-- For Deployment -->
+	<!-- <ItemGroup>
 		<ProjectReference Include="..\..\Shared\SharedConfiguration\SharedConfiguration.csproj" />
-	</ItemGroup>
+	</ItemGroup> -->
 
 </Project>
