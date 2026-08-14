@@ -34,7 +34,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PatientService\PatientService.csproj" />
-    <ProjectReference Include="..\..\Shared\SharedConfiguration\SharedConfiguration.csproj" />
-  </ItemGroup>
+   </ItemGroup>
 
 </Project>
