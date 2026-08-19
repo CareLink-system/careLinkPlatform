@@ -17,12 +17,73 @@ spec:
     spec:
       containers:
         - name: auth-service
-          image: carelink/auth-service:latest
-          imagePullPolicy: Always
+          image: dinildulneth/auth-service:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5001
               name: http
           env:
+            # ============================================
+            # DATABASE ENV VARS (ALL OF THEM!)
+            # ============================================
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: DB_PORT
+            - name: DB_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: DB_USERNAME
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: AUTH_DB_NAME
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: carelink-secrets
+                  key: PostgresPassword
+            - name: DB_SSL_MODE
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: DB_SSL_MODE
+
+            # ============================================
+            # JWT ENV VARS
+            # ============================================
+            - name: Jwt__Key
+              valueFrom:
+                secretKeyRef:
+                  name: carelink-secrets
+                  key: Jwt__Key
+            - name: Jwt__Issuer
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: Jwt__Issuer
+            - name: Jwt__Audience
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: Jwt__Audience
+
+            # ============================================
+            # CONNECTION STRING (FOR SERVICES THAT USE IT)
+            # ============================================
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: AuthDb__ConnectionString
             - name: ASPNETCORE_ENVIRONMENT
               valueFrom:
                 configMapKeyRef:
