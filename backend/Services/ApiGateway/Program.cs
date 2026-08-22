@@ -255,7 +255,7 @@ app.UseSwaggerUI(c =>
     // KEY FIX: use the same in-memory list, not config (which was never written to correctly)
     foreach (var ep in swaggerEndpoints)
     {
-        var slug = ep.Name.Replace(" ", "-");
+        var slug = ep.Name.Replace(" ", "-").ToLower();  // ← Add .ToLower()
         c.SwaggerEndpoint($"/swagger-proxy/{slug}/swagger.json", ep.Name);
         Console.WriteLine($"Registering Swagger UI tab: {ep.Name} -> /swagger-proxy/{slug}/swagger.json");
     }
