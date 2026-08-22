@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  notification-service:
+    image: dinildulneth/notification-service:latest
+    container_name: notification-service
+    ports:
+      - "5008:5008"
+    env_file:
+      - .env # Uses My .env file from the same folder
+    environment:
+      # Override any if needed
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5008
