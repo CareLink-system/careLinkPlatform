@@ -1,23 +1,5 @@
-# Build stage
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
-WORKDIR /src
-
-# Copy csproj and restore dependencies
-COPY ["AuthService.csproj", "."]
-RUN dotnet restore
-
-# Copy everything else and build
-COPY . .
-RUN dotnet publish -c Release -o /app/publish
-
-# Runtime stage
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:9.0
 WORKDIR /app
-EXPOSE 5001
-EXPOSE 5001
-
-# Copy published output from build stage
-COPY --from=build /app/publish .
-
-# Set entry point
+EXPOSE 5002
+COPY ./publish .
 ENTRYPOINT ["dotnet", "AuthService.dll"]
