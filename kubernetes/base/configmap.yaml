@@ -6,9 +6,15 @@ metadata:
 data:
   ASPNETCORE_ENVIRONMENT: "Production"
 
+  DB_HOST: "ep-snowy-feather-a14v529b-pooler.ap-southeast-1.aws.neon.tech"
+  DB_PORT: "5432"
+  DB_USERNAME: "neondb_owner"
+  DB_SSL_MODE: "Require"
+  GATE_DB_NAME: "carelink_db"
+
   # JWT Settings
-  Jwt__Issuer: "careLinkPlatform"
-  Jwt__Audience: "careLinkPlatformUsers"
+  JWT_ISSUER: "careLinkPlatform"
+  JWT_AUDIENCE: "careLinkPlatformUsers"
 
   # RabbitMQ Settings
   RabbitMq__Host: "rabbitmq-service"
@@ -18,20 +24,37 @@ data:
   MongoDb__Database: "carelink_db"
   MongoDb__ConnectionString: "mongodb://mongodb-service:27017"
 
+  # ============================================
+  # SERVICE-SPECIFIC DATABASE NAMES
+  # ============================================
+  AUTH_DB_NAME: "authdb"
+  PATIENT_DB_NAME: "patientdb"
+  DOCTOR_DB_NAME: "doctordb"
+  APPOINTMENT_DB_NAME: "appointmentdb"
+  PAYMENT_DB_NAME: "paymentdb"
+
+  # ============================================
+  # MONGO DB NAMES
+  # ============================================
+  TELEMEDICINE_DB_NAME: "telemedicinedb"
+  NOTIFICATION_DB_NAME: "notificationdb"
+
+  BASE_SERVICE_URL: "http://api-gateway-service"
+
   # Auth Service Database
-  AuthDb__ConnectionString: "Host=ep-snowy-feather-a14v529b-pooler.ap-southeast-1.aws.neon.tech;Database=authdb;Username=postgres;Password=npg_HBgxUG39Cufl"
+  AuthDb__ConnectionString: "Host=ep-snowy-feather-a14v529b-pooler.ap-southeast-1.aws.neon.tech;Port=5432;Database=authdb;Username=neondb_owner;Password=npg_HBgxUG39Cufl;SslMode=Require;Trust Server Certificate=true;Timeout=15;Command Timeout=15;"
 
   # Patient Service Database
-  PatientDb__ConnectionString: "Host=ep-snowy-feather-a14v529b-pooler.ap-southeast-1.aws.neon.tech;Database=patientdb;Username=postgres;Password=npg_HBgxUG39Cufl"
+  PatientDb__ConnectionString: "Host=ep-snowy-feather-a14v529b-pooler.ap-southeast-1.aws.neon.tech;Port=5432;Database=patientdb;Username=neondb_owner;Password=npg_HBgxUG39Cufl;SslMode=Require;Trust Server Certificate=true;Timeout=15;Command Timeout=15;"
 
   # Doctor Service Database
-  DoctorDb__ConnectionString: "Host=ep-snowy-feather-a14v529b-pooler.ap-southeast-1.aws.neon.tech;Database=doctordb;Username=postgres;Password=npg_HBgxUG39Cufl"
+  DoctorDb__ConnectionString: "Host=ep-snowy-feather-a14v529b-pooler.ap-southeast-1.aws.neon.tech;Port=5432;Database=doctordb;Username=neondb_owner;Password=npg_HBgxUG39Cufl;SslMode=Require;Trust Server Certificate=true;Timeout=15;Command Timeout=15;"
 
   # Appointment Service Database
-  AppointmentDb__ConnectionString: "Host=ep-snowy-feather-a14v529b-pooler.ap-southeast-1.aws.neon.tech;Database=appointmentdb;Username=postgres;Password=npg_HBgxUG39Cufl"
+  AppointmentDb__ConnectionString: "Host=ep-snowy-feather-a14v529b-pooler.ap-southeast-1.aws.neon.tech;Port=5432;Database=appointmentdb;Username=neondb_owner;Password=npg_HBgxUG39Cufl;SslMode=Require;Trust Server Certificate=true;Timeout=15;Command Timeout=15;"
 
   # Payment Service Database
-  PaymentDb__ConnectionString: "Host=ep-snowy-feather-a14v529b-pooler.ap-southeast-1.aws.neon.tech;Database=paymentdb;Username=postgres;Password=npg_HBgxUG39Cufl"
+  PaymentDb__ConnectionString: "Host=ep-snowy-feather-a14v529b-pooler.ap-southeast-1.aws.neon.tech;Port=5432;Database=paymentdb;Username=neondb_owner;Password=npg_HBgxUG39Cufl;SslMode=Require;Trust Server Certificate=true;Timeout=15;Command Timeout=15;"
 
   # Telemedicine Service Database
   TelemedicineDb__ConnectionString: "mongodb://mongodb-service:27017/telemedicinedb"
