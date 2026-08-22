@@ -17,22 +17,123 @@ spec:
     spec:
       containers:
         - name: api-gateway
-          image: carelink/api-gateway:latest
-          imagePullPolicy: Always
+          image: dinildulneth/api-gateway:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000
               name: http
           env:
+            # Force ASP.NET Core to listen on port 5000 inside the container
+            - name: ASPNETCORE_URLS
+              value: "http://+:5000"
+
+            # Downstream Service URLs
+            - name: AUTH_SERVICE_URL
+              value: "http://auth-service:5001"
+            - name: PATIENT_SERVICE_URL
+              value: "http://patient-service:5002"
+            - name: DOCTOR_SERVICE_URL
+              value: "http://doctor-service:5003"
+            - name: APPOINTMENT_SERVICE_URL
+              value: "http://appointment-service:5004"
+            - name: TELEMEDICINE_SERVICE_URL
+              value: "http://telemedicine-service:5007"
+            - name: NOTIFICATION_SERVICE_URL
+              value: "http://notification-service:5008"
+            - name: PAYMENT_SERVICE_URL
+              value: "http://payment-service:5010"
+            - name: SYMPTOM_CHECK_SERVICE_URL
+              value: "http://symptom-check-service:8000"
+            - name: CHATBOT_SERVICE_URL
+              value: "http://chatbot-service:8001"
+
+            # Swagger UI Aggregation URLs
+            - name: AUTH_SWAGGER_URL
+              value: "http://auth-service:5001/swagger/v1/swagger.json"
+            - name: PATIENT_SWAGGER_URL
+              value: "http://patient-service:5002/swagger/v1/swagger.json"
+            - name: DOCTOR_SWAGGER_URL
+              value: "http://doctor-service:5003/swagger/v1/swagger.json"
+            - name: APPOINTMENT_SWAGGER_URL
+              value: "http://appointment-service:5004/swagger/v1/swagger.json"
+            - name: TELEMEDICINE_SWAGGER_URL
+              value: "http://telemedicine-service:5007/swagger/v1/swagger.json"
+            - name: NOTIFICATION_SWAGGER_URL
+              value: "http://notification-service:5008/swagger/v1/swagger.json"
+            - name: PAYMENT_SWAGGER_URL
+              value: "http://payment-service:5010/swagger/v1/swagger.json"
+            - name: SYMPTOM_CHECK_SWAGGER_URL
+              value: "http://symptom-check-service:8000/openapi.json"
+            - name: CHATBOT_SWAGGER_URL
+              value: "http://chatbot-service:8001/openapi.json"
+
+            # ============================================
+            # DATABASE ENV VARS (ALL OF THEM!)
+            # ============================================
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: DB_PORT
+            - name: DB_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: DB_USERNAME
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: GATE_DB_NAME
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: carelink-secrets
+                  key: PostgresPassword
+            - name: DB_SSL_MODE
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: DB_SSL_MODE
+
+            # ============================================
+            # JWT ENV VARS
+            # ============================================
+
+            - name: JWT_ISSUER
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: JWT_ISSUER
+            - name: JWT_AUDIENCE
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: JWT_AUDIENCE
+
+            # ============================================
+            # CONNECTION STRING (FOR SERVICES THAT USE IT)
+            # ============================================
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: AuthDb__ConnectionString
             - name: ASPNETCORE_ENVIRONMENT
               valueFrom:
                 configMapKeyRef:
                   name: carelink-config
                   key: ASPNETCORE_ENVIRONMENT
-            - name: Jwt__Key
+            - name: JWT_KEY
               valueFrom:
                 secretKeyRef:
                   name: carelink-secrets
-                  key: Jwt__Key
+                  key: JWT_KEY
             - name: AUTH_SERVICE_URL
               value: "http://auth-service:5001"
             - name: PATIENT_SERVICE_URL
