@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  patient-service:
+    image: dinildulneth/patient-service:latest
+    container_name: patient-service
+    ports:
+      - "5002:5002"
+    env_file:
+      - .env # Uses My .env file from the same folder
+    environment:
+      # Override any if needed
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5002

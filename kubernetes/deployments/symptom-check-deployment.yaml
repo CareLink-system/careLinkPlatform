@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: symptom-check-service
-          image: carelink/symptom-check-service:latest
-          imagePullPolicy: Always
+          image: dinildulneth/symptom-check-service:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
               name: http

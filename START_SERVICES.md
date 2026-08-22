@@ -3,6 +3,7 @@
 This guide describes how to start the services you listed (backend: `AuthService`, `TelemedicineService`, `SymptomCheckService`; frontend) after the initial setup. It contains exact directories and copy-paste commands for Windows PowerShell. Use Docker for convenience (recommended) or run services locally if you prefer.
 
 **Prerequisites (install once)**
+
 - **Docker Desktop** (with Docker Compose) — used for DBs and optional containers.
 - **.NET 9 SDK** (required for the .NET services targeting `net9.0`).
 - **Node.js 18+ and npm** (for frontend / Vite).
@@ -11,6 +12,7 @@ This guide describes how to start the services you listed (backend: `AuthService
 ---
 
 **Directory layout (repo root = repository root)**
+
 - Backend docker-compose: `backend/docker-compose.yml`
 - Auth service: `backend/Services/AuthService`
 - Telemedicine service: `backend/Services/TelemedicineService`
@@ -19,7 +21,7 @@ This guide describes how to start the services you listed (backend: `AuthService
 
 ---
 
-1) Initial one-time setup (on your machine)
+1. Initial one-time setup (on your machine)
 
 - From repo root: restore .NET and install frontend deps
 
@@ -43,7 +45,7 @@ cd f:\careLinkPlatform
 
 Note: creating the Python venv is optional if you prefer Docker for the symptom checker.
 
-2) Option A — Recommended: use Docker Compose (fast, reproducible)
+2. Option A — Recommended: use Docker Compose (fast, reproducible)
 
 - This runs DBs (Postgres, MongoDB, Redis) plus built containers. Run from the `backend` directory.
 
@@ -64,6 +66,7 @@ docker-compose logs -f auth-service telemedicine-service symptom-checker-service
 ```
 
 Notes:
+
 - The `docker-compose.yml` maps container ports to host ports: API Gateway `5000`, Auth `5001`, Telemedicine `5007`, Symptom Checker `8080` (see file if unsure).
 - If you only want to start infra first: `docker-compose up -d postgres mongodb redis` then bring services up separately.
 
@@ -80,7 +83,7 @@ To remove volumes (clean DBs):
 docker-compose down -v
 ```
 
-3) Option B — Run services locally (no service containers) while using Docker for DBs
+3. Option B — Run services locally (no service containers) while using Docker for DBs
 
 Use this if you want to run the .NET and Python apps directly on your host for debugging.
 
@@ -99,7 +102,7 @@ cd f:\careLinkPlatform\backend\Services\AuthService
 # Set env vars so the local service connects to the postgres container on localhost
 $env:ASPNETCORE_ENVIRONMENT = 'Development'
 $env:ConnectionStrings__DefaultConnection = 'Host=localhost;Port=5432;Database=authdb;Username=admin;Password=admin123'
-$env:Jwt__Key = 'your-super-secret-key-for-development-only'
+$env:JWT_KEY = 'your-super-secret-key-for-development-only'
 
 dotnet run
 ```
@@ -139,14 +142,14 @@ npm run dev
 
 Open the frontend in your browser (Vite default): http://localhost:5173 — the frontend will call the API Gateway at http://localhost:5000 if configured that way.
 
-4) Minimal health checks and endpoints
+4. Minimal health checks and endpoints
 
 - API Gateway: http://localhost:5000/ (or `/swagger`)
 - AuthService: http://localhost:5001/health and http://localhost:5001/swagger
 - Telemedicine: http://localhost:5007/swagger or health endpoints if enabled
 - Symptom Checker: http://localhost:8080/docs (FastAPI auto docs) or `/health` if implemented
 
-5) Troubleshooting tips
+5. Troubleshooting tips
 
 - If a service fails to start because it cannot connect to Postgres/Mongo, ensure the DB containers are running and you used `localhost` host when running the service locally (Docker maps ports to localhost).
 - View logs:
@@ -171,7 +174,7 @@ docker-compose down -v
 docker-compose up -d postgres mongodb redis
 ```
 
-6) Quick checklists
+6. Quick checklists
 
 - Quick Docker start (recommended):
 
@@ -199,6 +202,7 @@ cd f:\careLinkPlatform\frontend; npm run dev
 ---
 
 If you'd like, I can:
+
 - add PowerShell scripts to automate these sequences (e.g., `scripts/start-dev.ps1` and `scripts/stop-dev.ps1`)
 - or create a one-liner `docker-compose` file that only starts the four services you specified.
 

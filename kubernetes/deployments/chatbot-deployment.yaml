@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: chatbot-service
-          image: carelink/chatbot-service:latest
-          imagePullPolicy: Always
+          image: localhost:8001/chatbot-service:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8001
               name: http

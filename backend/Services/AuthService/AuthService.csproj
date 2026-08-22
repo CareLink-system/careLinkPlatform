@@ -33,7 +33,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PatientService\PatientService.csproj" />
 	  <!--For Deployment-->
 	  <!--<ProjectReference Include="..\..\Shared\SharedConfiguration\SharedConfiguration.csproj" />-->
   </ItemGroup>
