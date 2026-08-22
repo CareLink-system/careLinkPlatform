@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  apiGateway-service:
+    image: dinildulneth/apiGateway-service:latest
+    container_name: apiGateway-service
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env # Uses My .env file from the same folder
+    environment:
+      # Override any if needed
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
