@@ -17,12 +17,79 @@ spec:
     spec:
       containers:
         - name: appointment-service
-          image: carelink/appointment-service:latest
-          imagePullPolicy: Always
+          image: dinildulneth/appointment-service:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5004
               name: http
           env:
+            - name: BASE_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: BASE_SERVICE_URL
+
+            # ============================================
+            # DATABASE ENV VARS (ALL OF THEM!)
+            # ============================================
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: DB_PORT
+            - name: DB_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: DB_USERNAME
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: APPOINTMENT_DB_NAME
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: carelink-secrets
+                  key: PostgresPassword
+            - name: DB_SSL_MODE
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: DB_SSL_MODE
+
+            # ============================================
+            # JWT ENV VARS
+            # ============================================
+            - name: JWT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: carelink-secrets
+                  key: JWT_KEY
+            - name: JWT_ISSUER
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: JWT_ISSUER
+            - name: JWT_AUDIENCE
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: JWT_AUDIENCE
+
+            # ============================================
+            # CONNECTION STRING (FOR SERVICES THAT USE IT)
+            # ============================================
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: AuthDb__ConnectionString
             - name: ASPNETCORE_ENVIRONMENT
               valueFrom:
                 configMapKeyRef:
@@ -33,6 +100,11 @@ spec:
                 configMapKeyRef:
                   name: carelink-config
                   key: AppointmentDb__ConnectionString
+            - name: BASE_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: carelink-config
+                  key: JWT_ISSUER
 ---
 apiVersion: v1
 kind: Service
