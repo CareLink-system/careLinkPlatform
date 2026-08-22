@@ -45,9 +45,9 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=authdb;Username=admin;Password=admin123
-      - Jwt__Key=your-super-secret-key-for-development-only
-      - Jwt__Issuer=careLinkPlatform
-      - Jwt__Audience=careLinkPlatformUsers
+      - JWT_KEY=your-super-secret-key-for-development-only
+      - JWT_ISSUER=careLinkPlatform
+      - JWT_AUDIENCE=careLinkPlatformUsers
     depends_on:
       - postgres
     networks:
@@ -104,9 +104,9 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=telemedicinedb;Username=admin;Password=admin123
-      - Jwt__Key=your-super-secret-key-for-development-only
-      - Jwt__Issuer=careLinkPlatform
-      - Jwt__Audience=careLinkPlatformUsers
+      - JWT_KEY=your-super-secret-key-for-development-only
+      - JWT_ISSUER=careLinkPlatform
+      - JWT_AUDIENCE=careLinkPlatformUsers
     depends_on:
       - postgres
     networks:
@@ -157,17 +157,17 @@ services:
       - carelink-network
 
   # RabbitMQ messaging
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: carelink-rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    networks:
-      - carelink-network
+  # rabbitmq:
+  #   image: rabbitmq:3-management
+  #   container_name: carelink-rabbitmq
+  #   ports:
+  #     - "5672:5672"
+  #     - "15672:15672"
+  #   environment:
+  #     RABBITMQ_DEFAULT_USER: guest
+  #     RABBITMQ_DEFAULT_PASS: guest
+  #   networks:
+  #     - carelink-network
 
   # API Gateway
   api-gateway:
@@ -177,9 +177,9 @@ services:
       - "5000:5000"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - Jwt__Key=your-super-secret-key-for-development-only
-      - Jwt__Issuer=careLinkPlatform
-      - Jwt__Audience=careLinkPlatformUsers
+      - JWT_KEY=your-super-secret-key-for-development-only
+      - JWT_ISSUER=careLinkPlatform
+      - JWT_AUDIENCE=careLinkPlatformUsers
       - AUTH_SERVICE_URL=http://auth-service:5001
       - PATIENT_SERVICE_URL=http://patient-service:5002
       - DOCTOR_SERVICE_URL=http://doctor-service:5003
@@ -187,9 +187,9 @@ services:
       - TELEMEDICINE_SERVICE_URL=http://telemedicine-service:5007
       - PAYMENT_SERVICE_URL=http://payment-service:5010
       - NOTIFICATION_SERVICE_URL=http://notification-service:5008
-      - RABBITMQ__HOST=rabbitmq
-      - RABBITMQ__USERNAME=guest
-      - RABBITMQ__PASSWORD=guest
+      # - RABBITMQ__HOST=rabbitmq
+      # - RABBITMQ__USERNAME=guest
+      # - RABBITMQ__PASSWORD=guest
     depends_on:
       - auth-service
       - patient-service
@@ -198,7 +198,7 @@ services:
       - telemedicine-service
       - payment-service
       - notification-service
-      - rabbitmq
+      # - rabbitmq
     networks:
       - carelink-network
 
