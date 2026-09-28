@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  appointment-service:
+    image: dinildulneth/appointment-service:latest
+    container_name: appointment-service
+    ports:
+      - "5004:5004"
+    env_file:
+      - .env # Uses My .env file from the same folder
+    environment:
+      # Override any if needed
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5004

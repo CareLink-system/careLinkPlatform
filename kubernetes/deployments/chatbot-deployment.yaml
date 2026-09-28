@@ -14,11 +14,15 @@ spec:
     metadata:
       labels:
         app: chatbot-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8001"
+        prometheus.io/path: "/metrics"
     spec:
       containers:
         - name: chatbot-service
-          image: carelink/chatbot-service:latest
-          imagePullPolicy: Always
+          image: localhost:8001/chatbot-service:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8001
               name: http

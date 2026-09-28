@@ -14,11 +14,15 @@ spec:
     metadata:
       labels:
         app: symptom-check-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
     spec:
       containers:
         - name: symptom-check-service
-          image: carelink/symptom-check-service:latest
-          imagePullPolicy: Always
+          image: dinildulneth/symptom-check-service:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
               name: http

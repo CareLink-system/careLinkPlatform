@@ -1,0 +1,118 @@
+version: "3.8"
+
+services:
+  auth-service:
+    image: dinildulneth/auth-service:latest
+    container_name: auth-service
+    ports:
+      - "5001:5001"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5001
+    env_file:
+      - ./AuthService/.env
+    networks:
+      - carelink-network
+
+  patient-service:
+    image: dinildulneth/patient-service:latest
+    container_name: patient-service
+    ports:
+      - "5002:5002"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5002
+    env_file:
+      - ./PatientService/.env
+    networks:
+      - carelink-network
+
+  doctor-service:
+    image: dinildulneth/doctor-service:latest
+    container_name: doctor-service
+    ports:
+      - "5003:5003"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5003
+    env_file:
+      - ./DoctorService/.env
+    networks:
+      - carelink-network
+
+  appointment-service:
+    image: dinildulneth/appointment-service:latest
+    container_name: appointment-service
+    ports:
+      - "5004:5004"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5004
+    env_file:
+      - ./AppointmentService/.env
+    networks:
+      - carelink-network
+
+  telemedicine-service:
+    image: dinildulneth/telemedicine-service:latest
+    container_name: telemedicine-service
+    ports:
+      - "5007:5007"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5007
+    env_file:
+      - ./TelemedicineService/.env
+    networks:
+      - carelink-network
+
+  notification-service:
+    image: dinildulneth/notification-service:latest
+    container_name: notification-service
+    ports:
+      - "5008:5008"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5008
+    env_file:
+      - ./NotificationService/.env
+    networks:
+      - carelink-network
+
+  payment-service:
+    image: dinildulneth/payment-service:latest
+    container_name: payment-service
+    ports:
+      - "5010:5010"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5010
+    env_file:
+      - ./PaymentService/.env
+    networks:
+      - carelink-network
+
+  api-gateway:
+    image: dinildulneth/api-gateway:latest
+    container_name: api-gateway
+    ports:
+      - "5000:5000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5000
+    env_file:
+      - ./ApiGateway/.env
+    networks:
+      - carelink-network
+    depends_on:
+      - auth-service
+      - patient-service
+      - doctor-service
+      - appointment-service
+      - telemedicine-service
+      - notification-service
+      - payment-service
+
+networks:
+  carelink-network:
+    driver: bridge
